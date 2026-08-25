@@ -34,7 +34,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
   return (
     <Link
-      href={`/product/${product.slug}`}
+      href={`/ecommerce/product/${product.slug}`}
       className="group flex flex-col rounded-xl border border-neutral-100 bg-white p-3 transition-shadow hover:shadow-lg"
     >
       <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-neutral-50">

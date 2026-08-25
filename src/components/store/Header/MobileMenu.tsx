@@ -56,7 +56,7 @@ export default function MobileMenu() {
                 </Link>
               ))}
               <Link
-                href="/#products"
+                href="/ecommerce#products"
                 onClick={() => setOpen(false)}
                 className="mt-1 flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2.5 text-sm font-medium text-emerald-700"
               >
@@ -72,7 +72,7 @@ export default function MobileMenu() {
               {categories.map((cat) => (
                 <Link
                   key={cat.name}
-                  href="/#categories"
+                  href="/ecommerce#categories"
                   onClick={() => setOpen(false)}
                   className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-neutral-700 hover:bg-emerald-50 hover:text-emerald-800"
                 >

@@ -36,7 +36,7 @@ export default function ProductInfo({ product }: { product: Product }) {
 
   const handleBuyNow = () => {
     handleAddToCart();
-    router.push("/cart");
+    router.push("/ecommerce/cart");
   };
 
   return (

@@ -49,7 +49,7 @@ export default function MainHeader() {
           <span className="hidden md:block h-8 w-px bg-neutral-200" />
 
           <Link
-            href="/cart"
+            href="/ecommerce/cart"
             className="relative flex flex-col items-center gap-0.5 text-neutral-700 hover:text-emerald-700"
           >
             <span className="relative">

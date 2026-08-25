@@ -13,7 +13,7 @@ export default function EmptyCart() {
         কার্টে কোনো পণ্য যোগ করা হয়নি। এখনই কেনাকাটা শুরু করুন।
       </p>
       <Button asChild className="mt-6 bg-emerald-800 hover:bg-emerald-900 text-white">
-        <Link href="/#products">শপিং করুন</Link>
+        <Link href="/ecommerce#products">শপিং করুন</Link>
       </Button>
     </div>
   );

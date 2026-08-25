@@ -10,7 +10,7 @@ export default function TopBar() {
           <span className="font-semibold text-amber-400">WELCOME20</span>
         </p>
         <div className="hidden md:flex items-center gap-4 shrink-0">
-          <Link href="/order-success" className="hover:text-amber-400">
+          <Link href="/ecommerce/order-success" className="hover:text-amber-400">
             Track Order
           </Link>
           <Link href="#" className="hover:text-amber-400">

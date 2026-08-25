@@ -32,7 +32,7 @@ export default function NavBar() {
               {categories.map((cat) => (
                 <Link
                   key={cat.name}
-                  href="/#categories"
+                  href="/ecommerce#categories"
                   className="flex items-center gap-3 px-4 py-2 text-sm text-neutral-700 hover:bg-emerald-50 hover:text-emerald-800"
                 >
                   <cat.icon className="size-4" />
@@ -61,7 +61,7 @@ export default function NavBar() {
         </nav>
 
         <Link
-          href="/#products"
+          href="/ecommerce#products"
           className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-4 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
         >
           <Zap className="size-4 fill-emerald-700" />

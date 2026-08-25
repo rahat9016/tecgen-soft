@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Logo({ compact = false }: { compact?: boolean }) {
   return (
-    <Link href="/" className="flex flex-col shrink-0">
+    <Link href="/ecommerce" className="flex flex-col shrink-0">
       <span className="flex items-center gap-1.5">
         <span className="text-xl md:text-2xl font-extrabold leading-none text-neutral-900">
           FitStore

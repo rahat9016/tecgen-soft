@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./features/auth/authSlice";
 import cartReducer from "./features/cart/cartSlice";
 import filterReducer from "./features/filter/filterSlice";
+import hotelBookingReducer from "./features/hotelBooking/hotelBookingSlice";
 import organizerReducer from "./features/organizer/organizationSlice";
 import permissionReducer from "./features/permission/permissionSlice";
 import userReducer from "./features/user/userSlice";
@@ -14,6 +15,7 @@ export const makeStore = () => {
       permission: permissionReducer,
       filter: filterReducer,
       cart: cartReducer,
+      hotelBooking: hotelBookingReducer,
     },
   });
 };

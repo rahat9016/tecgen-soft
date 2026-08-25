@@ -38,7 +38,7 @@ export default function PromoBanners() {
                 <p className="mt-1 text-lg font-extrabold">{banner.highlight}</p>
                 <p className="mt-1 text-xs opacity-70">{banner.note}</p>
                 <Link
-                  href="/#products"
+                  href="/ecommerce#products"
                   className={cn(
                     "mt-4 inline-block rounded-md px-4 py-2 text-xs font-semibold",
                     tone.button

@@ -35,7 +35,7 @@ export default function OrderSummary() {
       </div>
 
       <Button asChild className="mt-6 w-full bg-emerald-800 hover:bg-emerald-900 text-white">
-        <Link href="/checkout">চেকআউটে যান</Link>
+        <Link href="/ecommerce/checkout">চেকআউটে যান</Link>
       </Button>
     </div>
   );

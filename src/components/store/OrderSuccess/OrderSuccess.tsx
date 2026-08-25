@@ -37,7 +37,7 @@ export default function OrderSuccess() {
 
       <div className="mt-8">
         <Button asChild className="bg-emerald-800 hover:bg-emerald-900 text-white">
-          <Link href="/">শপিং চালিয়ে যান</Link>
+          <Link href="/ecommerce">শপিং চালিয়ে যান</Link>
         </Button>
       </div>
     </div>

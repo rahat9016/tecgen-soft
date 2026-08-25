@@ -14,7 +14,7 @@ export default function CartTable() {
       {items.map((item) => (
         <div key={item.id} className="flex items-center gap-4 p-4">
           <Link
-            href={`/product/${item.slug}`}
+            href={`/ecommerce/product/${item.slug}`}
             className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-neutral-50"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -23,7 +23,7 @@ export default function CartTable() {
 
           <div className="min-w-0 flex-1">
             <Link
-              href={`/product/${item.slug}`}
+              href={`/ecommerce/product/${item.slug}`}
               className="line-clamp-1 text-sm font-medium text-neutral-800 hover:text-emerald-800"
             >
               {item.name}

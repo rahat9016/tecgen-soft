@@ -42,13 +42,13 @@ export default function Hero() {
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <Link
-                href="/#products"
+                href="/ecommerce#products"
                 className="rounded-md bg-amber-400 px-6 py-2.5 text-sm font-semibold text-emerald-950 hover:bg-amber-300"
               >
                 এখনই কিনুন
               </Link>
               <Link
-                href="/#promos"
+                href="/ecommerce#promos"
                 className="rounded-md border border-white/40 px-6 py-2.5 text-sm font-semibold hover:bg-white/10"
               >
                 অফার দেখুন

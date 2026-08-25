@@ -7,7 +7,7 @@ export default function ProductSection() {
     <section id="products" className="container py-10">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-neutral-900">সর্বাধিক বিক্রিত পণ্য</h2>
-        <Link href="/#products" className="text-sm font-medium text-emerald-800 hover:underline">
+        <Link href="/ecommerce#products" className="text-sm font-medium text-emerald-800 hover:underline">
           সবগুলো দেখুন →
         </Link>
       </div>

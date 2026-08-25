@@ -12,15 +12,15 @@ import {
 import Newsletter from "./Newsletter";
 
 const shopLinks = [
-  { label: "সব পণ্য", href: "/#products" },
-  { label: "নতুন এসেছে", href: "/#products" },
-  { label: "সর্বাধিক বিক্রিত", href: "/#products" },
-  { label: "অফার", href: "/#promos" },
+  { label: "সব পণ্য", href: "/ecommerce#products" },
+  { label: "নতুন এসেছে", href: "/ecommerce#products" },
+  { label: "সর্বাধিক বিক্রিত", href: "/ecommerce#products" },
+  { label: "অফার", href: "/ecommerce#promos" },
   { label: "ব্র্যান্ডসমূহ", href: "#" },
 ];
 
 const serviceLinks = [
-  { label: "Track Order", href: "/order-success" },
+  { label: "Track Order", href: "/ecommerce/order-success" },
   { label: "Returns & Refunds", href: "#" },
   { label: "Shipping Policy", href: "#" },
   { label: "Privacy Policy", href: "#" },
@@ -29,7 +29,7 @@ const serviceLinks = [
 
 const accountLinks = [
   { label: "Login / Register", href: "/auth/login" },
-  { label: "আমার অর্ডার", href: "/order-success" },
+  { label: "আমার অর্ডার", href: "/ecommerce/order-success" },
   { label: "Wishlist", href: "#" },
   { label: "অ্যাকাউন্ট সেটিংস", href: "#" },
   { label: "ঠিকানা বই", href: "#" },

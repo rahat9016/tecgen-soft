@@ -6,7 +6,7 @@ export default function CategoryGrid() {
     <section id="categories" className="container py-10">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-neutral-900">ক্যাটেগরি সমূহ</h2>
-        <Link href="/#products" className="text-sm font-medium text-emerald-800 hover:underline">
+        <Link href="/ecommerce#products" className="text-sm font-medium text-emerald-800 hover:underline">
           সবগুলো দেখুন →
         </Link>
       </div>
@@ -15,7 +15,7 @@ export default function CategoryGrid() {
         {categories.map((cat) => (
           <Link
             key={cat.name}
-            href="/#products"
+            href="/ecommerce#products"
             className="group flex flex-col items-center gap-2 text-center"
           >
             <span className="flex size-16 items-center justify-center overflow-hidden rounded-full border border-neutral-100 bg-neutral-50 shadow-sm ring-0 transition-shadow group-hover:shadow-md group-hover:ring-2 group-hover:ring-emerald-700">
