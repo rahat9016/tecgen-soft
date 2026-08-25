@@ -54,7 +54,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="absolute right-4 top-6 flex flex-col items-center md:right-10">
+        <div className="absolute right-4 top-6 hidden flex-col items-center lg:flex lg:right-10">
           <span className="rounded-t-md bg-violet-700 px-3 py-1 text-[10px] font-bold tracking-wide text-white">
             SPECIAL OFFER
           </span>
