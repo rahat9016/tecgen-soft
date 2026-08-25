@@ -18,8 +18,14 @@ export default function CategoryGrid() {
             href="/#products"
             className="group flex flex-col items-center gap-2 text-center"
           >
-            <span className="flex size-16 items-center justify-center rounded-full bg-neutral-100 text-neutral-700 group-hover:bg-emerald-800 group-hover:text-white transition-colors">
-              <cat.icon className="size-6" />
+            <span className="flex size-16 items-center justify-center overflow-hidden rounded-full border border-neutral-100 bg-neutral-50 shadow-sm ring-0 transition-shadow group-hover:shadow-md group-hover:ring-2 group-hover:ring-emerald-700">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={cat.image}
+                alt={cat.name}
+                loading="lazy"
+                className="size-full object-cover"
+              />
             </span>
             <span className="text-xs font-medium text-neutral-700">{cat.name}</span>
           </Link>

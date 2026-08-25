@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Backpack, Headphones, Watch } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import HeroIllustration from "./HeroIllustration";
 
 export default function Hero() {
   const [slide, setSlide] = useState(0);
@@ -25,30 +26,30 @@ export default function Hero() {
           <ChevronRight className="size-5" />
         </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-6 px-6 py-12 md:px-14 md:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-6 px-6 py-6 md:px-14 md:py-8">
           <div>
             <span className="inline-block rounded-full bg-amber-400 px-4 py-1 text-xs font-semibold text-emerald-950">
               বড় সেল চলছে
             </span>
-            <h1 className="mt-4 text-3xl md:text-5xl font-extrabold leading-tight">
+            <h1 className="mt-3 text-2xl md:text-4xl font-extrabold leading-tight">
               সেরা পণ্যে
               <br />
               ৫০% পর্যন্ত ছাড়!
             </h1>
-            <p className="mt-4 max-w-md text-sm md:text-base text-emerald-100">
+            <p className="mt-3 max-w-md text-sm text-emerald-100">
               সেরা ব্র্যান্ড, সেরা মান, সেরা দাম – সব এক জায়গায়। সীমিত সময়ের
               অফার, এখনই অর্ডার করুন!
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-3">
               <Link
                 href="/#products"
-                className="rounded-md bg-amber-400 px-6 py-3 text-sm font-semibold text-emerald-950 hover:bg-amber-300"
+                className="rounded-md bg-amber-400 px-6 py-2.5 text-sm font-semibold text-emerald-950 hover:bg-amber-300"
               >
                 এখনই কিনুন
               </Link>
               <Link
                 href="/#promos"
-                className="rounded-md border border-white/40 px-6 py-3 text-sm font-semibold hover:bg-white/10"
+                className="rounded-md border border-white/40 px-6 py-2.5 text-sm font-semibold hover:bg-white/10"
               >
                 অফার দেখুন
               </Link>
@@ -56,24 +57,18 @@ export default function Hero() {
           </div>
 
           <div className="relative hidden md:flex items-center justify-center">
-            <div className="relative flex size-72 items-center justify-center rounded-full bg-emerald-800/60">
-              <Backpack className="size-32 text-emerald-100" strokeWidth={1} />
-              <span className="absolute -left-2 top-6 flex size-16 items-center justify-center rounded-full bg-emerald-700 shadow-lg">
-                <Headphones className="size-8" />
-              </span>
-              <span className="absolute -right-2 bottom-8 flex size-16 items-center justify-center rounded-full bg-emerald-700 shadow-lg">
-                <Watch className="size-8" />
-              </span>
-              <span className="absolute -top-4 right-6 flex size-20 flex-col items-center justify-center rounded-full bg-amber-400 text-emerald-950 shadow-xl">
-                <span className="text-[10px] font-semibold">UP TO</span>
-                <span className="text-xl font-extrabold leading-none">50%</span>
-                <span className="text-[10px] font-semibold">OFF</span>
+            <div className="relative w-full max-w-65 aspect-square">
+              <HeroIllustration />
+              <span className="absolute top-0 right-2 flex size-16 flex-col items-center justify-center rounded-full bg-amber-400 text-emerald-950 shadow-xl">
+                <span className="text-[9px] font-semibold">UP TO</span>
+                <span className="text-lg font-extrabold leading-none">50%</span>
+                <span className="text-[9px] font-semibold">OFF</span>
               </span>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-center gap-2 pb-5">
+        <div className="flex justify-center gap-2 pb-4">
           {[0, 1, 2].map((i) => (
             <button
               key={i}

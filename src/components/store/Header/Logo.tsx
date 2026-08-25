@@ -1,20 +1,21 @@
 import Link from "next/link";
-import { ShoppingBag } from "lucide-react";
 
-export default function Logo() {
+export default function Logo({ compact = false }: { compact?: boolean }) {
   return (
-    <Link href="/" className="flex items-center gap-2 shrink-0">
-      <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-800 text-white">
-        <ShoppingBag className="size-5" />
-      </span>
-      <span>
-        <span className="block text-xl font-extrabold leading-tight text-emerald-950">
-          FitStore<span className="text-amber-500">BD</span>
+    <Link href="/" className="flex flex-col shrink-0">
+      <span className="flex items-center gap-1.5">
+        <span className="text-xl md:text-2xl font-extrabold leading-none text-neutral-900">
+          FitStore
         </span>
-        <span className="block text-[11px] text-neutral-500 leading-tight">
+        <span className="rounded-md bg-emerald-600 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
+          BD
+        </span>
+      </span>
+      {!compact && (
+        <span className="mt-0.5 text-[11px] italic font-medium text-emerald-700 leading-none">
           Better Quality, Better Life
         </span>
-      </span>
+      )}
     </Link>
   );
 }
