@@ -1,0 +1,79 @@
+[
+  { "id": 1, "name": "Cardiology", "slug": "cardiology" },
+  { "id": 2, "name": "Neurology", "slug": "neurology" },
+  { "id": 3, "name": "Orthopedics", "slug": "orthopedics" },
+  { "id": 4, "name": "Dermatology", "slug": "dermatology" },
+  { "id": 5, "name": "Gastroenterology", "slug": "gastroenterology" },
+  { "id": 6, "name": "Pediatrics", "slug": "pediatrics" },
+  { "id": 7, "name": "Psychiatry", "slug": "psychiatry" },
+  { "id": 8, "name": "Ophthalmology", "slug": "ophthalmology" },
+  { "id": 9, "name": "Oncology", "slug": "oncology" },
+  { "id": 10, "name": "Urology", "slug": "urology" },
+  { "id": 11, "name": "Endocrinology", "slug": "endocrinology" },
+  { "id": 12, "name": "Nephrology", "slug": "nephrology" },
+  { "id": 13, "name": "Pulmonology", "slug": "pulmonology" },
+  { "id": 14, "name": "Rheumatology", "slug": "rheumatology" },
+  { "id": 15, "name": "Hematology", "slug": "hematology" },
+  { "id": 16, "name": "Allergy & Immunology", "slug": "allergy-immunology" },
+  { "id": 17, "name": "Infectious Disease", "slug": "infectious-disease" },
+  { "id": 18, "name": "General Surgery", "slug": "general-surgery" },
+  { "id": 19, "name": "Plastic Surgery", "slug": "plastic-surgery" },
+  { "id": 20, "name": "ENT (Otolaryngology)", "slug": "ent-otolaryngology" },
+  {
+    "id": 21,
+    "name": "Obstetrics & Gynecology",
+    "slug": "obstetrics-gynecology"
+  },
+  { "id": 22, "name": "Anesthesiology", "slug": "anesthesiology" },
+  { "id": 23, "name": "Emergency Medicine", "slug": "emergency-medicine" },
+  { "id": 24, "name": "Pathology", "slug": "pathology" },
+  { "id": 25, "name": "Radiology", "slug": "radiology" },
+  { "id": 26, "name": "Sports Medicine", "slug": "sports-medicine" },
+  { "id": 27, "name": "Geriatrics", "slug": "geriatrics" },
+  { "id": 28, "name": "Sleep Medicine", "slug": "sleep-medicine" },
+  { "id": 29, "name": "Pain Medicine", "slug": "pain-medicine" },
+  {
+    "id": 30,
+    "name": "Rehabilitation Medicine",
+    "slug": "rehabilitation-medicine"
+  },
+  {
+    "id": 31,
+    "name": "Occupational Medicine",
+    "slug": "occupational-medicine"
+  },
+  { "id": 32, "name": "Palliative Care", "slug": "palliative-care" },
+  { "id": 33, "name": "Toxicology", "slug": "toxicology" },
+  { "id": 34, "name": "Genetics", "slug": "genetics" },
+  { "id": 35, "name": "Audiology", "slug": "audiology" },
+  { "id": 36, "name": "Chiropractic", "slug": "chiropractic" },
+  {
+    "id": 37,
+    "name": "Colon & Rectal Surgery",
+    "slug": "colon-rectal-surgery"
+  },
+  {
+    "id": 38,
+    "name": "Cardiothoracic Surgery",
+    "slug": "cardiothoracic-surgery"
+  },
+  { "id": 39, "name": "Neonatology", "slug": "neonatology" },
+  { "id": 40, "name": "Vascular Surgery", "slug": "vascular-surgery" },
+  { "id": 41, "name": "Ophthalmic Surgery", "slug": "ophthalmic-surgery" },
+  {
+    "id": 42,
+    "name": "Critical Care Medicine",
+    "slug": "critical-care-medicine"
+  },
+  { "id": 43, "name": "Family Medicine", "slug": "family-medicine" },
+  {
+    "id": 44,
+    "name": "Clinical Pharmacology",
+    "slug": "clinical-pharmacology"
+  },
+  {
+    "id": 45,
+    "name": "Interventional Radiology",
+    "slug": "interventional-radiology"
+  }
+]

@@ -1,0 +1,62 @@
+version: "3.8"
+
+# Each service is self-contained: run with only the profile, e.g.
+#   docker compose --profile sqa  up --build -d
+#   docker compose --profile uat  up --build -d
+#   docker compose --profile prod up --build -d
+#
+# NEXT_PUBLIC_* is baked at BUILD time, so it lives in build.args (literal per
+# service - env_file is runtime-only and cannot feed build.args). Runtime vars
+# come from each service's env_file.
+
+services:
+  # -------------------------
+  # 1. SQA Environment
+  # -------------------------
+  hhd-sqa:
+    container_name: happy-hospital-diagnosis-frontend-sqa
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: "http://192.168.0.202:8002/happy-hospital/api/v1"
+    env_file:
+      - .env.sqa
+    ports:
+      - "3001:3000"
+    restart: unless-stopped
+    profiles: ["sqa"]
+
+  # -------------------------
+  # 2. UAT Environment
+  # -------------------------
+  hhd-uat:
+    container_name: happy-hospital-diagnosis-frontend-uat
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: "http://192.168.0.202:8000/happy-hospital/api/v1"
+    env_file:
+      - .env.uat
+    ports:
+      - "3002:3000"
+    restart: unless-stopped
+    profiles: ["uat"]
+
+  # -------------------------
+  # 3. PROD Environment
+  # -------------------------
+  hhd-prod:
+    container_name: happy-hospital-diagnosis-frontend-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: "http://72.62.231.103:8080/happy-hospital/api/v1"
+    env_file:
+      - .env.prod
+    ports:
+      - "3003:3000"
+    restart: unless-stopped
+    profiles: ["prod"]
