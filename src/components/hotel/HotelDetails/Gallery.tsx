@@ -6,7 +6,7 @@ export default function Gallery({ images, name }: { images: string[]; name: stri
   const [active, setActive] = useState(0);
 
   return (
-    <div className="grid grid-cols-4 grid-rows-2 gap-2 overflow-hidden rounded-xl" style={{ height: 420 }}>
+    <div className="grid h-[300px] grid-cols-4 grid-rows-3 gap-2 overflow-hidden rounded-xl sm:h-[420px] sm:grid-rows-2">
       <button
         type="button"
         onClick={() => setActive(0)}
@@ -23,7 +23,7 @@ export default function Gallery({ images, name }: { images: string[]; name: stri
           key={img}
           type="button"
           onClick={() => setActive(i + 1)}
-          className="col-span-1 row-span-1 hidden sm:block"
+          className="col-span-1 row-span-1"
         >
           <img src={img} alt={`${name} ${i + 2}`} className="size-full object-cover" />
         </button>
