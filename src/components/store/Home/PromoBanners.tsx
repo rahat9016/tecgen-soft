@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CreditCard, Gift, ShoppingBag } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { promoBanners } from "@/src/data/banners";
 import { cn } from "@/src/lib/utils";
 
@@ -21,15 +21,12 @@ const toneStyles = {
   },
 } as const;
 
-const icons = [CreditCard, Gift, ShoppingBag];
-
 export default function PromoBanners() {
   return (
     <section id="promos" className="container py-4">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {promoBanners.map((banner, i) => {
+        {promoBanners.map((banner) => {
           const tone = toneStyles[banner.tone];
-          const Icon = icons[i];
           return (
             <div
               key={banner.title}
@@ -50,8 +47,18 @@ export default function PromoBanners() {
                   {banner.cta}
                 </Link>
               </div>
-              <span className={cn("flex size-16 shrink-0 items-center justify-center rounded-full", tone.icon)}>
-                <Icon className="size-7" />
+              <span
+                className={cn(
+                  "flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full",
+                  tone.icon
+                )}
+              >
+                {banner.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={banner.image} alt={banner.title} className="size-full object-cover" />
+                ) : (
+                  <ShoppingBag className="size-7" />
+                )}
               </span>
             </div>
           );

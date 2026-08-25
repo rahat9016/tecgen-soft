@@ -27,8 +27,7 @@ export default function ProductInfo({ product }: { product: Product }) {
           slug: product.slug,
           name: product.name,
           price: product.price,
-          icon: product.icon,
-          color: product.color,
+          image: product.image,
         },
         qty,
       })

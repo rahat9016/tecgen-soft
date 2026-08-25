@@ -36,6 +36,8 @@ export const promoBanners = [
     highlight: "20% ইনস্ট্যান্ট ছাড়!",
     note: "নির্বাচিত ব্যাংক কার্ডে",
     cta: "বিস্তারিত দেখুন",
+    image:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Credit-cards.jpg/500px-Credit-cards.jpg",
   },
   {
     tone: "cream" as const,
@@ -45,6 +47,8 @@ export const promoBanners = [
     note: "৳২,৫০০+ অর্ডারে",
     cta: "এখনই শপ করুন",
     code: "WEEKEND10",
+    image:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Gift_box.jpg/500px-Gift_box.jpg",
   },
   {
     tone: "blue" as const,
@@ -53,5 +57,6 @@ export const promoBanners = [
     highlight: "ফ্ল্যাট 15% ছাড়!",
     note: "কুপন কোড: HELLO15",
     cta: "এখনই শপ করুন",
+    image: null,
   },
 ];

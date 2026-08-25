@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Star, ShoppingCart } from "lucide-react";
 import type { Product } from "@/src/data/products";
-import { productIconMap } from "@/src/lib/productIcons";
 import { useAppDispatch } from "@/src/lib/redux/hooks";
 import { addItem } from "@/src/lib/redux/features/cart/cartSlice";
 import { cn } from "@/src/lib/utils";
@@ -17,7 +16,6 @@ const badgeStyles: Record<string, string> = {
 
 export default function ProductCard({ product }: { product: Product }) {
   const dispatch = useAppDispatch();
-  const Icon = productIconMap[product.icon];
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -28,8 +26,7 @@ export default function ProductCard({ product }: { product: Product }) {
           slug: product.slug,
           name: product.name,
           price: product.price,
-          icon: product.icon,
-          color: product.color,
+          image: product.image,
         },
       })
     );
@@ -40,18 +37,24 @@ export default function ProductCard({ product }: { product: Product }) {
       href={`/product/${product.slug}`}
       className="group flex flex-col rounded-xl border border-neutral-100 bg-white p-3 transition-shadow hover:shadow-lg"
     >
-      <div className={cn("relative flex aspect-square items-center justify-center rounded-lg", product.color)}>
+      <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-neutral-50">
         {product.badge && (
           <span
             className={cn(
-              "absolute left-2 top-2 rounded-md px-2 py-0.5 text-[11px] font-semibold text-white",
+              "absolute left-2 top-2 z-10 rounded-md px-2 py-0.5 text-[11px] font-semibold text-white",
               badgeStyles[product.badge]
             )}
           >
             {product.badge}
           </span>
         )}
-        <Icon className="size-16 opacity-80 transition-transform group-hover:scale-110" strokeWidth={1.5} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={product.image}
+          alt={product.name}
+          loading="lazy"
+          className="size-full object-cover transition-transform group-hover:scale-105"
+        />
       </div>
 
       <h3 className="mt-3 line-clamp-1 text-sm font-medium text-neutral-800">
