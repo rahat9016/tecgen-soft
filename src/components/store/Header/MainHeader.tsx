@@ -1,16 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, Search, ShoppingCart, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, Heart, Search, ShoppingCart } from "lucide-react";
 import Logo from "./Logo";
 import MobileMenu from "./MobileMenu";
 import { Input } from "@/src/components/ui/input";
-import { useAppSelector } from "@/src/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/src/lib/redux/hooks";
+import { logoutUser } from "@/src/lib/redux/features/auth/authSlice";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/src/components/ui/dropdown-menu";
 
 export default function MainHeader() {
   const cartCount = useAppSelector((state) =>
     state.cart.items.reduce((sum, i) => sum + i.qty, 0)
   );
+  const userInformation = useAppSelector((state) => state.auth.userInformation);
+  const firstName = userInformation.firstName || "Sadia";
+  const lastName = userInformation.lastName || "Rahman";
+  const email = userInformation.email || "sadia.rahman@example.com";
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    dispatch(logoutUser());
+  };
 
   return (
     <div className="bg-white">
@@ -63,13 +83,41 @@ export default function MainHeader() {
 
           <span className="hidden md:block h-8 w-px bg-neutral-200" />
 
-          <Link
-            href="/auth/login"
-            className="flex items-center gap-1.5 text-neutral-700 hover:text-emerald-700"
-          >
-            <User className="size-5" />
-            <span className="hidden lg:inline text-sm">Login / Sign Up</span>
-          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-1.5 text-neutral-700 hover:text-emerald-700"
+                aria-label="Open account menu"
+              >
+                <span className="flex size-8 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-800">
+                  {firstName[0].toUpperCase()}
+                </span>
+                <span className="hidden lg:flex lg:items-center lg:gap-1 text-sm">
+                  {firstName}
+                  <ChevronDown className="size-3.5" />
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={10} className="w-48">
+              <DropdownMenuLabel className="truncate">
+                {`${firstName} ${lastName}`.trim() || email}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push("/ecommerce/order-success")}>
+                My Orders
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("#")}>
+                Wishlist
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("#")}>
+                Account Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
