@@ -8,12 +8,12 @@ export default function EmptyCart() {
       <span className="flex size-20 items-center justify-center rounded-full bg-neutral-100 text-neutral-400">
         <ShoppingCart className="size-9" />
       </span>
-      <h2 className="mt-6 text-lg font-semibold text-neutral-800">আপনার কার্ট খালি</h2>
+      <h2 className="mt-6 text-lg font-semibold text-neutral-800">Your cart is empty</h2>
       <p className="mt-1 text-sm text-neutral-500">
-        কার্টে কোনো পণ্য যোগ করা হয়নি। এখনই কেনাকাটা শুরু করুন।
+        You haven&apos;t added any products to your cart yet. Start shopping now.
       </p>
       <Button asChild className="mt-6 bg-emerald-800 hover:bg-emerald-900 text-white">
-        <Link href="/ecommerce#products">শপিং করুন</Link>
+        <Link href="/ecommerce#products">Start Shopping</Link>
       </Button>
     </div>
   );

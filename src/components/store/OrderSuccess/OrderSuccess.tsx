@@ -16,28 +16,28 @@ export default function OrderSuccess() {
       </span>
 
       <h1 className="mt-6 text-2xl font-bold text-neutral-900">
-        ধন্যবাদ! আপনার অর্ডার সফল হয়েছে
+        Thank You! Your Order Was Successful
       </h1>
       <p className="mt-2 text-sm text-neutral-500">
-        অর্ডার আইডি: <span className="font-semibold text-neutral-800">{orderId}</span>
+        Order ID: <span className="font-semibold text-neutral-800">{orderId}</span>
       </p>
 
       <div className="mt-8 flex w-full max-w-md items-center gap-4 rounded-xl border border-neutral-100 bg-neutral-50 p-6 text-left">
         <PackageCheck className="size-8 shrink-0 text-emerald-800" />
         <div>
           <p className="text-sm font-semibold text-neutral-800">
-            আপনার অর্ডার প্রসেসিং হচ্ছে
+            Your order is being processed
           </p>
           <p className="mt-1 text-xs text-neutral-500">
-            আনুমানিক ডেলিভারি সময়: ২-৪ কার্যদিবস। ডেলিভারির সময় ক্যাশ অন
-            ডেলিভারি বা আপনার নির্বাচিত পেমেন্ট পদ্ধতিতে পেমেন্ট করুন।
+            Estimated delivery time: 2-4 business days. Pay via cash on
+            delivery or your selected payment method upon delivery.
           </p>
         </div>
       </div>
 
       <div className="mt-8">
         <Button asChild className="bg-emerald-800 hover:bg-emerald-900 text-white">
-          <Link href="/ecommerce">শপিং চালিয়ে যান</Link>
+          <Link href="/ecommerce">Continue Shopping</Link>
         </Button>
       </div>
     </div>

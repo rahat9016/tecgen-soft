@@ -1,16 +1,16 @@
 import * as yup from "yup";
 
 export const checkoutValidationSchema = yup.object({
-  fullName: yup.string().required("নাম আবশ্যক"),
+  fullName: yup.string().required("Name is required"),
   phone: yup
     .string()
-    .required("ফোন নম্বর আবশ্যক")
-    .matches(/^01[3-9]\d{8}$/, "সঠিক বাংলাদেশী ফোন নম্বর দিন"),
-  email: yup.string().email("সঠিক ইমেইল দিন").default(""),
-  address: yup.string().required("ঠিকানা আবশ্যক"),
-  city: yup.string().required("শহর আবশ্যক"),
-  area: yup.string().required("এলাকা/থানা আবশ্যক"),
-  postalCode: yup.string().required("পোস্টাল কোড আবশ্যক"),
+    .required("Phone number is required")
+    .matches(/^01[3-9]\d{8}$/, "Please enter a valid Bangladeshi phone number"),
+  email: yup.string().email("Please enter a valid email address").default(""),
+  address: yup.string().required("Address is required"),
+  city: yup.string().required("City is required"),
+  area: yup.string().required("Area/Thana is required"),
+  postalCode: yup.string().required("Postal code is required"),
   paymentMethod: yup
     .mixed<"cod" | "card" | "mobile-banking">()
     .oneOf(["cod", "card", "mobile-banking"])

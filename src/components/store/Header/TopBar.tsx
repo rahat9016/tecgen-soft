@@ -6,7 +6,7 @@ export default function TopBar() {
     <div className="bg-emerald-950 text-emerald-50 text-xs">
       <div className="container flex items-center justify-between gap-4 py-2">
         <p className="truncate">
-          বিশেষ অফার! প্রথম অর্ডারে ২০% ছাড় । কুপন কোড:{" "}
+          Special Offer! Get 20% off your first order. Coupon code:{" "}
           <span className="font-semibold text-amber-400">WELCOME20</span>
         </p>
         <div className="hidden md:flex items-center gap-4 shrink-0">
@@ -20,7 +20,7 @@ export default function TopBar() {
             Returns
           </Link>
           <button className="flex items-center gap-1 hover:text-amber-400">
-            বাংলা <ChevronDown className="size-3" />
+            English <ChevronDown className="size-3" />
           </button>
           <div className="flex items-center gap-2">
             <Link

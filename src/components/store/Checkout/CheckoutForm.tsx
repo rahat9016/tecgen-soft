@@ -14,9 +14,9 @@ import {
 } from "./schema/CheckoutSchema";
 
 const paymentOptions = [
-  { value: "cod", label: "ক্যাশ অন ডেলিভারি", icon: Banknote },
-  { value: "card", label: "কার্ড পেমেন্ট", icon: CreditCard },
-  { value: "mobile-banking", label: "মোবাইল ব্যাংকিং", icon: Smartphone },
+  { value: "cod", label: "Cash on Delivery", icon: Banknote },
+  { value: "card", label: "Card Payment", icon: CreditCard },
+  { value: "mobile-banking", label: "Mobile Banking", icon: Smartphone },
 ] as const;
 
 export default function CheckoutForm() {
@@ -48,48 +48,48 @@ export default function CheckoutForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
-        <h3 className="text-base font-semibold text-neutral-900">ডেলিভারি তথ্য</h3>
+        <h3 className="text-base font-semibold text-neutral-900">Delivery Information</h3>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            placeholder="পুরো নাম"
+            placeholder="Full Name"
             error={errors.fullName?.message}
             showErrorMessage
             {...register("fullName")}
           />
           <Input
-            placeholder="ফোন নম্বর (01XXXXXXXXX)"
+            placeholder="Phone Number (01XXXXXXXXX)"
             error={errors.phone?.message}
             showErrorMessage
             {...register("phone")}
           />
           <Input
-            placeholder="ইমেইল (ঐচ্ছিক)"
+            placeholder="Email (Optional)"
             className="sm:col-span-2"
             error={errors.email?.message}
             showErrorMessage
             {...register("email")}
           />
           <Input
-            placeholder="সম্পূর্ণ ঠিকানা"
+            placeholder="Full Address"
             className="sm:col-span-2"
             error={errors.address?.message}
             showErrorMessage
             {...register("address")}
           />
           <Input
-            placeholder="শহর"
+            placeholder="City"
             error={errors.city?.message}
             showErrorMessage
             {...register("city")}
           />
           <Input
-            placeholder="এলাকা / থানা"
+            placeholder="Area / Thana"
             error={errors.area?.message}
             showErrorMessage
             {...register("area")}
           />
           <Input
-            placeholder="পোস্টাল কোড"
+            placeholder="Postal Code"
             error={errors.postalCode?.message}
             showErrorMessage
             {...register("postalCode")}
@@ -98,7 +98,7 @@ export default function CheckoutForm() {
       </div>
 
       <div>
-        <h3 className="text-base font-semibold text-neutral-900">পেমেন্ট পদ্ধতি</h3>
+        <h3 className="text-base font-semibold text-neutral-900">Payment Method</h3>
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {paymentOptions.map((opt) => (
             <label
@@ -128,7 +128,7 @@ export default function CheckoutForm() {
         disabled={isSubmitting || items.length === 0}
         className="w-full bg-emerald-800 hover:bg-emerald-900 text-white"
       >
-        অর্ডার করুন
+        Place Order
       </Button>
     </form>
   );

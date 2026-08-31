@@ -1,10 +1,10 @@
 export const navLinks = [
-  { label: "হোম", href: "/ecommerce" },
-  { label: "দোকান", href: "/ecommerce#products" },
-  { label: "অফার", href: "/ecommerce#promos" },
-  { label: "নতুন এসেছে", href: "/ecommerce#products" },
-  { label: "সর্বাধিক বিক্রিত", href: "/ecommerce#products" },
-  { label: "ব্র্যান্ড", href: "#" },
-  { label: "ব্লগ", href: "#" },
-  { label: "যোগাযোগ", href: "#" },
+  { label: "Home", href: "/ecommerce" },
+  { label: "Shop", href: "/ecommerce#products" },
+  { label: "Offers", href: "/ecommerce#promos" },
+  { label: "New Arrivals", href: "/ecommerce#products" },
+  { label: "Best Sellers", href: "/ecommerce#products" },
+  { label: "Brands", href: "#" },
+  { label: "Blog", href: "#" },
+  { label: "Contact", href: "#" },
 ];

@@ -19,7 +19,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="container py-8">
-      <h1 className="text-2xl font-bold text-neutral-900">চেকআউট</h1>
+      <h1 className="text-2xl font-bold text-neutral-900">Checkout</h1>
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">{hydrated && <CheckoutForm />}</div>
         <div>{hydrated && <CheckoutSummary />}</div>

@@ -24,7 +24,7 @@ export default function MainHeader() {
           <div className="flex w-full max-w-2xl">
             <Input
               type="search"
-              placeholder="আপনার পছন্দের পণ্য খুঁজুন..."
+              placeholder="Search for your favorite products..."
               className="h-11 rounded-r-none border-r-0 focus-visible:ring-0"
             />
             <button
@@ -77,7 +77,7 @@ export default function MainHeader() {
         <div className="flex w-full">
           <Input
             type="search"
-            placeholder="আপনার পছন্দের পণ্য খুঁজুন..."
+            placeholder="Search for your favorite products..."
             className="h-10 rounded-r-none border-r-0 focus-visible:ring-0"
           />
           <button

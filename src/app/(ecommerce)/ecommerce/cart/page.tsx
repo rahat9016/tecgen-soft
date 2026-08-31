@@ -19,7 +19,7 @@ export default function CartPage() {
 
   return (
     <div className="container py-8">
-      <h1 className="text-2xl font-bold text-neutral-900">শপিং কার্ট</h1>
+      <h1 className="text-2xl font-bold text-neutral-900">Shopping Cart</h1>
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">{hydrated && <CartTable />}</div>
         <div>

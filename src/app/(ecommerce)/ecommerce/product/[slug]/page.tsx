@@ -22,7 +22,7 @@ export default async function ProductPage({
     <div>
       <div className="container flex items-center gap-1.5 py-4 text-xs text-neutral-500">
         <Link href="/ecommerce" className="hover:text-emerald-800">
-          হোম
+          Home
         </Link>
         <ChevronRight className="size-3" />
         <span>{product.category}</span>

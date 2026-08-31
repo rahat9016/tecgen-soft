@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, X, Zap, Heart, User } from "lucide-react";
 import { categories } from "@/src/data/categories";
+import { categoryIllustrations } from "../Home/categoryIllustrationMap";
 import { navLinks } from "./navLinks";
 
 export default function MobileMenu() {
@@ -34,7 +35,7 @@ export default function MobileMenu() {
           />
           <div className="absolute left-0 top-0 h-full w-80 max-w-[85%] overflow-y-auto bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-neutral-100 p-4">
-              <span className="text-lg font-bold text-neutral-900">মেনু</span>
+              <span className="text-lg font-bold text-neutral-900">Menu</span>
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Close menu"
@@ -67,19 +68,22 @@ export default function MobileMenu() {
 
             <div className="border-t border-neutral-100 p-2">
               <p className="px-3 py-2 text-xs font-semibold uppercase text-neutral-400">
-                ক্যাটেগরি সমূহ
+                Categories
               </p>
-              {categories.map((cat) => (
-                <Link
-                  key={cat.name}
-                  href="/ecommerce#categories"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-neutral-700 hover:bg-emerald-50 hover:text-emerald-800"
-                >
-                  <cat.icon className="size-4" />
-                  {cat.name}
-                </Link>
-              ))}
+              {categories.map((cat) => {
+                const Illustration = categoryIllustrations[cat.icon];
+                return (
+                  <Link
+                    key={cat.name}
+                    href="/ecommerce#categories"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-neutral-700 hover:bg-emerald-50 hover:text-emerald-800"
+                  >
+                    <Illustration className="size-5" />
+                    {cat.name}
+                  </Link>
+                );
+              })}
             </div>
 
             <div className="border-t border-neutral-100 p-2">

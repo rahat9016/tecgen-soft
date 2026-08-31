@@ -12,11 +12,11 @@ import {
 import Newsletter from "./Newsletter";
 
 const shopLinks = [
-  { label: "সব পণ্য", href: "/ecommerce#products" },
-  { label: "নতুন এসেছে", href: "/ecommerce#products" },
-  { label: "সর্বাধিক বিক্রিত", href: "/ecommerce#products" },
-  { label: "অফার", href: "/ecommerce#promos" },
-  { label: "ব্র্যান্ডসমূহ", href: "#" },
+  { label: "All Products", href: "/ecommerce#products" },
+  { label: "New Arrivals", href: "/ecommerce#products" },
+  { label: "Best Sellers", href: "/ecommerce#products" },
+  { label: "Offers", href: "/ecommerce#promos" },
+  { label: "Brands", href: "#" },
 ];
 
 const serviceLinks = [
@@ -29,10 +29,10 @@ const serviceLinks = [
 
 const accountLinks = [
   { label: "Login / Register", href: "/auth/login" },
-  { label: "আমার অর্ডার", href: "/ecommerce/order-success" },
+  { label: "My Orders", href: "/ecommerce/order-success" },
   { label: "Wishlist", href: "#" },
-  { label: "অ্যাকাউন্ট সেটিংস", href: "#" },
-  { label: "ঠিকানা বই", href: "#" },
+  { label: "Account Settings", href: "#" },
+  { label: "Address Book", href: "#" },
 ];
 
 export default function StoreFooter() {
@@ -46,8 +46,8 @@ export default function StoreFooter() {
             FitStore<span className="text-amber-400">BD</span>
           </span>
           <p className="mt-3 text-sm text-emerald-200/80 max-w-xs">
-            সেরা মানের পণ্য, সেরা দামে, সেরা সেবার প্রতিশ্রুতি নিয়ে আমরা আছি
-            আপনার পাশে। আপনার স্মার্ট সিদ্ধান্তে পরিণত।
+            We&apos;re committed to bringing you the best quality products, at
+            the best prices, with the best service. Your smart shopping choice.
           </p>
           <div className="mt-4 flex items-center gap-2">
             {[Facebook, Instagram, Twitter, Youtube].map((Icon, i) => (
@@ -62,16 +62,16 @@ export default function StoreFooter() {
           </div>
         </div>
 
-        <FooterCol title="দোকান" links={shopLinks} />
-        <FooterCol title="গ্রাহক সেবা" links={serviceLinks} />
-        <FooterCol title="আমার অ্যাকাউন্ট" links={accountLinks} />
+        <FooterCol title="Shop" links={shopLinks} />
+        <FooterCol title="Customer Service" links={serviceLinks} />
+        <FooterCol title="My Account" links={accountLinks} />
 
         <div>
-          <h4 className="font-semibold text-white">যোগাযোগ করুন</h4>
+          <h4 className="font-semibold text-white">Contact Us</h4>
           <ul className="mt-3 space-y-3 text-sm text-emerald-200/80">
             <li className="flex items-start gap-2">
               <MapPin className="size-4 mt-0.5 shrink-0" />
-              ১২৩, ঢাকা, বাংলাদেশ
+              123, Dhaka, Bangladesh
             </li>
             <li className="flex items-center gap-2">
               <Phone className="size-4 shrink-0" />
