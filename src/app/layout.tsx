@@ -15,8 +15,9 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "FitStore BD - Better Quality, Better Life",
-  description: "FitStore BD - Online Shopping in Bangladesh",
+  title: "Tecgen Soft - Web & Software Development Company in Bangladesh",
+  description:
+    "Tecgen Soft is a leading web and software development company in Bangladesh, providing innovative solutions for businesses.",
 };
 
 export default function RootLayout({
@@ -24,7 +25,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  console.log("ok");
   return (
     <html lang="en" className={poppins.variable} suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>

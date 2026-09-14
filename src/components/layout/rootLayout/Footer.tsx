@@ -31,11 +31,11 @@ Diagnostic Center "
             >
               <Image
                 src={logo}
-                alt="Happy Hospital & 
+                alt="Happy Hospital &
 Diagnostic Center"
                 width={216}
-                height={216}
-                className="w-24 h-24"
+                height={144}
+                className="w-24 h-auto object-contain"
               />
               <h2 className="text-base text-secondary-dark font-semibold">
                 Happy Hospital &<br />

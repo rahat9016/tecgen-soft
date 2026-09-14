@@ -1,5 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Code2, Facebook, Mail, MessageCircle, Phone } from "lucide-react";
+import { Facebook, Mail, MessageCircle, Phone } from "lucide-react";
+import logo from "@/public/logo_2.png";
 
 export default function AgencyFooter() {
   return (
@@ -7,12 +9,17 @@ export default function AgencyFooter() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <Link href="/" className="flex items-center gap-1.5">
-              <span className="flex size-9 items-center justify-center rounded-lg bg-indigo-600 text-white">
-                <Code2 className="size-5" />
-              </span>
-              <span className="text-lg font-bold text-slate-900">
-                Tecgen <span className="text-indigo-600">Soft</span>
+            <Link href="/" className="flex items-center gap-2">
+              <Image
+                src={logo}
+                alt="Tecgen Soft"
+                width={40}
+                height={40}
+                className="h-9 w-auto object-contain"
+              />
+              <span className="text-lg font-bold">
+                <span style={{ color: "#061531" }}>Tecgen</span>{" "}
+                <span style={{ color: "#3D2EF9" }}>Soft</span>
               </span>
             </Link>
             <p className="mt-3 text-sm leading-relaxed text-slate-500">
