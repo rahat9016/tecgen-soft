@@ -18,11 +18,11 @@ export default function RootPage() {
       <SmoothScroll>
         <div className="h-16" aria-hidden="true" />
         <Hero />
-        <TrustSection />
+        <PricingPreview />
         <SolutionsSection />
         <HowItWorks />
         <WhyUsSection />
-        <PricingPreview />
+        <TrustSection />
         <GrowthSection />
         <FaqSection />
         <FinalCta />
