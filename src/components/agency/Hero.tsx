@@ -72,50 +72,38 @@ export default function Hero() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8, 1], [1, 1, 0]);
 
   return (
-    <section ref={sectionRef} className="relative overflow-hidden bg-indigo-50/40">
-      <motion.svg
-        style={{ y: bgY }}
-        className="pointer-events-none absolute inset-0 h-[calc(100%+120px)] w-full"
-        viewBox="0 0 1600 900"
-        preserveAspectRatio="xMidYMid slice"
-        aria-hidden="true"
-      >
-        <defs>
-          <pattern id="agency-grid" width="64" height="64" patternUnits="userSpaceOnUse">
-            <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#c7d2fe" strokeWidth="1" opacity="0.5" />
-          </pattern>
-          <radialGradient id="agency-fade" cx="50%" cy="35%" r="75%">
-            <stop offset="0%" stopColor="#eef2ff" stopOpacity="0" />
-            <stop offset="70%" stopColor="#eef2ff" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#ffffff" stopOpacity="0.9" />
-          </radialGradient>
-          <filter id="agency-blur" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="70" />
-          </filter>
-        </defs>
-        <g className="agency-grid-drift">
-          <rect x="-64" y="-64" width="1728" height="1028" fill="url(#agency-grid)" />
-        </g>
-        <circle
-          className="agency-blob-pulse"
-          cx="1380"
-          cy="40"
-          r="180"
-          fill="#6366f1"
-          opacity="0.22"
-          filter="url(#agency-blur)"
+    <section ref={sectionRef} className="relative overflow-hidden bg-[#061531]">
+      {/* professional background photo */}
+      <motion.div style={{ y: bgY }} className="absolute inset-0 h-[calc(100%+120px)] w-full">
+        <Image
+          src="/background.jpg"
+          alt=""
+          fill
+          priority
+          className="object-cover"
+          aria-hidden="true"
         />
-        <circle
-          className="agency-blob-pulse agency-blob-pulse-delayed"
-          cx="60"
-          cy="760"
-          r="200"
-          fill="#3b82f6"
-          opacity="0.18"
-          filter="url(#agency-blur)"
-        />
-        <rect width="1600" height="900" fill="url(#agency-fade)" />
-      </motion.svg>
+      </motion.div>
+
+      {/* brand-color overlay for legibility + depth */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(115deg, rgba(6,21,49,0.88) 0%, rgba(6,21,49,0.75) 32%, rgba(6,21,49,0.4) 58%, rgba(6,21,49,0.25) 100%), radial-gradient(ellipse 60% 50% at 10% 110%, rgba(61,46,249,0.3), transparent 60%)",
+        }}
+      />
+
+      {/* fine grain texture for a premium, non-flat feel */}
+      <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.04]" aria-hidden="true">
+        <filter id="agency-noise">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#agency-noise)" />
+      </svg>
+
+      {/* soft fade into the section below */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-[#061531] to-transparent" />
 
       <motion.div
         variants={container}
@@ -127,43 +115,46 @@ export default function Hero() {
         <div>
           <motion.span
             variants={item}
-            className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1.5 text-xs font-medium text-indigo-700"
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-indigo-200 backdrop-blur-sm"
           >
             🇧🇩 বাংলাদেশি উদ্যোক্তাদের জন্য তৈরি
           </motion.span>
 
           <motion.h1
             variants={item}
-            className="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl md:text-5xl"
+            className="mt-5 text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl"
           >
             আপনার ব্যবসার জন্য{" "}
-            <span className="text-indigo-600">Professional Website</span> —
-            আপনার বাজেটের মধ্যেই।
+            <span className="bg-linear-to-r from-indigo-400 via-[#6C63FF] to-indigo-300 bg-clip-text text-transparent">
+              Professional Website
+            </span>{" "}
+            — আপনার বাজেটের মধ্যেই।
           </motion.h1>
-          <motion.p variants={item} className="mt-3 text-base font-medium text-slate-500 sm:text-lg">
+          <motion.p variants={item} className="mt-3 text-base font-medium text-slate-300 sm:text-lg">
             Launch Your Business Online Without Breaking Your Budget.
           </motion.p>
 
           <motion.p
             variants={item}
-            className="mt-5 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base"
+            className="mt-5 max-w-xl text-sm leading-relaxed text-slate-400 sm:text-base"
           >
             E-commerce, Hotel Booking, Restaurant, Business Website এবং আরও অনেক কিছু —
-            আমরা আপনার ব্যবসার প্রয়োজন অনুযায়ী <strong>ready-to-launch website</strong> তৈরি
+            আমরা আপনার ব্যবসার প্রয়োজন অনুযায়ী{" "}
+            <strong className="font-semibold text-slate-200">ready-to-launch website</strong> তৈরি
             করি। টেকনোলজি বুঝতে হবে না — সেই দায়িত্ব আমাদের।
           </motion.p>
 
           <motion.div variants={item} className="mt-8 flex flex-wrap gap-3">
             <Link
               href="#solutions"
-              className="inline-flex h-12 items-center gap-2 rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/30"
+              className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#3D2EF9] px-6 text-sm font-semibold text-white shadow-lg shadow-[#3D2EF9]/30 transition hover:bg-[#4d3ffa] hover:shadow-xl hover:shadow-[#3D2EF9]/40"
             >
               View Our Solutions
               <ArrowRight className="size-4" />
             </Link>
             <Link
               href="#contact"
-              className="inline-flex h-12 items-center gap-2 rounded-lg border border-slate-300 bg-white px-6 text-sm font-semibold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50"
+              className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-6 text-sm font-semibold text-white backdrop-blur-sm transition hover:border-white/30 hover:bg-white/10"
             >
               <MessageCircle className="size-4" />
               Talk to Us
@@ -172,8 +163,8 @@ export default function Hero() {
 
           <motion.div variants={item} className="mt-8 flex flex-wrap gap-x-5 gap-y-2">
             {trustIndicators.map(({ icon: Icon, label }) => (
-              <span key={label} className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-                <Icon className="size-3.5 text-indigo-600" />
+              <span key={label} className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
+                <Icon className="size-3.5 text-indigo-400" />
                 {label}
               </span>
             ))}
@@ -205,7 +196,7 @@ export default function Hero() {
           <motion.span
             animate={{ y: [0, -6, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-3 -left-3 rounded-full bg-white px-3 py-1 text-[10px] font-semibold text-indigo-600 shadow-md"
+            className="absolute top-3 -left-3 rounded-full bg-white px-3 py-1 text-[10px] font-semibold text-[#3D2EF9] shadow-lg shadow-black/20"
           >
             Real Client Projects
           </motion.span>
