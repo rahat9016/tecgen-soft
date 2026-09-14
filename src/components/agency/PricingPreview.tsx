@@ -1,0 +1,111 @@
+import Link from "next/link";
+import { ArrowRight, Check } from "lucide-react";
+
+import Reveal from "@/src/components/agency/Reveal";
+import { StaggerGrid, StaggerItem } from "@/src/components/agency/StaggerGrid";
+
+const plans = [
+  {
+    name: "Business Website",
+    price: "৳৮,০০০",
+    note: "One-time",
+    support: "২ মাস সাপোর্ট included",
+    after: "৳৫০০/মাস (optional, চাইলে)",
+    features: ["৫ পেজ পর্যন্ত ওয়েবসাইট", "Mobile Responsive", "Contact Form", "Basic SEO Setup"],
+    highlight: false,
+  },
+  {
+    name: "Starter E-commerce",
+    price: "৳১৫,০০০",
+    note: "One-time",
+    support: "৩ মাস সাপোর্ট included",
+    after: "৳৮০০/মাস (optional, চাইলে)",
+    features: ["Admin Dashboard", "Product ও Order Management", "Shopping Cart ও Checkout", "Basic Training"],
+    highlight: true,
+  },
+  {
+    name: "Hotel Booking",
+    price: "৳২০,০০০",
+    note: "One-time",
+    support: "৩ মাস সাপোর্ট included",
+    after: "৳৮০০/মাস (optional, চাইলে)",
+    features: ["Room Management", "Booking ও Availability System", "Admin Dashboard", "Basic Training"],
+    highlight: false,
+  },
+];
+
+export default function PricingPreview() {
+  return (
+    <section id="pricing" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20 lg:px-8">
+      <Reveal className="mx-auto max-w-2xl text-center">
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          Pricing Transparency
+        </h2>
+        <p className="mt-3 text-sm text-slate-500 sm:text-base">
+          কী পাবেন, কত খরচ হবে, কী থাকছে না — সবকিছু পরিষ্কার। কোনো surprise bill নেই।
+        </p>
+      </Reveal>
+
+      <StaggerGrid className="mt-10 grid gap-6 lg:grid-cols-3">
+        {plans.map((plan) => (
+          <StaggerItem
+            key={plan.name}
+            className={`flex flex-col rounded-2xl border p-6 transition hover:-translate-y-1 ${
+              plan.highlight
+                ? "border-indigo-300 bg-indigo-600 text-white shadow-xl shadow-indigo-600/20"
+                : "border-slate-200 bg-white hover:shadow-lg hover:shadow-slate-900/10"
+            }`}
+          >
+            <h3 className={`text-sm font-semibold ${plan.highlight ? "text-indigo-100" : "text-slate-500"}`}>
+              {plan.name}
+            </h3>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-bold">{plan.price}</span>
+              <span className={`text-xs ${plan.highlight ? "text-indigo-100" : "text-slate-400"}`}>
+                {plan.note}
+              </span>
+            </div>
+
+            <div
+              className={`mt-4 space-y-1 rounded-lg p-3 text-xs ${
+                plan.highlight ? "bg-white/10" : "bg-slate-50"
+              }`}
+            >
+              <p className={plan.highlight ? "text-white" : "text-slate-700"}>
+                <strong>Support:</strong> {plan.support}
+              </p>
+              <p className={plan.highlight ? "text-indigo-100" : "text-slate-500"}>
+                <strong>After support:</strong> {plan.after}
+              </p>
+            </div>
+
+            <ul className="mt-4 flex-1 space-y-2">
+              {plan.features.map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm">
+                  <Check className={`mt-0.5 size-4 shrink-0 ${plan.highlight ? "text-white" : "text-indigo-600"}`} />
+                  <span className={plan.highlight ? "text-indigo-50" : "text-slate-600"}>{f}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href="#contact"
+              className={`mt-6 inline-flex h-11 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition ${
+                plan.highlight
+                  ? "bg-white text-indigo-700 hover:bg-indigo-50"
+                  : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+              }`}
+            >
+              বিস্তারিত জানুন
+              <ArrowRight className="size-3.5" />
+            </Link>
+          </StaggerItem>
+        ))}
+      </StaggerGrid>
+
+      <p className="mt-6 text-center text-xs text-slate-400">
+        Domain, hosting ও অন্যান্য optional service আলাদা — অর্ডারের আগেই আপনাকে জানানো হবে।
+      </p>
+    </section>
+  );
+}
