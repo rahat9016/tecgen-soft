@@ -8,8 +8,8 @@ export type Project = {
   status: "Client Project" | "Demo Project";
   /** internal route to the actual running demo — real and clickable, not a screenshot */
   liveHref: string;
-  /** real screenshots of different live pages within the demo */
-  gallery: { label: string; image: string; href: string }[];
+  /** real screenshots of different live pages within the demo — width/height are the real intrinsic pixel dimensions, used for masonry layout so tiles aren't cropped */
+  gallery: { label: string; image: string; href: string; width: number; height: number }[];
   /** the actual user flow through the built modules, in order */
   journey?: string[];
 };
@@ -29,11 +29,13 @@ export const PROJECTS: Project[] = [
     status: "Demo Project",
     liveHref: "/ecommerce",
     gallery: [
-      { label: "Storefront", image: "/ecommerce.webp", href: "/ecommerce" },
+      { label: "Storefront", image: "/ecommerce.webp", href: "/ecommerce", width: 1920, height: 3285 },
       {
         label: "Product Page",
         image: "/ecommerce-product.webp",
         href: "/ecommerce/product/mustard-embroidered-salwar-kameez",
+        width: 1440,
+        height: 900,
       },
     ],
     journey: ["Browse Products", "View Product Details", "Add to Cart", "Checkout", "Order Management"],
@@ -48,11 +50,19 @@ export const PROJECTS: Project[] = [
     status: "Demo Project",
     liveHref: "/hotel-management",
     gallery: [
-      { label: "Homepage", image: "/hotel-management.webp", href: "/hotel-management" },
+      {
+        label: "Homepage",
+        image: "/hotel-management.webp",
+        href: "/hotel-management",
+        width: 1920,
+        height: 2835,
+      },
       {
         label: "Hotel Details",
         image: "/hotel-detail.webp",
         href: "/hotel-management/hotel/sea-paradise-resort",
+        width: 1440,
+        height: 900,
       },
     ],
     journey: ["Browse Rooms", "View Room Details", "Select Dates", "Booking & Payment", "Booking Management"],
