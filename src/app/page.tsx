@@ -22,11 +22,11 @@ export default function RootPage() {
       <SmoothScroll>
         <div className="h-16" aria-hidden="true" />
         <Hero />
-        <TrustSection />
         <PortfolioSection />
         <SolutionsSection />
-        <PricingPreview />
         <HowItWorks />
+        <PricingPreview />
+        <TrustSection />
         <WhyUsSection />
         <BangladeshSection />
         <GrowthSection />
