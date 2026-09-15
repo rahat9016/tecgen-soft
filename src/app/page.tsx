@@ -1,5 +1,7 @@
+import AboutSection from "@/src/components/agency/AboutSection";
 import AgencyFooter from "@/src/components/agency/AgencyFooter";
 import AgencyHeader from "@/src/components/agency/AgencyHeader";
+import BangladeshSection from "@/src/components/agency/BangladeshSection";
 import FaqSection from "@/src/components/agency/FaqSection";
 import FinalCta from "@/src/components/agency/FinalCta";
 import GrowthSection from "@/src/components/agency/GrowthSection";
@@ -20,14 +22,16 @@ export default function RootPage() {
       <SmoothScroll>
         <div className="h-16" aria-hidden="true" />
         <Hero />
-        <PricingPreview />
-        <SolutionsSection />
+        <TrustSection />
         <PortfolioSection />
+        <SolutionsSection />
+        <PricingPreview />
         <HowItWorks />
         <WhyUsSection />
-        <TrustSection />
-        <TestimonialsSection />
+        <BangladeshSection />
         <GrowthSection />
+        <AboutSection />
+        <TestimonialsSection />
         <FaqSection />
         <FinalCta />
         <AgencyFooter />

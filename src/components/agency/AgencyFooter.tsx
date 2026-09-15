@@ -42,7 +42,8 @@ export default function AgencyFooter() {
           <div>
             <h4 className="text-sm font-semibold text-slate-900">Company</h4>
             <ul className="mt-3 space-y-2 text-sm text-slate-500">
-              <li><Link href="#solutions" className="hover:text-indigo-600">Our Solutions</Link></li>
+              <li><Link href="#work" className="hover:text-indigo-600">Our Work</Link></li>
+              <li><Link href="#about" className="hover:text-indigo-600">About</Link></li>
               <li><Link href="#pricing" className="hover:text-indigo-600">Pricing</Link></li>
               <li><Link href="#contact" className="hover:text-indigo-600">Contact</Link></li>
             </ul>
@@ -63,13 +64,18 @@ export default function AgencyFooter() {
                 <MessageCircle className="size-4 text-indigo-500" />
                 <a href={CONTACT.whatsappHref} className="hover:text-indigo-600">WhatsApp / Messenger</a>
               </li>
-              <li className="flex items-center gap-2"><Facebook className="size-4 text-indigo-500" /> Facebook Page</li>
+              <li className="flex items-center gap-2">
+                <Facebook className="size-4 text-indigo-500" />
+                <a href={CONTACT.facebookHref} className="hover:text-indigo-600" target="_blank" rel="noopener noreferrer">
+                  Facebook Page
+                </a>
+              </li>
             </ul>
           </div>
         </div>
 
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-6 sm:flex-row">
-          <p className="text-xs text-slate-400">© {new Date().getFullYear()} TecgenSoft. All rights reserved.</p>
+          <p className="text-xs text-slate-400">© {new Date().getFullYear()} Tecgen Soft. All rights reserved.</p>
           <p className="text-xs text-slate-400">Made in Bangladesh 🇧🇩 for Bangladeshi entrepreneurs.</p>
         </div>
       </div>

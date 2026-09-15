@@ -59,6 +59,18 @@ const faqs = [
     q: "Website-এর ownership কার থাকবে?",
     a: "সম্পূর্ণ পেমেন্ট সম্পন্ন হওয়ার পর website, domain ও এর সব content-এর মালিকানা সম্পূর্ণভাবে আপনার।",
   },
+  {
+    q: "Domain আমার নামে থাকবে?",
+    a: "হ্যাঁ। Domain কেনার সময় আপনার তথ্য দিয়ে registration করা হয়, তাই ownership শুরু থেকেই আপনার নামে থাকে।",
+  },
+  {
+    q: "Support শেষ হওয়ার পরে কী হবে?",
+    a: "Support period শেষ হলে বাধ্যতামূলক কোনো চার্জ নেই। পরে প্রয়োজন হলে আপনি মাসিক ভিত্তিতে extended support নিতে পারেন — খরচ আগে থেকেই জানানো হবে।",
+  },
+  {
+    q: "Bug হলে কী হবে?",
+    a: "Support period-এর মধ্যে কোনো bug/error ধরা পড়লে আমরা বিনামূল্যে ঠিক করে দিই। নতুন feature request বা scope-এর বাইরের কাজ এর আওতায় পড়ে না।",
+  },
 ];
 
 export default function FaqSection() {

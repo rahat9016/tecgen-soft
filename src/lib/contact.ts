@@ -3,4 +3,5 @@ export const CONTACT = {
   phoneHref: "tel:+8801638627290",
   whatsappHref: "https://wa.me/8801638627290",
   email: "tecgensoft@gmail.com",
+  facebookHref: "https://facebook.com/tecgensoft",
 };
