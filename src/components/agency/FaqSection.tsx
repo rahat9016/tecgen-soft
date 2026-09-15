@@ -75,22 +75,22 @@ const faqs = [
 
 export default function FaqSection() {
   return (
-    <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6 md:py-20 lg:px-8">
+    <section className="mx-auto max-w-4xl px-4 py-14 sm:px-6 md:py-18 lg:px-8">
       <Reveal className="mx-auto max-w-2xl text-center">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+        <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           প্রশ্ন থাকতে পারে? উত্তর এখানে।
         </h2>
-        <p className="mt-3 text-sm text-slate-500 sm:text-base">Frequently Asked Questions</p>
+        <p className="mt-3 text-base text-slate-500">Frequently Asked Questions</p>
       </Reveal>
 
-      <Reveal delay={0.1} className="mt-10 rounded-2xl border border-slate-200 bg-white px-6">
+      <Reveal delay={0.1} className="mt-10 rounded-2xl border border-slate-200 bg-white px-6 shadow-sm sm:px-8">
         <Accordion type="single" collapsible>
           {faqs.map((faq, i) => (
-            <AccordionItem key={i} value={`item-${i}`}>
-              <AccordionTrigger className="text-sm font-semibold text-slate-900">
+            <AccordionItem key={i} value={`item-${i}`} className="border-slate-200">
+              <AccordionTrigger className="py-5 text-left text-base font-semibold text-slate-900 hover:text-indigo-600 hover:no-underline">
                 {faq.q}
               </AccordionTrigger>
-              <AccordionContent className="text-sm leading-relaxed text-slate-600">
+              <AccordionContent className="text-bn text-sm leading-relaxed text-slate-600">
                 {faq.a}
               </AccordionContent>
             </AccordionItem>

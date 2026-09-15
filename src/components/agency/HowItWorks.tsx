@@ -51,12 +51,12 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20 lg:px-8">
+    <section id="how-it-works" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 md:py-18 lg:px-8">
       <Reveal className="mx-auto max-w-2xl text-center">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+        <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           অর্ডার করার পর <span className="text-indigo-600">কী হবে</span>?
         </h2>
-        <p className="mt-3 text-sm text-slate-500 sm:text-base">
+        <p className="mt-3 text-base text-slate-500">
           No technical jargon — just six clear steps from confirmation to launch. Payment is due only after the project is complete.
         </p>
       </Reveal>

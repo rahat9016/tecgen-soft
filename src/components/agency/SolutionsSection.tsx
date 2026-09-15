@@ -21,6 +21,7 @@ const solutions = [
     features: ["Product ও Category Management", "Shopping Cart ও Checkout", "Admin Dashboard"],
     href: "/solutions/ecommerce",
     accent: "bg-indigo-600",
+    popular: true,
   },
   {
     icon: Hotel,
@@ -56,38 +57,48 @@ const solutions = [
 
 export default function SolutionsSection() {
   return (
-    <section id="solutions" className="py-16 md:py-20">
+    <section id="solutions" className="py-14 md:py-18">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             আপনার ব্যবসার জন্য কোন <span className="text-indigo-600">Solution</span> দরকার?
           </h2>
-          <p className="mt-3 text-sm text-slate-500 sm:text-base">
+          <p className="mt-3 text-base text-slate-500">
             Pick the package built for your business type.
           </p>
         </Reveal>
 
         <StaggerGrid className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {solutions.map(({ icon: Icon, name, bn, price, delivery, features, href, accent }) => (
+          {solutions.map(({ icon: Icon, name, bn, price, delivery, features, href, accent, popular }) => (
             <StaggerItem
               key={name}
-              className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-900/10"
+              className={`relative flex flex-col rounded-2xl border bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-900/10 ${
+                popular ? "border-indigo-300 ring-1 ring-indigo-100" : "border-slate-200"
+              }`}
             >
-              <span className={`flex size-11 items-center justify-center rounded-xl ${accent} text-white`}>
+              {popular && (
+                <span className="absolute -top-3 left-6 rounded-full bg-indigo-600 px-3 py-1 text-[10px] font-bold tracking-wide text-white shadow-sm">
+                  MOST POPULAR
+                </span>
+              )}
+              <span
+                className={`flex size-12 items-center justify-center rounded-xl ${accent} text-white shadow-sm transition group-hover:scale-105`}
+              >
                 <Icon className="size-5" />
               </span>
-              <h3 className="mt-4 text-base font-semibold text-slate-900">{name}</h3>
-              <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{bn}</p>
+              <h3 className="mt-4 text-lg font-semibold text-slate-900">{name}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{bn}</p>
 
               <div className="mt-4 space-y-1 border-y border-dashed border-slate-200 py-3">
-                <p className="text-sm font-bold text-indigo-600">{price}</p>
+                <p className="text-base font-bold text-indigo-600">{price}</p>
                 <p className="text-xs text-slate-400">{delivery}</p>
               </div>
 
               <ul className="mt-3 flex-1 space-y-1.5">
                 {features.map((f) => (
-                  <li key={f} className="text-xs text-slate-600">
-                    • {f}
+                  <li key={f} className="flex items-start gap-1.5 text-sm text-slate-600">
+                    <span className="mt-1.5 size-1 shrink-0 rounded-full bg-indigo-400" />
+                    {f}
                   </li>
                 ))}
               </ul>

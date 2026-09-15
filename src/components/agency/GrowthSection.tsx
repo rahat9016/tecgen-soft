@@ -14,13 +14,13 @@ const addOns = [
 
 export default function GrowthSection() {
   return (
-    <section className="bg-slate-50 py-16 md:py-20">
+    <section className="bg-slate-50 py-14 md:py-18">
       <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
         <Reveal>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             Start Small. Grow Later.
           </h2>
-          <p className="mt-3 text-sm text-slate-500 sm:text-base">
+          <p className="mt-3 text-base text-slate-500">
             আপনার ব্যবসা বড় হলে আপনার website-ও বড় হবে। প্রথম দিনই সবকিছু কিনতে হবে না।
           </p>
         </Reveal>

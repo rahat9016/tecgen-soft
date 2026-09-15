@@ -36,22 +36,23 @@ export default function AgencyHeader() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-9 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-slate-600 transition hover:text-indigo-600"
+              className="group relative text-sm font-medium text-slate-600 transition hover:text-indigo-600"
             >
               {link.label}
+              <span className="absolute -bottom-1 left-0 h-px w-0 bg-indigo-600 transition-all duration-200 group-hover:w-full" />
             </Link>
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Link
             href="#contact"
-            className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-600/30"
           >
             <MessageCircle className="size-4" />
             <span className="hidden sm:inline">Talk to Us</span>

@@ -57,13 +57,13 @@ const plans = [
 
 export default function PricingPreview() {
   return (
-    <section id="pricing" className="bg-slate-50 py-16 md:py-20">
+    <section id="pricing" className="bg-slate-50 py-14 md:py-18">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             Simple & Transparent <span className="text-indigo-600">Pricing</span>
           </h2>
-          <p className="mt-3 text-sm text-slate-500 sm:text-base">
+          <p className="mt-3 text-base text-slate-500">
             আপনি আগে থেকেই জানবেন — কত খরচ হবে এবং কী পাবেন। কোনো surprise bill নেই।
           </p>
         </Reveal>
@@ -72,17 +72,22 @@ export default function PricingPreview() {
         {plans.map((plan) => (
           <StaggerItem
             key={plan.name}
-            className={`flex flex-col rounded-2xl border p-6 transition hover:-translate-y-1 ${
+            className={`relative flex flex-col rounded-2xl border p-6 transition hover:-translate-y-1 ${
               plan.highlight
-                ? "border-indigo-300 bg-indigo-600 text-white shadow-xl shadow-indigo-600/20"
+                ? "border-indigo-400 bg-indigo-600 text-white shadow-xl shadow-indigo-600/25 lg:scale-105"
                 : "border-slate-200 bg-white hover:shadow-lg hover:shadow-slate-900/10"
             }`}
           >
+            {plan.highlight && (
+              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-amber-400 px-3.5 py-1 text-[10px] font-bold tracking-wide text-indigo-950 shadow-sm">
+                MOST POPULAR
+              </span>
+            )}
             <h3 className={`text-sm font-semibold ${plan.highlight ? "text-indigo-100" : "text-slate-500"}`}>
               {plan.name}
             </h3>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-3xl font-bold">{plan.price}</span>
+              <span className="text-4xl font-bold">{plan.price}</span>
               <span className={`text-xs ${plan.highlight ? "text-indigo-100" : "text-slate-400"}`}>
                 {plan.note}
               </span>

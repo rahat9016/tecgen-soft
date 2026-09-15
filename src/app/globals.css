@@ -339,3 +339,20 @@ input[type="time"]::-moz-inner-spin-button {
     animation: none;
   }
 }
+
+/* =========================
+   ANCHOR SCROLL OFFSET
+   keeps sections clear of the fixed header when jumped to via nav links
+========================= */
+section[id] {
+  scroll-margin-top: 5rem;
+}
+
+/* =========================
+   BENGALI TYPOGRAPHY
+   Bengali conjuncts/matras need extra line-height to stay readable
+========================= */
+.text-bn,
+[lang="bn"] {
+  line-height: 1.85;
+}

@@ -61,13 +61,13 @@ const cards = [
 
 export default function TrustSection() {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20 lg:px-8">
+    <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 md:py-18 lg:px-8">
       <Reveal className="mx-auto max-w-2xl text-center">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+        <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
           Built for entrepreneurs who want{" "}
           <span className="text-indigo-600">clarity</span>.
         </h2>
-        <p className="mt-3 text-sm text-slate-500 sm:text-base">
+        <p className="mt-3 text-base text-slate-500">
           কী পাবেন, কত খরচ হবে এবং কী থাকছে না — সবকিছু আগে থেকেই পরিষ্কার।
         </p>
       </Reveal>

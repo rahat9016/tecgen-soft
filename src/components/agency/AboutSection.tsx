@@ -5,10 +5,10 @@ import { CONTACT } from "@/src/lib/contact";
 
 export default function AboutSection() {
   return (
-    <section id="about" className="py-16 md:py-20">
+    <section id="about" className="py-14 md:py-18">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             Who is Tecgen Soft?
           </h2>
         </Reveal>
