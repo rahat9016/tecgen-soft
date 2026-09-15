@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MessageCircle, Phone, Send } from "lucide-react";
 
 import Reveal from "@/src/components/agency/Reveal";
+import { CONTACT } from "@/src/lib/contact";
 
 export default function FinalCta() {
   return (
@@ -27,14 +28,14 @@ export default function FinalCta() {
             Talk to an Expert
           </Link>
           <Link
-            href="https://wa.me/"
+            href={CONTACT.whatsappHref}
             className="inline-flex h-12 items-center gap-2 rounded-lg bg-emerald-500 px-6 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-600"
           >
             <MessageCircle className="size-4" />
             WhatsApp / Messenger
           </Link>
           <Link
-            href="tel:+880"
+            href={CONTACT.phoneHref}
             className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-6 text-sm font-semibold text-white transition hover:bg-white/20"
           >
             <Phone className="size-4" />

@@ -180,7 +180,7 @@ export default function Hero() {
             transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
             className="ml-auto w-[85%]"
           >
-            <BrowserFrame title="tripwave.com — Hotel & Resort Booking" src="/agency/preview-hotel.jpg" />
+            <BrowserFrame title="tripwave.com — Hotel & Resort Booking" src="/hotel-management.webp" />
           </motion.div>
           <motion.div
             animate={{ y: [0, 12, 0] }}
@@ -189,7 +189,7 @@ export default function Hero() {
           >
             <BrowserFrame
               title="fitstorebd.com — Online Shop"
-              src="/agency/preview-ecommerce.jpg"
+              src="/ecommerce.webp"
               className="ring-4 ring-white"
             />
           </motion.div>

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Facebook, Mail, MessageCircle, Phone } from "lucide-react";
 import logo from "@/public/logo_2.png";
+import { CONTACT } from "@/src/lib/contact";
 
 export default function AgencyFooter() {
   return (
@@ -50,9 +51,18 @@ export default function AgencyFooter() {
           <div>
             <h4 className="text-sm font-semibold text-slate-900">Contact</h4>
             <ul className="mt-3 space-y-2 text-sm text-slate-500">
-              <li className="flex items-center gap-2"><Phone className="size-4 text-indigo-500" /> +880 1XXX-XXXXXX</li>
-              <li className="flex items-center gap-2"><Mail className="size-4 text-indigo-500" /> hello@tecgensoft.com</li>
-              <li className="flex items-center gap-2"><MessageCircle className="size-4 text-indigo-500" /> WhatsApp / Messenger</li>
+              <li className="flex items-center gap-2">
+                <Phone className="size-4 text-indigo-500" />
+                <a href={CONTACT.phoneHref} className="hover:text-indigo-600">{CONTACT.phoneDisplay}</a>
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="size-4 text-indigo-500" />
+                <a href={`mailto:${CONTACT.email}`} className="hover:text-indigo-600">{CONTACT.email}</a>
+              </li>
+              <li className="flex items-center gap-2">
+                <MessageCircle className="size-4 text-indigo-500" />
+                <a href={CONTACT.whatsappHref} className="hover:text-indigo-600">WhatsApp / Messenger</a>
+              </li>
               <li className="flex items-center gap-2"><Facebook className="size-4 text-indigo-500" /> Facebook Page</li>
             </ul>
           </div>

@@ -5,9 +5,11 @@ import FinalCta from "@/src/components/agency/FinalCta";
 import GrowthSection from "@/src/components/agency/GrowthSection";
 import Hero from "@/src/components/agency/Hero";
 import HowItWorks from "@/src/components/agency/HowItWorks";
+import PortfolioSection from "@/src/components/agency/PortfolioSection";
 import PricingPreview from "@/src/components/agency/PricingPreview";
 import SmoothScroll from "@/src/components/agency/SmoothScroll";
 import SolutionsSection from "@/src/components/agency/SolutionsSection";
+import TestimonialsSection from "@/src/components/agency/TestimonialsSection";
 import TrustSection from "@/src/components/agency/TrustSection";
 import WhyUsSection from "@/src/components/agency/WhyUsSection";
 
@@ -20,9 +22,11 @@ export default function RootPage() {
         <Hero />
         <PricingPreview />
         <SolutionsSection />
+        <PortfolioSection />
         <HowItWorks />
         <WhyUsSection />
         <TrustSection />
+        <TestimonialsSection />
         <GrowthSection />
         <FaqSection />
         <FinalCta />
