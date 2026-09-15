@@ -22,7 +22,7 @@ export default function BrowserFrame({
         <span className="size-2 rounded-full bg-red-300" />
         <span className="size-2 rounded-full bg-amber-300" />
         <span className="size-2 rounded-full bg-emerald-300" />
-        <span className="ml-2 truncate text-[10px] text-slate-400">{title}</span>
+        <span className="ml-2 min-w-0 flex-1 truncate text-[10px] text-slate-400">{title}</span>
         {badge && <span className="ml-auto shrink-0">{badge}</span>}
       </div>
       <div className={`relative aspect-16/10 w-full ${imageClassName ?? ""}`}>

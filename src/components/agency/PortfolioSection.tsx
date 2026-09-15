@@ -4,37 +4,10 @@ import { ArrowUpRight } from "lucide-react";
 import BrowserFrame from "@/src/components/agency/BrowserFrame";
 import Reveal from "@/src/components/agency/Reveal";
 import { StaggerGrid, StaggerItem } from "@/src/components/agency/StaggerGrid";
-
-// TODO: replace with real delivered projects (image, live URL, one-line result).
-// status must stay honest: "Client Project" only for paid, delivered work —
-// everything else is "Demo Project". Never relabel a demo as a client project.
-const projects: {
-  name: string;
-  category: string;
-  description: string;
-  image: string;
-  href: string;
-  status: "Client Project" | "Demo Project";
-}[] = [
-  {
-    name: "E-commerce Website",
-    category: "E-commerce",
-    description: "Fashion ও product business-এর জন্য অনলাইন শপ — product, cart, checkout, admin dashboard।",
-    image: "/ecommerce.webp",
-    href: "#",
-    status: "Demo Project",
-  },
-  {
-    name: "Hotel Booking Website",
-    category: "Hotel Booking",
-    description: "Room browsing, booking ও admin management সহ হোটেল/রিসোর্ট বুকিং সিস্টেম।",
-    image: "/hotel-management.webp",
-    href: "#",
-    status: "Demo Project",
-  },
-];
+import { PROJECTS } from "@/src/lib/projects";
 
 export default function PortfolioSection() {
+  const projects = PROJECTS;
   return (
     <section id="work" className="bg-slate-50 py-14 md:py-18">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -50,7 +23,7 @@ export default function PortfolioSection() {
         <StaggerGrid className="mt-12 flex flex-col gap-8">
           {projects.map((project, i) => (
             <StaggerItem
-              key={i}
+              key={project.slug}
               className={`group grid items-center gap-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-xl hover:shadow-slate-900/10 lg:grid-cols-5 ${
                 i % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""
               }`}
@@ -83,14 +56,14 @@ export default function PortfolioSection() {
 
                 <div className="mt-6 flex flex-wrap gap-2.5">
                   <Link
-                    href={project.href}
+                    href={`/work/${project.slug}`}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
                   >
                     View Case Study
                     <ArrowUpRight className="size-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                   </Link>
                   <Link
-                    href="#solutions"
+                    href={`/solutions/${project.solutionSlug}`}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
                   >
                     Similar Package
