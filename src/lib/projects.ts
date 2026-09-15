@@ -10,6 +10,8 @@ export type Project = {
   liveHref: string;
   /** real screenshots of different live pages within the demo */
   gallery: { label: string; image: string; href: string }[];
+  /** the actual user flow through the built modules, in order */
+  journey?: string[];
 };
 
 // TODO: replace with real delivered projects (image, live URL, one-line result).
@@ -34,6 +36,7 @@ export const PROJECTS: Project[] = [
         href: "/ecommerce/product/mustard-embroidered-salwar-kameez",
       },
     ],
+    journey: ["Browse Products", "View Product Details", "Add to Cart", "Checkout", "Order Management"],
   },
   {
     slug: "hotel-booking-demo",
@@ -52,6 +55,7 @@ export const PROJECTS: Project[] = [
         href: "/hotel-management/hotel/sea-paradise-resort",
       },
     ],
+    journey: ["Browse Rooms", "View Room Details", "Select Dates", "Booking & Payment", "Booking Management"],
   },
 ];
 
