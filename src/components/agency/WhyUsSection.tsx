@@ -1,4 +1,4 @@
-import { Layers, RefreshCcw, ScrollText, Tags, TrendingUp, Wrench } from "lucide-react";
+import { ClipboardList, LifeBuoy, MonitorPlay, Tags, Target, TrendingUp } from "lucide-react";
 
 import Reveal from "@/src/components/agency/Reveal";
 import { StaggerGrid, StaggerItem } from "@/src/components/agency/StaggerGrid";
@@ -10,27 +10,27 @@ const reasons = [
     desc: "Know the cost before development starts.",
   },
   {
-    icon: ScrollText,
+    icon: ClipboardList,
     title: "Clear Scope",
     desc: "Every package clearly explains what is included.",
   },
   {
-    icon: Layers,
+    icon: MonitorPlay,
     title: "Real Demos",
     desc: "See the actual product before buying.",
   },
   {
-    icon: TrendingUp,
+    icon: Target,
     title: "Business Focused",
     desc: "We build around your business needs.",
   },
   {
-    icon: Wrench,
+    icon: LifeBuoy,
     title: "Support After Launch",
     desc: "We provide the agreed post-launch support.",
   },
   {
-    icon: RefreshCcw,
+    icon: TrendingUp,
     title: "Future Upgrades",
     desc: "Your website can grow as your business grows.",
   },

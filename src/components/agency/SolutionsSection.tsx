@@ -56,14 +56,14 @@ const solutions = [
 
 export default function SolutionsSection() {
   return (
-    <section id="solutions" className="bg-slate-50 py-16 md:py-20">
+    <section id="solutions" className="py-16 md:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            আপনার জন্য কী তৈরি করে দিতে পারি?
+            আপনার ব্যবসার জন্য কোন <span className="text-indigo-600">Solution</span> দরকার?
           </h2>
           <p className="mt-3 text-sm text-slate-500 sm:text-base">
-            What Can We Build For You? — আপনার ব্যবসার ধরন অনুযায়ী প্যাকেজ বেছে নিন।
+            Pick the package built for your business type.
           </p>
         </Reveal>
 

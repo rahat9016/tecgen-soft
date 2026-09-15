@@ -7,7 +7,8 @@ import Reveal from "@/src/components/agency/Reveal";
 // swap this back to real testimonials once genuine ones are available.
 export default function TestimonialsSection() {
   return (
-    <section className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 md:py-20 lg:px-8">
+    <section className="bg-slate-50 py-16 md:py-20">
+      <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
       <Reveal>
         <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
           See Our Real Work
@@ -24,6 +25,7 @@ export default function TestimonialsSection() {
           <ArrowRight className="size-3.5" />
         </Link>
       </Reveal>
+      </div>
     </section>
   );
 }

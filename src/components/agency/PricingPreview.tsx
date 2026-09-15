@@ -11,7 +11,14 @@ const plans = [
     note: "One-time",
     support: "২ মাস সাপোর্ট included",
     after: "৳৫০০/মাস (optional, চাইলে)",
-    features: ["৫ পেজ পর্যন্ত ওয়েবসাইট", "Mobile Responsive", "Contact Form", "Basic SEO Setup"],
+    features: [
+      "৫ পেজ পর্যন্ত ওয়েবসাইট",
+      "Mobile Responsive Design",
+      "Contact / Lead Form",
+      "Basic SEO Setup",
+      "Deployment",
+      "Basic Training",
+    ],
     highlight: false,
   },
   {
@@ -20,7 +27,14 @@ const plans = [
     note: "One-time",
     support: "৩ মাস সাপোর্ট included",
     after: "৳৮০০/মাস (optional, চাইলে)",
-    features: ["Admin Dashboard", "Product ও Order Management", "Shopping Cart ও Checkout", "Basic Training"],
+    features: [
+      "Admin Dashboard",
+      "Product ও Category Management",
+      "Order Management",
+      "Shopping Cart ও Checkout",
+      "Mobile Responsive Design",
+      "Basic Training",
+    ],
     highlight: true,
   },
   {
@@ -29,24 +43,32 @@ const plans = [
     note: "One-time",
     support: "৩ মাস সাপোর্ট included",
     after: "৳৮০০/মাস (optional, চাইলে)",
-    features: ["Room Management", "Booking ও Availability System", "Admin Dashboard", "Basic Training"],
+    features: [
+      "Room Management",
+      "Booking ও Availability System",
+      "Customer Management",
+      "Admin Dashboard",
+      "Mobile Responsive Design",
+      "Basic Training",
+    ],
     highlight: false,
   },
 ];
 
 export default function PricingPreview() {
   return (
-    <section id="pricing" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20 lg:px-8">
-      <Reveal className="mx-auto max-w-2xl text-center">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-          Pricing Transparency
-        </h2>
-        <p className="mt-3 text-sm text-slate-500 sm:text-base">
-          কী পাবেন, কত খরচ হবে, কী থাকছে না — সবকিছু পরিষ্কার। কোনো surprise bill নেই।
-        </p>
-      </Reveal>
+    <section id="pricing" className="bg-slate-50 py-16 md:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            Simple & Transparent <span className="text-indigo-600">Pricing</span>
+          </h2>
+          <p className="mt-3 text-sm text-slate-500 sm:text-base">
+            আপনি আগে থেকেই জানবেন — কত খরচ হবে এবং কী পাবেন। কোনো surprise bill নেই।
+          </p>
+        </Reveal>
 
-      <StaggerGrid className="mt-10 grid gap-6 lg:grid-cols-3">
+        <StaggerGrid className="mt-10 grid gap-6 lg:grid-cols-3">
         {plans.map((plan) => (
           <StaggerItem
             key={plan.name}
@@ -106,6 +128,7 @@ export default function PricingPreview() {
       <p className="mt-6 text-center text-xs text-slate-400">
         Domain, hosting ও অন্যান্য optional service আলাদা — অর্ডারের আগেই আপনাকে জানানো হবে।
       </p>
+    </div>
     </section>
   );
 }

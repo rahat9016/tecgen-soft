@@ -54,20 +54,20 @@ export default function HowItWorks() {
     <section id="how-it-works" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20 lg:px-8">
       <Reveal className="mx-auto max-w-2xl text-center">
         <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-          আপনার টাকা দেওয়ার পর কী হবে?
+          অর্ডার করার পর <span className="text-indigo-600">কী হবে</span>?
         </h2>
         <p className="mt-3 text-sm text-slate-500 sm:text-base">
-          Technical কিছু বুঝতে হবে না — পুরো প্রক্রিয়া খুবই সহজ ও পরিষ্কার।
+          No technical jargon — just six clear steps from confirmation to launch. Payment is due only after the project is complete.
         </p>
       </Reveal>
 
       <StaggerGrid className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-6">
         {steps.map(({ n, icon: Icon, title, bn }, i) => (
-          <StaggerItem key={n} className="relative">
+          <StaggerItem key={n} className="relative text-center">
             {i < steps.length - 1 && (
-              <div className="absolute top-6 left-[60%] hidden h-px w-full border-t border-dashed border-slate-300 lg:block" />
+              <div className="absolute top-6 left-1/2 hidden h-px w-[calc(100%+2rem)] border-t border-dashed border-slate-300 lg:block" />
             )}
-            <div className="relative flex size-12 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white shadow-md shadow-indigo-600/20">
+            <div className="relative z-10 mx-auto flex size-12 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white shadow-md shadow-indigo-600/20">
               <Icon className="size-5" />
             </div>
             <p className="mt-4 text-xs font-semibold tracking-wide text-indigo-500">STEP {n}</p>

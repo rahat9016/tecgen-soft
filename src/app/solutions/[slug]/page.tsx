@@ -169,23 +169,27 @@ export default async function SolutionDetailPage({
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Payment</h2>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <div className="rounded-2xl border border-indigo-200 bg-white px-6 py-4">
-              <p className="text-xs text-slate-400">Project Start</p>
-              <p className="text-lg font-bold text-indigo-600">৫০%</p>
+            <div className="rounded-2xl border border-slate-200 bg-white px-6 py-4">
+              <p className="text-xs text-slate-400">Requirement Confirmation</p>
+              <p className="text-sm font-semibold text-slate-700">No Payment Needed</p>
             </div>
             <ArrowRight className="size-5 shrink-0 rotate-90 text-indigo-400 sm:rotate-0" />
             <div className="rounded-2xl border border-slate-200 bg-white px-6 py-4">
-              <p className="text-xs text-slate-400">Development</p>
+              <p className="text-xs text-slate-400">Design & Development</p>
               <p className="text-sm font-semibold text-slate-700">In Progress</p>
             </div>
             <ArrowRight className="size-5 shrink-0 rotate-90 text-indigo-400 sm:rotate-0" />
             <div className="rounded-2xl border border-indigo-200 bg-white px-6 py-4">
-              <p className="text-xs text-slate-400">Final Delivery</p>
-              <p className="text-lg font-bold text-indigo-600">৫০%</p>
+              <p className="text-xs text-slate-400">Project Complete</p>
+              <p className="text-lg font-bold text-indigo-600">১০০% Payment</p>
             </div>
           </div>
 
-          <ul className="mx-auto mt-10 max-w-md space-y-2 text-left text-sm text-slate-600">
+          <p className="mx-auto mt-4 max-w-md text-sm text-slate-500">
+            কোনো advance লাগে না — প্রজেক্ট সম্পূর্ণ শেষ হয়ে, আপনি review করে সন্তুষ্ট হওয়ার পরই পুরো পেমেন্ট করবেন।
+          </p>
+
+          <ul className="mx-auto mt-8 max-w-md space-y-2 text-left text-sm text-slate-600">
             <li>• Domain ownership: আপনার নামে registered থাকবে।</li>
             <li>• Hosting ownership: আপনার account-এ setup করা হয়।</li>
             <li>• Source code: সম্পূর্ণ পেমেন্টের পর আপনাকে দেওয়া হয়।</li>
