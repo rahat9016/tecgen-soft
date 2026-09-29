@@ -21,11 +21,26 @@ export default function MemoView({ id }: { id: string }) {
 
   useEffect(() => {
     if (!found || !autoPrint || printed.current) return;
-    const t = setTimeout(() => {
+    let cancelled = false;
+    // Print only once fonts and the logo have loaded, otherwise the memo prints unstyled.
+    const imagesReady = Array.from(document.images).map((img) =>
+      img.complete
+        ? Promise.resolve()
+        : new Promise<void>((resolve) => {
+            img.addEventListener("load", () => resolve(), { once: true });
+            img.addEventListener("error", () => resolve(), { once: true });
+          })
+    );
+    Promise.all([document.fonts.ready, ...imagesReady]).then(() => {
+      if (cancelled || printed.current) return;
       printed.current = true;
-      window.print();
-    }, 400);
-    return () => clearTimeout(t);
+      // Drop ?print=1 so a refresh doesn't open the print dialog again.
+      window.history.replaceState(null, "", window.location.pathname);
+      requestAnimationFrame(() => window.print());
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [found, autoPrint]);
 
   if (!memo) {

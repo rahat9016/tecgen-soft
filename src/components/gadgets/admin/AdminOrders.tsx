@@ -3,11 +3,12 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { CalendarClock, Plus } from "lucide-react";
 import { orderDue, useGadgetDB } from "@/src/lib/gadget-store/store";
 import type { OrderStatus } from "@/src/lib/gadget-store/types";
-import { formatDateTime, formatTaka, paymentLabels, statusLabels } from "@/src/lib/gadget-store/format";
+import { daysUntil, formatDate, formatDateTime, formatTaka, paymentLabels, statusLabels } from "@/src/lib/gadget-store/format";
 import { StatusBadge } from "../shared";
-import { AdminHeader, Pills, SearchInput, Table, td, th } from "./kit";
+import { AdminHeader, btn, Card, Pills, SearchInput, Table, td, th } from "./kit";
 
 type Filter = "all" | OrderStatus;
 
@@ -30,6 +31,24 @@ export default function AdminOrders({ preorders = false }: { preorders?: boolean
     );
   }, [base, status, q]);
 
+  // Reservations per upcoming product, so stock can be ordered from the supplier before launch.
+  const reservations = useMemo(() => {
+    if (!preorders) return [];
+    const active = base.filter((o) => o.status !== "cancelled" && o.status !== "delivered");
+    return db.products
+      .filter((p) => p.preOrder)
+      .map((p) => {
+        const lines = active.flatMap((o) => o.items.filter((l) => l.productId === p.id).map((l) => ({ l, o })));
+        return {
+          p,
+          units: lines.reduce((s, x) => s + x.l.qty, 0),
+          orders: new Set(lines.map((x) => x.o.id)).size,
+          deposits: [...new Set(lines.map((x) => x.o))].reduce((s, o) => s + o.paid, 0),
+        };
+      })
+      .sort((a, b) => b.units - a.units || a.p.preOrder!.releaseDate.localeCompare(b.p.preOrder!.releaseDate));
+  }, [preorders, base, db.products]);
+
   const statuses: Filter[] = ["all", "pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
 
   return (
@@ -39,9 +58,47 @@ export default function AdminOrders({ preorders = false }: { preorders?: boolean
         subtitle={
           preorders
             ? "Deposits received for upcoming launches. Deliver after launch to collect the balance."
-            : "Online orders from the storefront"
+            : "Online orders from the storefront and orders placed by staff"
+        }
+        actions={
+          <Link
+            href={preorders ? "/gadgets/admin/orders/new?type=preorder" : "/gadgets/admin/orders/new"}
+            className={preorders ? `${btn.primary} bg-violet-600 hover:bg-violet-700` : btn.primary}
+          >
+            <Plus className="size-4" /> {preorders ? "New pre-order" : "New order"}
+          </Link>
         }
       />
+      {preorders && (
+        <Card className="mb-6">
+          <h2 className="mb-3 flex items-center gap-2 font-semibold text-neutral-900">
+            <CalendarClock className="size-4 text-violet-600" /> Reservations by product
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {reservations.map(({ p, units, orders, deposits }) => (
+              <div key={p.id} className="flex items-center gap-3 rounded-xl border border-neutral-100 p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.image} alt="" className="size-12 shrink-0 rounded-lg object-cover" />
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-1 text-sm font-medium text-neutral-900">{p.name}</p>
+                  <p className="text-xs text-neutral-500">
+                    Launch {formatDate(p.preOrder!.releaseDate)} · {daysUntil(p.preOrder!.releaseDate)}d
+                  </p>
+                  <p className="mt-0.5 text-xs text-neutral-600">
+                    <b className="text-violet-700">{units} reserved</b> · {orders} orders · {formatTaka(deposits)} deposits
+                  </p>
+                </div>
+                <Link
+                  href={`/gadgets/admin/products/${p.id}`}
+                  className="shrink-0 text-xs text-orange-600 hover:underline"
+                >
+                  Edit
+                </Link>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Pills<Filter>
           value={status}
@@ -84,7 +141,7 @@ export default function AdminOrders({ preorders = false }: { preorders?: boolean
               <td className={td}>
                 <p className="line-clamp-1 max-w-56">{o.items.map((l) => `${l.name}${l.qty > 1 ? ` ×${l.qty}` : ""}`).join(", ")}</p>
               </td>
-              <td className={`${td} whitespace-nowrap`}>{preorders && o.releaseDate ? o.releaseDate : formatDateTime(o.createdAt)}</td>
+              <td className={`${td} whitespace-nowrap`}>{preorders && o.releaseDate ? formatDate(o.releaseDate) : formatDateTime(o.createdAt)}</td>
               <td className={td}>{paymentLabels[o.paymentMethod]}</td>
               <td className={td}>
                 <StatusBadge status={o.status} />

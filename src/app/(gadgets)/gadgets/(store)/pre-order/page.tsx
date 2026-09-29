@@ -16,17 +16,19 @@ const steps = [
 export default function PreOrderPage() {
   const { products } = useGadgetDB();
   const hydrated = useHydrated();
-  const upcoming = products.filter((p) => p.active && p.preOrder);
+  const upcoming = products
+    .filter((p) => p.active && p.preOrder)
+    .sort((a, b) => a.preOrder!.releaseDate.localeCompare(b.preOrder!.releaseDate));
 
   return (
     <div className="container mt-6">
       <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-violet-950 via-violet-900 to-fuchsia-900 px-6 py-12 text-white sm:px-12">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-300">Pre-order</p>
         <h1 className="mt-3 max-w-2xl text-3xl font-extrabold leading-tight sm:text-5xl">
-          Be the first to own the next flagship.
+          Be the first to own what&apos;s next.
         </h1>
         <p className="mt-4 max-w-xl text-violet-100/80">
-          Reserve upcoming phones with a refundable deposit and get them on launch day — with official warranty and 0% EMI.
+          Reserve upcoming phones, watches, laptops and more with a refundable deposit and get them on launch day — with official warranty and 0% EMI.
         </p>
       </section>
 

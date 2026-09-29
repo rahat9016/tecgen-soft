@@ -118,7 +118,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   );
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-neutral-50 print:min-h-0 print:bg-white">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 bg-neutral-950 lg:block print:hidden">{sidebar}</aside>
 
       {open && (

@@ -191,6 +191,16 @@ export function enrichGadget(g: Gadget): Gadget {
   const specs = (d?.specs ?? categoryTemplate[g.category] ?? []).map(([label, value]) => ({ label, value }));
   const warranty = { label: "Warranty", value: g.brand === "Apple" ? "1 Year Apple Care / Official" : "1 Year Official Warranty" };
 
+  const launch = g.preOrder
+    ? new Date(g.preOrder.releaseDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+    : "";
+  if (g.preOrder && !d) {
+    specs.push(
+      { label: "Expected launch", value: launch },
+      { label: "Pre-order", value: "Refundable deposit, balance on delivery" }
+    );
+  }
+
   return {
     ...g,
     active: g.active ?? true,
@@ -198,6 +208,9 @@ export function enrichGadget(g: Gadget): Gadget {
     description:
       g.description ??
       d?.description ??
+      (g.preOrder
+        ? `Pre-order the ${g.name} in Bangladesh before launch (expected ${launch}). Reserve yours with a fully refundable deposit, pay the balance on delivery, and get priority dispatch on launch day with official warranty.`
+        : undefined) ??
       `Buy the original ${g.name} from gadgethub with official warranty, 0% EMI and fast delivery all over Bangladesh.`,
     specs: g.specs ?? [...base, ...specs, warranty],
     colors: g.colors ?? d?.colors,

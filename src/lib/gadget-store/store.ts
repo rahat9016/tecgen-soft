@@ -241,6 +241,82 @@ export function placeOrder(input: CheckoutInput): string {
   return id;
 }
 
+export type AdminOrderInput = {
+  /** Existing customer id, or details for a new customer record. */
+  customer: { id: string } | Omit<Customer, "id" | "joinedAt">;
+  lines: { product: Product; qty: number; variant?: string }[];
+  type: Order["type"];
+  paymentMethod: PaymentMethod;
+  paid: number;
+  deliveryFee: number;
+  discount: number;
+  note?: string;
+};
+
+/** Order placed by staff on a customer's behalf (phone, walk-in, Messenger …). */
+export function createAdminOrder(input: AdminOrderInput): string {
+  let id = "";
+  update((s) => {
+    let customers = s.customers;
+    let customer: Customer;
+    if ("id" in input.customer) {
+      customer = s.customers.find((c) => c.id === (input.customer as { id: string }).id)!;
+    } else {
+      customer = { ...input.customer, id: uid("cu"), joinedAt: nowIso() };
+      customers = [...customers, customer];
+    }
+
+    const items: OrderLine[] = input.lines.map(({ product, qty, variant }) => ({
+      productId: product.id,
+      name: product.name,
+      image: product.image,
+      price: product.price,
+      cost: product.cost,
+      qty,
+      variant,
+    }));
+    const subtotal = items.reduce((sum, l) => sum + l.price * l.qty, 0);
+    const total = Math.max(0, subtotal + input.deliveryFee - input.discount);
+    const pre = input.type === "preorder" ? input.lines[0]?.product.preOrder : null;
+    const seq = s.seq.order + 1;
+    id = `GH-${seq}`;
+    const at = nowIso();
+
+    const order: Order = {
+      id,
+      createdAt: at,
+      customerId: customer.id,
+      customer: { name: customer.name, phone: customer.phone, email: customer.email, address: customer.address, city: customer.city },
+      items,
+      subtotal,
+      deliveryFee: input.deliveryFee,
+      discount: input.discount,
+      total,
+      paid: Math.min(total, Math.max(0, input.paid)),
+      paymentMethod: input.paymentMethod,
+      type: input.type,
+      releaseDate: pre?.releaseDate,
+      status: "confirmed",
+      timeline: [
+        { status: "pending", at, note: "Placed by admin on behalf of customer" },
+        { status: "confirmed", at, note: input.type === "preorder" ? "Pre-order reserved" : "Confirmed by admin" },
+      ],
+      note: input.note,
+    };
+
+    const products =
+      input.type === "preorder"
+        ? s.products
+        : s.products.map((p) => {
+            const sold = items.filter((l) => l.productId === p.id).reduce((q, l) => q + l.qty, 0);
+            return sold ? { ...p, stock: Math.max(0, p.stock - sold) } : p;
+          });
+
+    return { ...s, customers, products, orders: [order, ...s.orders], seq: { ...s.seq, order: seq } };
+  });
+  return id;
+}
+
 export function setOrderStatus(id: string, status: OrderStatus, note?: string) {
   update((s) => ({
     ...s,

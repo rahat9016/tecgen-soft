@@ -14,7 +14,7 @@ import type {
   Product,
 } from "./types";
 
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 export const DEMO_USER_ID = "cu1";
 
 const products: Product[] = gadgets.map((g) => {
