@@ -28,13 +28,20 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
           effects: true,
         });
 
+        // "#id" links, plus "/#id" links (shared header/footer) while we're on the home page
         const anchors = Array.from(
-          document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')
-        ).filter((a) => a.getAttribute("href")!.length > 1);
+          document.querySelectorAll<HTMLAnchorElement>('a[href^="#"], a[href^="/#"]')
+        ).filter((a) => {
+          const href = a.getAttribute("href")!;
+          return href.length > 1 && (href.startsWith("#") || window.location.pathname === "/");
+        });
 
         const handleClick = (e: MouseEvent, anchor: HTMLAnchorElement) => {
+          const hash = anchor.getAttribute("href")!.replace(/^\//, "");
+          if (!document.querySelector(hash)) return;
           e.preventDefault();
-          smoother?.scrollTo(anchor.getAttribute("href")!, true, "top 64px");
+          smoother?.scrollTo(hash, true, "top 64px");
+          history.replaceState(null, "", hash);
         };
 
         const listeners = anchors.map((anchor) => {
@@ -42,6 +49,12 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
           anchor.addEventListener("click", fn);
           return { anchor, fn };
         });
+
+        // arriving from another page via "/#id" — jump to the section once the smoother is ready
+        const initialHash = window.location.hash;
+        if (initialHash.length > 1 && document.querySelector(initialHash)) {
+          requestAnimationFrame(() => smoother?.scrollTo(initialHash, false, "top 64px"));
+        }
 
         cleanupClicks = () => {
           listeners.forEach(({ anchor, fn }) => anchor.removeEventListener("click", fn));

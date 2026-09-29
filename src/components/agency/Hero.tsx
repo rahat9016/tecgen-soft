@@ -1,7 +1,9 @@
 "use client";
 
 import { motion, useScroll, useTransform, type Variants } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRef } from "react";
 
 import BrowserFrame from "@/src/components/agency/BrowserFrame";
@@ -80,7 +82,7 @@ export default function Hero() {
         initial="hidden"
         animate="show"
         style={{ y: contentY, opacity: heroOpacity }}
-        className="relative mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pt-[7vh] sm:px-6 lg:px-8"
+        className="relative mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pt-[6vh] sm:px-6 lg:px-8"
       >
         <motion.h1
           variants={item}
@@ -115,8 +117,18 @@ export default function Hero() {
           and long-term support.
         </motion.p>
 
+        <motion.div variants={item} className="mt-8 flex justify-center">
+          <Link
+            href="#solutions"
+            className="group inline-flex h-13 items-center gap-2 rounded-xl bg-[#3D2EF9] px-7 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.1)_inset,0_18px_40px_-10px_rgba(61,46,249,0.7)] transition hover:-translate-y-0.5 hover:bg-[#4d3ffa] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.14)_inset,0_24px_48px_-10px_rgba(61,46,249,0.85)]"
+          >
+            View Our Solutions
+            <ArrowRight className="size-4 transition group-hover:translate-x-1" />
+          </Link>
+        </motion.div>
+
         {/* project showcase — fanned browser frames that bleed into the next section */}
-        <motion.div variants={item} className="relative mx-auto mt-12 min-h-0 w-full max-w-6xl flex-1 md:mt-14">
+        <motion.div variants={item} className="relative mx-auto mt-10 min-h-0 w-full max-w-6xl flex-1 md:mt-12">
           <div className="agency-blob-pulse pointer-events-none absolute top-1/3 left-1/2 h-72 w-[70%] -translate-x-1/2 rounded-full bg-[#3D2EF9]/35 blur-[110px]" />
 
           <div className="relative h-full">
@@ -128,7 +140,6 @@ export default function Hero() {
                 <BrowserFrame
                   title="tripwave.com — Hotel & Resort Booking"
                   src="/hotel-management.webp"
-                  scroll={20}
                   className="border-white/10 shadow-2xl shadow-black/50"
                 />
               </motion.div>
@@ -154,7 +165,6 @@ export default function Hero() {
               <BrowserFrame
                 title="fitstorebd.com — Online Shop"
                 src="/ecommerce.webp"
-                scroll={22}
                 className="border-white/10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.7)] ring-1 ring-white/20"
               />
 

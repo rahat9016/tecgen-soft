@@ -7,12 +7,12 @@ import { Menu, MessageCircle, X } from "lucide-react";
 import logo from "@/public/logo_2.png";
 
 const navLinks = [
-  { href: "#solutions", label: "Solutions" },
-  { href: "#work", label: "Our Work" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "#how-it-works", label: "How It Works" },
-  { href: "#about", label: "About" },
-  { href: "#contact", label: "Contact" },
+  { href: "/#solutions", label: "Solutions" },
+  { href: "/#work", label: "Our Work" },
+  { href: "/#pricing", label: "Pricing" },
+  { href: "/#how-it-works", label: "How It Works" },
+  { href: "/#about", label: "About" },
+  { href: "/#contact", label: "Contact" },
 ];
 
 export default function AgencyHeader() {
@@ -51,7 +51,7 @@ export default function AgencyHeader() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="#contact"
+            href="/#contact"
             className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-600/30"
           >
             <MessageCircle className="size-4" />

@@ -42,10 +42,10 @@ export default function AgencyFooter() {
           <div>
             <h4 className="text-sm font-semibold text-slate-900">Company</h4>
             <ul className="mt-3 space-y-2 text-sm text-slate-500">
-              <li><Link href="#work" className="hover:text-indigo-600">Our Work</Link></li>
-              <li><Link href="#about" className="hover:text-indigo-600">About</Link></li>
-              <li><Link href="#pricing" className="hover:text-indigo-600">Pricing</Link></li>
-              <li><Link href="#contact" className="hover:text-indigo-600">Contact</Link></li>
+              <li><Link href="/#work" className="hover:text-indigo-600">Our Work</Link></li>
+              <li><Link href="/#about" className="hover:text-indigo-600">About</Link></li>
+              <li><Link href="/#pricing" className="hover:text-indigo-600">Pricing</Link></li>
+              <li><Link href="/#contact" className="hover:text-indigo-600">Contact</Link></li>
             </ul>
           </div>
 
