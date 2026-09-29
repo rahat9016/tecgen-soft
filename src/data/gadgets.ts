@@ -1,19 +1,15 @@
-export type GadgetCategory =
-  | "Phones"
-  | "Tablets"
-  | "Laptops"
-  | "Smart Watch"
-  | "Earbuds"
-  | "Headphones"
-  | "Speakers"
-  | "Power"
-  | "Gaming"
-  | "Cameras"
-  | "Drones"
-  | "Smart Home"
-  | "E-Readers"
-  | "VR"
-  | "Accessories";
+// Categories are editable from the admin panel, so this is a plain string.
+export type GadgetCategory = string;
+
+export interface GadgetSpec {
+  label: string;
+  value: string;
+}
+
+export interface PreOrderInfo {
+  releaseDate: string; // ISO date
+  deposit: number;
+}
 
 export interface Gadget {
   id: string;
@@ -22,10 +18,18 @@ export interface Gadget {
   brand: string;
   category: GadgetCategory;
   image: string;
+  gallery?: string[];
   price: number;
   originalPrice: number | null;
+  stock?: number;
   isNew?: boolean;
+  active?: boolean;
   tags?: ("apple" | "deal" | "best" | "top")[];
+  description?: string;
+  specs?: GadgetSpec[];
+  colors?: string[];
+  storage?: string[];
+  preOrder?: PreOrderInfo | null;
 }
 
 // Product photos: Wikimedia Commons (CC-licensed), resized into /public/gadgets.
@@ -423,6 +427,49 @@ export const gadgets: Gadget[] = [
     originalPrice: 52999,
     isNew: true,
   },
+  {
+    id: "g37",
+    slug: "iphone-17-pro-max",
+    name: "iPhone 17 Pro Max 256GB — Cosmic Orange",
+    brand: "Apple",
+    category: "Phones",
+    image: "/gadgets/iphone-17-pro.webp",
+    price: 189999,
+    originalPrice: 199999,
+    isNew: true,
+    tags: ["apple", "top"],
+    colors: ["Cosmic Orange", "Deep Blue", "Silver"],
+    storage: ["256GB", "512GB", "1TB"],
+  },
+  {
+    id: "g38",
+    slug: "iphone-18-pro",
+    name: "iPhone 18 Pro 256GB",
+    brand: "Apple",
+    category: "Phones",
+    image: "/gadgets/iphone-18-pro.webp",
+    price: 209999,
+    originalPrice: null,
+    isNew: true,
+    tags: ["apple"],
+    colors: ["Burgundy", "Silver", "Space Black"],
+    storage: ["256GB", "512GB", "1TB"],
+    preOrder: { releaseDate: "2026-10-24", deposit: 20000 },
+  },
+  {
+    id: "g39",
+    slug: "galaxy-s26-ultra",
+    name: "Samsung Galaxy S26 Ultra 12/256GB",
+    brand: "Samsung",
+    category: "Phones",
+    image: "/gadgets/galaxy-s26-ultra.webp",
+    price: 164999,
+    originalPrice: null,
+    isNew: true,
+    colors: ["Cobalt Violet", "Titanium Black", "Titanium Silver"],
+    storage: ["256GB", "512GB"],
+    preOrder: { releaseDate: "2026-11-05", deposit: 15000 },
+  },
 ];
 
 export const byTag = (tag: NonNullable<Gadget["tags"]>[number]) =>
@@ -435,4 +482,12 @@ export const byBrand = (brand: string) => gadgets.filter((g) => g.brand === bran
 
 export const newArrivals = gadgets.filter((g) => g.isNew);
 
-export const formatTaka = (n: number) => `৳${n.toLocaleString("en-IN")}`;
+export const formatTaka = (n: number) => `${n < 0 ? "-" : ""}৳${Math.abs(n).toLocaleString("en-IN")}`;
+
+export const getGadget = (slug: string) => gadgets.find((g) => g.slug === slug);
+
+export const getRelatedGadgets = (item: Gadget, limit = 8) =>
+  [
+    ...gadgets.filter((g) => g.id !== item.id && g.category === item.category),
+    ...gadgets.filter((g) => g.id !== item.id && g.category !== item.category && g.brand === item.brand),
+  ].slice(0, limit);

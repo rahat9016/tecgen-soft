@@ -1,14 +1,17 @@
 import Link from "next/link";
 
+// Horizontal lockups are cropped from /gadgets/logo.png; the light one swaps the navy text to white for dark backgrounds.
 export default function GadgetLogo({ light = false }: { light?: boolean }) {
   return (
-    <Link href="/gadgets" className="flex shrink-0 flex-col leading-none">
-      <span className={`text-2xl font-extrabold tracking-tight ${light ? "text-white" : "text-neutral-900"}`}>
-        gadget<span className="text-orange-500">hub</span>
-      </span>
-      <span className={`mt-0.5 text-[10px] font-medium tracking-[0.2em] ${light ? "text-neutral-400" : "text-neutral-500"}`}>
-        SMART TECH STORE
-      </span>
+    <Link href="/gadgets" className="shrink-0" aria-label="gadgethub home">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={light ? "/gadgets/logo-horizontal-light.webp" : "/gadgets/logo-horizontal.webp"}
+        alt="gadgethub — Smart Tech Store"
+        width={716}
+        height={132}
+        className="h-9 w-auto md:h-11"
+      />
     </Link>
   );
 }

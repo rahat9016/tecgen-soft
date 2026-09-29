@@ -15,7 +15,7 @@ export default function ServiceStrip() {
         {services.map(({ icon: Icon, title }) => (
           <li key={title} className="flex items-center gap-3 rounded-xl px-3 py-2">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-500">
-              <Icon className="size-[18px]" />
+              <Icon className="size-4.5" />
             </span>
             <span className="text-xs font-medium text-neutral-700 sm:text-sm">{title}</span>
           </li>

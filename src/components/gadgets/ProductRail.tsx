@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Gadget } from "@/src/data/gadgets";
 import { cn } from "@/src/lib/utils";
@@ -15,12 +16,14 @@ export default function ProductRail({
   highlight,
   items,
   tabs,
+  viewAll,
 }: {
   id?: string;
   title: string;
   highlight: string;
   items?: Gadget[];
   tabs?: Tab[];
+  viewAll?: string;
 }) {
   const [active, setActive] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -33,6 +36,8 @@ export default function ProductRail({
     el.scrollBy({ left: dir * (card + 16) * 2, behavior: "smooth" });
   };
 
+  if (!tabs && list.length === 0) return null;
+
   const selectTab = (i: number) => {
     setActive(i);
     scrollerRef.current?.scrollTo({ left: 0 });
@@ -42,7 +47,12 @@ export default function ProductRail({
     <section id={id} className="container mt-14 scroll-mt-32">
       <div className="flex items-center justify-between gap-4">
         <SectionTitle title={title} highlight={highlight} />
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {viewAll && (
+            <Link href={viewAll} className="mr-2 hidden text-sm font-medium text-orange-500 hover:underline sm:block">
+              View all
+            </Link>
+          )}
           <button
             onClick={() => scroll(-1)}
             aria-label="Scroll left"
