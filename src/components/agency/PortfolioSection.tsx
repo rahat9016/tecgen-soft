@@ -13,7 +13,7 @@ export default function PortfolioSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            শুধু কথা নয় — <span className="text-indigo-600">আসল প্রোডাক্ট</span> দেখুন।
+            <span className="text-indigo-600">আসল প্রোডাক্ট</span> দেখুন।
           </h2>
           <p className="mt-3 text-base text-slate-500">
             Every project below is real and clickable — not a mockup.

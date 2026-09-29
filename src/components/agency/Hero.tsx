@@ -86,19 +86,19 @@ export default function Hero() {
         initial="hidden"
         animate="show"
         style={{ y: contentY, opacity: heroOpacity }}
-        className="relative mx-auto grid max-w-7xl gap-14 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-8 lg:px-8"
+        className="relative mx-auto grid max-w-7xl gap-10 px-4 sm:gap-14 py-16 sm:px-6 md:py-20 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-8 lg:px-8"
       >
         <div>
           <motion.span
             variants={item}
-            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-indigo-200 backdrop-blur-sm"
+            className="hidden items-center gap-2 rounded-full border border-white/15 sm:inline-flex bg-white/5 px-4 py-1.5 text-xs font-medium text-indigo-200 backdrop-blur-sm"
           >
             🇧🇩 বাংলাদেশি উদ্যোক্তাদের জন্য তৈরি
           </motion.span>
 
           <motion.h1
             variants={item}
-            className="mt-6 text-[2.6rem] leading-[1.08] font-bold tracking-tight text-white sm:text-5xl md:text-6xl"
+            className="text-[2.6rem] sm:mt-6 leading-[1.08] font-bold tracking-tight text-white sm:text-5xl md:text-6xl"
           >
             আপনার ব্যবসার জন্য{" "}
             <span className="bg-linear-to-r from-indigo-400 via-[#6C63FF] to-indigo-300 bg-clip-text text-transparent">
@@ -106,20 +106,20 @@ export default function Hero() {
             </span>{" "}
             তৈরি করুন
           </motion.h1>
-          <motion.p variants={item} className="mt-4 text-base font-medium text-slate-300 sm:text-lg">
+          <motion.p variants={item} className="mt-4 hidden text-base font-medium text-slate-300 sm:block sm:text-lg">
             আপনার বাজেটের মধ্যেই — কোনো hidden cost ছাড়া।
           </motion.p>
 
           <motion.p
             variants={item}
-            className="mt-4 max-w-lg text-sm leading-relaxed text-slate-400 sm:text-base"
+            className="mt-4 hidden max-w-lg text-sm sm:block leading-relaxed text-slate-400 sm:text-base"
           >
             E-commerce, Hotel Booking, Restaurant বা Business — যেকোনো ধরনের ব্যবসার জন্য{" "}
             <strong className="font-semibold text-slate-200">ready-to-launch website</strong>। টেকনোলজি
             বুঝতে হবে না, সেই দায়িত্ব আমাদের।
           </motion.p>
 
-          <motion.div variants={item} className="mt-9 flex flex-wrap gap-3">
+          <motion.div variants={item} className="mt-9 hidden flex-wrap gap-3 sm:flex">
             <Link
               href="#solutions"
               className="group inline-flex h-14 items-center gap-2 rounded-xl bg-[#3D2EF9] px-7 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_18px_40px_-8px_rgba(61,46,249,0.6)] transition hover:bg-[#4d3ffa] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_22px_48px_-8px_rgba(61,46,249,0.75)]"
@@ -136,7 +136,7 @@ export default function Hero() {
             </Link>
           </motion.div>
 
-          <motion.div variants={item} className="mt-7 flex flex-wrap gap-x-5 gap-y-2.5 border-t border-white/10 pt-6">
+          <motion.div variants={item} className="mt-7 hidden flex-wrap gap-x-5 gap-y-2.5 border-t sm:flex border-white/10 pt-6">
             {trustIndicators.map(({ icon: Icon, label }) => (
               <span key={label} className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
                 <Icon className="size-3.5 text-indigo-400" />
