@@ -197,6 +197,8 @@ export default function PortfolioSection() {
                 <div className="mt-8 flex flex-wrap gap-2.5 lg:mt-auto lg:pt-8">
                   <Link
                     href={project.liveHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="group inline-flex items-center gap-2 rounded-xl bg-[#3D2EF9] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:-translate-y-0.5 hover:bg-[#4d3ffa]"
                   >
                     <Play className="size-3.5 fill-current" />
