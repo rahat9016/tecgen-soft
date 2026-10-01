@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { currentUser, useGadgetDB, useHydrated } from "@/src/lib/gadget-store/store";
 import { formatDate } from "@/src/lib/gadget-store/format";
 import { cn } from "@/src/lib/utils";
+import GadgetAvatar from "../GadgetAvatar";
 import { accountLinks } from "../GadgetHeader";
 import { PageLoader } from "../shared";
 
@@ -20,9 +21,11 @@ export default function AccountShell({ children }: { children: React.ReactNode }
     <div className="container mt-8 grid gap-8 lg:grid-cols-[260px_1fr]">
       <aside className="h-fit min-w-0 rounded-2xl border border-neutral-100 p-4">
         <div className="flex items-center gap-3 border-b border-neutral-100 px-2 pb-4">
-          <span className="flex size-12 items-center justify-center rounded-full bg-orange-100 text-lg font-bold text-orange-600">
-            {hydrated ? user.name[0] : ""}
-          </span>
+          {hydrated ? (
+            <GadgetAvatar user={user} className="size-12 shrink-0 bg-orange-100 text-lg font-bold text-orange-600" />
+          ) : (
+            <span className="size-12 shrink-0 rounded-full bg-orange-100" />
+          )}
           <div className="min-w-0">
             <p className="truncate font-semibold text-neutral-900">{hydrated ? user.name : "…"}</p>
             <p className="text-xs text-neutral-500">{hydrated ? `Member since ${formatDate(user.joinedAt)}` : ""}</p>

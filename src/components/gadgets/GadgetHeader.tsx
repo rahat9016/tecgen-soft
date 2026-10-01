@@ -16,6 +16,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import GadgetAvatar from "./GadgetAvatar";
 import GadgetLogo from "./GadgetLogo";
 import GadgetSearch from "./GadgetSearch";
 import { cartDetails, currentUser, useGadgetDB, useHydrated } from "@/src/lib/gadget-store/store";
@@ -59,28 +60,28 @@ export default function GadgetHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-100 bg-white">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-neutral-950 text-white">
       <div className="container flex items-center gap-4 py-3 md:gap-8">
-        <button onClick={() => setOpen(true)} aria-label="Open menu" className="text-neutral-700 lg:hidden">
+        <button onClick={() => setOpen(true)} aria-label="Open menu" className="text-neutral-200 hover:text-white lg:hidden">
           <Menu className="size-6" />
         </button>
 
-        <GadgetLogo />
+        <GadgetLogo light />
 
         <div className="hidden flex-1 md:block">
-          <GadgetSearch className="max-w-xl" />
+          <GadgetSearch dark className="mx-auto max-w-xl" />
         </div>
 
         <nav className="ml-auto flex items-center gap-2 md:gap-5">
           <Link
             href="/gadgets/track-order"
-            className="hidden items-center gap-1.5 text-sm font-medium text-neutral-700 hover:text-orange-500 xl:flex"
+            className="hidden items-center gap-1.5 text-sm font-medium text-neutral-300 hover:text-orange-400 xl:flex"
           >
             <Truck className="size-4" /> Track Order
           </Link>
           <Link
             href="/gadgets/pre-order"
-            className="hidden items-center gap-1.5 text-sm font-medium text-neutral-700 hover:text-orange-500 lg:flex"
+            className="hidden items-center gap-1.5 text-sm font-medium text-neutral-300 hover:text-orange-400 lg:flex"
           >
             <CalendarClock className="size-4" /> Pre-order
           </Link>
@@ -93,7 +94,7 @@ export default function GadgetHeader() {
           <Link
             href="/gadgets/cart"
             aria-label={`Cart, ${count} items`}
-            className="relative flex size-10 items-center justify-center rounded-full border border-neutral-200 text-neutral-800 hover:border-orange-500 hover:text-orange-500"
+            className="relative flex size-10 items-center justify-center rounded-full border border-white/20 text-neutral-100 hover:border-orange-400 hover:text-orange-400"
           >
             <ShoppingBag className="size-4.5" />
             {hydrated && count > 0 && (
@@ -107,10 +108,10 @@ export default function GadgetHeader() {
             <DropdownMenuTrigger asChild>
               <button
                 aria-label="Account menu"
-                className="flex size-10 items-center justify-center rounded-full border border-neutral-200 text-neutral-800 hover:border-orange-500 hover:text-orange-500"
+                className="flex size-10 items-center justify-center overflow-hidden rounded-full border border-white/20 text-neutral-100 hover:border-orange-400 hover:text-orange-400"
               >
                 {hydrated ? (
-                  <span className="text-sm font-semibold">{user.name[0]}</span>
+                  <GadgetAvatar user={user} className="size-full text-sm" />
                 ) : (
                   <User className="size-4.5" />
                 )}
@@ -141,14 +142,14 @@ export default function GadgetHeader() {
       </div>
 
       <div className="container pb-3 md:hidden">
-        <GadgetSearch placeholder="Search gadgets..." />
+        <GadgetSearch dark placeholder="Search gadgets..." />
       </div>
 
-      <div className="hidden border-t border-neutral-100 lg:block">
-        <ul className="container flex items-center justify-between gap-4 overflow-x-auto py-2.5 text-[13px] text-neutral-700 [scrollbar-width:none]">
+      <div className="hidden border-t border-white/10 lg:block">
+        <ul className="container flex items-center justify-between gap-4 overflow-x-auto py-2.5 text-[13px] text-neutral-300 [scrollbar-width:none]">
           {gadgetNav.map((item) => (
             <li key={item.label} className="shrink-0">
-              <Link href={item.href} className="hover:text-orange-500">
+              <Link href={item.href} className="transition-colors hover:text-orange-400">
                 {item.label}
               </Link>
             </li>
@@ -159,7 +160,7 @@ export default function GadgetHeader() {
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button aria-label="Close menu" className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="absolute inset-y-0 left-0 w-72 overflow-y-auto bg-white p-5">
+          <div className="absolute inset-y-0 left-0 w-72 overflow-y-auto bg-white p-5 text-neutral-900">
             <div className="flex items-center justify-between">
               <GadgetLogo />
               <button onClick={() => setOpen(false)} aria-label="Close menu">

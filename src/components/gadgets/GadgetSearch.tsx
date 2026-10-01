@@ -13,9 +13,11 @@ const MAX_RESULTS = 8;
 export default function GadgetSearch({
   placeholder = "Search iPhone, AirPods, power bank...",
   className,
+  dark = false,
 }: {
   placeholder?: string;
   className?: string;
+  dark?: boolean;
 }) {
   const router = useRouter();
   const { products } = useGadgetDB();
@@ -77,8 +79,15 @@ export default function GadgetSearch({
   return (
     <div ref={wrapperRef} className={cn("relative w-full", className)}>
       <form role="search" onSubmit={onSubmit}>
-        <div className="flex h-12 items-center rounded-full border border-transparent bg-neutral-100 px-5 transition focus-within:border-orange-400 focus-within:bg-white focus-within:shadow-sm">
-          <Search className="size-5 shrink-0 text-neutral-400" />
+        <div
+          className={cn(
+            "flex h-12 items-center rounded-full border px-5 transition focus-within:border-orange-400",
+            dark
+              ? "border-white/10 bg-white/10 text-white focus-within:bg-white/15"
+              : "border-transparent bg-neutral-100 focus-within:bg-white focus-within:shadow-sm"
+          )}
+        >
+          <Search className={cn("size-5 shrink-0", dark ? "text-neutral-300" : "text-neutral-400")} />
           <input
             type="text"
             role="combobox"
@@ -105,7 +114,12 @@ export default function GadgetSearch({
                 setQuery("");
                 setActive(-1);
               }}
-              className="flex size-7 shrink-0 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700"
+              className={cn(
+                "flex size-7 shrink-0 items-center justify-center rounded-full",
+                dark
+                  ? "text-neutral-300 hover:bg-white/10 hover:text-white"
+                  : "text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700"
+              )}
             >
               <X className="size-4" />
             </button>

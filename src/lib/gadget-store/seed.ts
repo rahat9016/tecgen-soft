@@ -14,7 +14,7 @@ import type {
   Product,
 } from "./types";
 
-export const DB_VERSION = 4;
+export const DB_VERSION = 6;
 export const DEMO_USER_ID = "cu1";
 
 const products: Product[] = gadgets.map((g) => {
@@ -54,7 +54,7 @@ function rng(seed: number) {
 }
 
 const customerSeed: Omit<Customer, "joinedAt">[] = [
-  { id: DEMO_USER_ID, name: "Rahim Ahmed", phone: "01712-345678", email: "rahim.ahmed@example.com", address: "House 12, Road 5, Dhanmondi", city: "Dhaka" },
+  { id: DEMO_USER_ID, name: "Rahim Ahmed", phone: "01712-345678", email: "rahim.ahmed@example.com", address: "House 12, Road 5, Dhanmondi", city: "Dhaka", avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=160&h=160&fit=crop&crop=faces&auto=format&q=80" },
   { id: "cu2", name: "Farhana Akter", phone: "01819-223344", email: "farhana@example.com", address: "Sector 7, Uttara", city: "Dhaka" },
   { id: "cu3", name: "Mahmudul Hasan", phone: "01911-556677", email: "mahmud@example.com", address: "GEC Circle", city: "Chattogram" },
   { id: "cu4", name: "Sadia Islam", phone: "01521-889900", email: "sadia@example.com", address: "Zindabazar", city: "Sylhet" },

@@ -13,6 +13,7 @@ export type Customer = {
   address: string;
   city: string;
   joinedAt: string;
+  avatar?: string;
 };
 
 export type OrderStatus = "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
