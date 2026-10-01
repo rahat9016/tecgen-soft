@@ -9,7 +9,7 @@ import type { Customer } from "@/src/lib/gadget-store/types";
 import { formatDate, formatTaka, formatTime } from "@/src/lib/gadget-store/format";
 import ChatConversation from "@/src/components/gadgets/ChatConversation";
 import GadgetAvatar from "@/src/components/gadgets/GadgetAvatar";
-import { AdminHeader, btn, Drawer } from "@/src/components/gadgets/admin/kit";
+import { btn, Drawer } from "@/src/components/gadgets/admin/kit";
 import { StatusBadge } from "@/src/components/gadgets/shared";
 import { cn } from "@/src/lib/utils";
 
@@ -55,24 +55,9 @@ function ChatInbox() {
 
   return (
     <>
-      <AdminHeader
-        title="Customer Chat"
-        subtitle="Replies appear instantly in the customer's chat widget (open the store in another tab to try it)."
-        actions={
-          <div className="flex gap-2 text-xs">
-            <span className="rounded-full bg-white px-3 py-1.5 font-medium text-neutral-600 ring-1 ring-neutral-200">
-              {sorted.length} conversations
-            </span>
-            {unreadCount > 0 && (
-              <span className="rounded-full bg-orange-500 px-3 py-1.5 font-semibold text-white">{unreadCount} unread</span>
-            )}
-          </div>
-        }
-      />
-
-      <div className="grid h-[calc(100dvh-13rem)] min-h-[480px] overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm md:grid-cols-[300px_1fr] xl:grid-cols-[320px_1fr_300px]">
+      <div className="grid h-[calc(100dvh-6rem)] min-h-[480px] md:h-[calc(100dvh-8rem)] overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm md:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_300px]">
         {/* ── Inbox ── */}
-        <aside className={cn("flex min-h-0 flex-col border-neutral-100 md:border-r", selected && "max-md:hidden")}>
+        <aside className={cn("flex min-h-0 min-w-0 flex-col border-neutral-100 md:border-r", selected && "max-md:hidden")}>
           <div className="space-y-3 border-b border-neutral-100 p-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
@@ -168,7 +153,7 @@ function ChatInbox() {
         </aside>
 
         {/* ── Conversation ── */}
-        <section className={cn("flex min-h-0 flex-col", !selected && "max-md:hidden")}>
+        <section className={cn("flex min-h-0 min-w-0 flex-col", !selected && "max-md:hidden")}>
           {activeId ? (
             <>
               <div className="flex items-center gap-3 border-b border-neutral-100 px-3 py-3 sm:px-4">
@@ -203,6 +188,7 @@ function ChatInbox() {
                 className="flex-1"
                 side="admin"
                 otherName={name}
+                otherAvatar={customer?.avatar}
                 messages={thread?.messages ?? []}
                 onSend={(t) => sendChat(activeId, "admin", t)}
                 quickReplies={quickReplies}
