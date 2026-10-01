@@ -10,6 +10,7 @@ import {
   Menu,
   MessageCircle,
   Package,
+  Settings,
   ShoppingBag,
   Truck,
   User,
@@ -44,11 +45,12 @@ export const gadgetNav = [
 ];
 
 export const accountLinks = [
-  { label: "My Profile", href: "/gadgets/account", icon: UserRound },
+  { label: "Dashboard", href: "/gadgets/account", icon: UserRound },
   { label: "My Orders", href: "/gadgets/account/orders", icon: Package },
   { label: "Pre-orders", href: "/gadgets/account/pre-orders", icon: CalendarClock },
   { label: "Wishlist", href: "/gadgets/account/wishlist", icon: Heart },
   { label: "Messages", href: "/gadgets/account/messages", icon: MessageCircle },
+  { label: "Profile Settings", href: "/gadgets/account/profile", icon: Settings },
   { label: "Track Order", href: "/gadgets/track-order", icon: Truck },
 ];
 

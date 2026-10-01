@@ -12,15 +12,16 @@ export default function GadgetAvatar({
   user: Pick<Customer, "name" | "avatar">;
   className?: string;
 }) {
-  const [failed, setFailed] = useState(false);
+  // Remember which URL failed, so a newly uploaded photo gets a fresh attempt.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
-  if (user.avatar && !failed) {
+  if (user.avatar && user.avatar !== failedSrc) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={user.avatar}
         alt={user.name}
-        onError={() => setFailed(true)}
+        onError={() => setFailedSrc(user.avatar ?? null)}
         className={cn("rounded-full object-cover", className)}
       />
     );
