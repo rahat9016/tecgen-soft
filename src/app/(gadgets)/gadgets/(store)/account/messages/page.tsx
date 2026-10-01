@@ -21,6 +21,7 @@ export default function MessagesPage() {
         <ChatConversation
           className="h-[520px]"
           side="customer"
+          otherName="gadgethub Support"
           messages={thread?.messages ?? []}
           onSend={(t) => sendChat(db.currentUserId, "customer", t)}
           quickReplies={["Where is my order?", "Is EMI available?", "Exchange my old phone", "Pre-order info"]}

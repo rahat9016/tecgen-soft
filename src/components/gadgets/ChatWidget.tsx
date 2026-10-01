@@ -40,6 +40,7 @@ export default function ChatWidget() {
           <ChatConversation
             className="flex-1"
             side="customer"
+            otherName="gadgethub Support"
             messages={thread?.messages ?? []}
             onSend={(t) => sendChat(db.currentUserId, "customer", t)}
             quickReplies={["Where is my order?", "Is EMI available?", "Exchange my old phone", "Pre-order info"]}
