@@ -20,7 +20,7 @@ export default function GadgetCard({ item }: { item: Gadget }) {
   };
 
   return (
-    <article className="group flex h-full flex-col rounded-2xl border border-neutral-100 bg-white p-3 transition hover:border-orange-200 hover:shadow-lg">
+    <article className="group flex h-full flex-col rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm transition hover:border-orange-300 hover:shadow-lg">
       <div className="relative">
         <Link href={href} className="relative block aspect-square overflow-hidden rounded-xl bg-neutral-50">
           {item.preOrder ? (
@@ -72,8 +72,12 @@ export default function GadgetCard({ item }: { item: Gadget }) {
 
       <div className="mt-auto flex items-center justify-between gap-2 pt-3">
         {item.preOrder ? (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-violet-700">
-            <CalendarClock className="size-3.5" /> Deposit {formatTaka(item.preOrder.deposit)}
+          <span className="flex min-w-0 items-center gap-1.5 text-violet-700">
+            <CalendarClock className="size-3.5 shrink-0" />
+            <span className="flex min-w-0 flex-col leading-tight">
+              <span className="text-[10px] text-neutral-500">Deposit</span>
+              <span className="truncate text-xs font-semibold">{formatTaka(item.preOrder.deposit)}</span>
+            </span>
           </span>
         ) : outOfStock ? (
           <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-600">Out of stock</span>
@@ -87,7 +91,7 @@ export default function GadgetCard({ item }: { item: Gadget }) {
         {item.preOrder ? (
           <Link
             href={href}
-            className="rounded-full bg-violet-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-violet-700"
+            className="shrink-0 whitespace-nowrap rounded-full bg-violet-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-violet-700"
           >
             Pre-order
           </Link>

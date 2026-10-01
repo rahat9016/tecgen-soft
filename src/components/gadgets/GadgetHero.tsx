@@ -6,10 +6,22 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 
 const slides = [
-  { src: "/gadgets/banner1.webp", alt: "0% EMI up to 12 months on iPhone 17 Pro & Pro Max with EBL & City credit cards" },
-  { src: "/gadgets/banner2.webp", alt: "The new iPhone era — pre-order iPhone 18 Pro Series and iPhone Duo" },
-  { src: "/gadgets/banner3.webp", alt: "Samsung Galaxy S26 Ultra — pre-order with 36 months EMI" },
-  { src: "/gadgets/banner4.webp", alt: "PC build to laptop, everything in one place" },
+  {
+    src: "/gadgets/banner1.webp",
+    alt: "0% EMI up to 12 months on iPhone 17 Pro & Pro Max with EBL & City credit cards",
+    href: "/gadgets/product/iphone-17-pro-max",
+  },
+  {
+    src: "/gadgets/banner2.webp",
+    alt: "The new iPhone era — pre-order iPhone 18 Pro Series and iPhone Duo",
+    href: "/gadgets/pre-order",
+  },
+  {
+    src: "/gadgets/banner3.webp",
+    alt: "Samsung Galaxy S26 Ultra — pre-order with 36 months EMI",
+    href: "/gadgets/product/galaxy-s26-ultra",
+  },
+  { src: "/gadgets/banner4.webp", alt: "PC build to laptop, everything in one place", href: "/gadgets/shop?category=Laptops" },
 ];
 
 const sidePromos = [
@@ -41,9 +53,12 @@ export default function GadgetHero() {
     <section className="container mt-5 grid gap-4 lg:grid-cols-[1fr_300px]">
       <div className="group relative aspect-[16/9] overflow-hidden rounded-2xl bg-neutral-100">
         {slides.map((slide, i) => (
-          <div
+          // Banner art has its CTA (e.g. "Pre-order Now") painted in, so the whole slide is the link.
+          <Link
             key={slide.src}
+            href={slide.href}
             aria-hidden={i !== index}
+            tabIndex={i === index ? 0 : -1}
             className={cn(
               "absolute inset-0 transition-opacity duration-700",
               i === index ? "opacity-100" : "pointer-events-none opacity-0"
@@ -56,7 +71,7 @@ export default function GadgetHero() {
               fetchPriority={i === 0 ? "high" : "auto"}
               className="size-full object-cover"
             />
-          </div>
+          </Link>
         ))}
 
         <button

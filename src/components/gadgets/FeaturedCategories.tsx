@@ -47,9 +47,9 @@ export default function FeaturedCategories() {
           <li key={name}>
             <Link
               href={`/gadgets/shop?category=${q}`}
-              className="group flex flex-col items-center gap-2 rounded-xl p-3 text-center transition hover:bg-orange-50"
+              className="group flex flex-col items-center gap-2 rounded-xl p-3 text-center transition hover:bg-neutral-50"
             >
-              <span className="flex size-14 items-center justify-center rounded-2xl bg-neutral-50 text-neutral-700 transition group-hover:bg-white group-hover:text-orange-500 group-hover:shadow">
+              <span className="flex size-14 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-800 ring-1 ring-neutral-200 transition group-hover:bg-neutral-200 group-hover:text-orange-500 group-hover:shadow-md">
                 <Icon className="size-6" strokeWidth={1.6} />
               </span>
               <span className="text-[11px] font-medium text-neutral-700 sm:text-xs">{name}</span>

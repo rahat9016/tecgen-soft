@@ -133,8 +133,10 @@ export function cartDetails(db: GadgetDB) {
   return { lines, subtotal, count: lines.reduce((s, l) => s + l.qty, 0) };
 }
 
+export const FREE_DELIVERY_MIN = 20000;
+
 export const deliveryFeeFor = (subtotal: number, city: string) =>
-  subtotal >= 20000 ? 0 : city.trim().toLowerCase() === "dhaka" ? 80 : 150;
+  subtotal >= FREE_DELIVERY_MIN ? 0 : city.trim().toLowerCase() === "dhaka" ? 80 : 150;
 
 /* ───────────── cart & wishlist ───────────── */
 
