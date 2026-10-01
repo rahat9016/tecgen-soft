@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-import { X } from "lucide-react";
+import { Check, ChevronDown, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/src/components/ui/dropdown-menu";
 import { cn } from "@/src/lib/utils";
 
 export function AdminHeader({
@@ -120,6 +128,50 @@ export function Modal({
   );
 }
 
+/** Right-hand slide-over panel for quick views; closes on Escape or backdrop click. */
+export function Drawer({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: React.ReactNode;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = overflow;
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 print:hidden" role="dialog" aria-modal="true">
+      <button aria-label="Close" className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" onClick={onClose} />
+      <div className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-200">
+        <div className="flex items-start justify-between gap-3 border-b border-neutral-100 px-6 py-4">
+          <div className="min-w-0">{title}</div>
+          <button onClick={onClose} aria-label="Close" className={btn.ghost}>
+            <X className="size-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+        {footer && <div className="border-t border-neutral-100 bg-neutral-50 px-6 py-4">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
 export function SearchInput({
   value,
   onChange,
@@ -174,4 +226,70 @@ export function daysAgoStart(days: number) {
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() - (days - 1));
   return d.getTime();
+}
+
+/**
+ * Pill-shaped filter dropdown: shows "Label: Value", turns orange when it differs from its default,
+ * and offers an inline clear button.
+ */
+export function FilterMenu<T extends string>({
+  label,
+  icon: Icon,
+  value,
+  defaultValue,
+  options,
+  onChange,
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  value: T;
+  defaultValue: T;
+  options: { value: T; label: string; dot?: string }[];
+  onChange: (v: T) => void;
+}) {
+  const active = value !== defaultValue;
+  const current = options.find((o) => o.value === value);
+  return (
+    <DropdownMenu modal={false}>
+      <div
+        className={cn(
+          "inline-flex h-9 shrink-0 items-center rounded-full border text-sm transition",
+          active
+            ? "border-orange-300 bg-orange-50 text-orange-700"
+            : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50"
+        )}
+      >
+        <DropdownMenuTrigger className="flex h-full items-center gap-2 rounded-full pl-3 pr-2.5 outline-none focus-visible:ring-2 focus-visible:ring-orange-200">
+          <Icon className={cn("size-4", active ? "text-orange-500" : "text-neutral-400")} />
+          <span className={active ? "text-orange-600/80" : "text-neutral-500"}>{label}</span>
+          {active && <span className="font-semibold">{current?.label}</span>}
+          {!active && <ChevronDown className="size-3.5 text-neutral-400" />}
+        </DropdownMenuTrigger>
+        {active && (
+          <button
+            onClick={() => onChange(defaultValue)}
+            aria-label={`Clear ${label} filter`}
+            className="mr-1 flex size-6 items-center justify-center rounded-full text-orange-500 hover:bg-orange-100"
+          >
+            <X className="size-3.5" />
+          </button>
+        )}
+      </div>
+      <DropdownMenuContent align="start" sideOffset={6} className="min-w-52 rounded-xl p-1.5">
+        <DropdownMenuLabel className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">{label}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {options.map((o) => (
+          <DropdownMenuItem
+            key={o.value}
+            onSelect={() => onChange(o.value)}
+            className={cn("cursor-pointer gap-2 rounded-lg py-2", o.value === value && "bg-orange-50 font-medium text-orange-700")}
+          >
+            {o.dot && <span className={cn("size-2 rounded-full", o.dot)} />}
+            {o.label}
+            {o.value === value && <Check className="ml-auto size-4 text-orange-500" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
