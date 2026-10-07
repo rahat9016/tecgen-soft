@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { roomDiscount, type RoomType } from "@/src/data/hotels";
 import { Button } from "@/src/components/ui/button";
-import DatePickerField from "@/src/components/hotel/shared/DatePickerField";
+import DateRangeField from "@/src/components/hotel/shared/DateRangeField";
 import GuestsRoomsField, {
   type GuestsRoomsValue,
 } from "@/src/components/hotel/shared/GuestsRoomsField";
@@ -40,8 +40,7 @@ export default function BookingSidebar({
   onBookNow: () => void;
   cancellationPolicy?: string;
 }) {
-  const [checkInOpen, setCheckInOpen] = useState(false);
-  const [checkOutOpen, setCheckOutOpen] = useState(false);
+  const [datesOpen, setDatesOpen] = useState(false);
 
   const nights =
     checkIn && checkOut
@@ -61,11 +60,11 @@ export default function BookingSidebar({
 
   // The button always does something: it walks the guest to the next missing step.
   const action = !checkIn
-    ? { label: "Select dates", onClick: () => setCheckInOpen(true) }
+    ? { label: "Select dates", onClick: () => setDatesOpen(true) }
     : !checkOut
-      ? { label: "Select check-out date", onClick: () => setCheckOutOpen(true) }
+      ? { label: "Select check-out date", onClick: () => setDatesOpen(true) }
       : unavailable
-        ? { label: "Change dates", onClick: () => setCheckInOpen(true) }
+        ? { label: "Change dates", onClick: () => setDatesOpen(true) }
         : overCapacity
           ? { label: "Adjust guests or rooms", onClick: undefined }
           : {
@@ -100,30 +99,17 @@ export default function BookingSidebar({
       </div>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-neutral-200">
-        <div className="grid grid-cols-2 divide-x divide-neutral-200">
-          <DatePickerField
-            variant="inline"
-            label="Check-in"
-            value={checkIn}
-            open={checkInOpen}
-            onOpenChange={setCheckInOpen}
-            onChange={(date) => {
-              onCheckInChange(date);
-              if (date && (!checkOut || checkOut <= date))
-                onCheckOutChange(null);
-              setCheckOutOpen(true);
+        <div className="p-1">
+          <DateRangeField
+            compact
+            checkIn={checkIn}
+            checkOut={checkOut}
+            open={datesOpen}
+            onOpenChange={setDatesOpen}
+            onChange={(nextIn, nextOut) => {
+              onCheckInChange(nextIn);
+              onCheckOutChange(nextOut);
             }}
-          />
-          <DatePickerField
-            variant="inline"
-            label="Check-out"
-            value={checkOut}
-            onChange={onCheckOutChange}
-            disabledBefore={
-              checkIn ? new Date(checkIn.getTime() + 86400000) : undefined
-            }
-            open={checkOutOpen}
-            onOpenChange={setCheckOutOpen}
           />
         </div>
         <div className="border-t border-neutral-200">

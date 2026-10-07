@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const slides = [
@@ -15,6 +15,36 @@ const INTERVAL = 6000;
 
 const imageUrl = (id: string, width: number) =>
   `https://images.unsplash.com/photo-${id}?w=${width}&q=85&auto=format&fit=crop`;
+
+// Dots live in the hero content (normal flow, under the trust row) so they can never sit on the search bar.
+const SliderContext = createContext<{ active: number; goTo: (index: number) => void } | null>(null);
+
+export function HeroSliderDots() {
+  const slider = useContext(SliderContext);
+  if (!slider) return null;
+  const { active, goTo } = slider;
+
+  return (
+    <div className="flex items-center justify-center gap-2">
+      {slides.map((slide, i) => (
+        <button
+          key={slide.id}
+          type="button"
+          onClick={() => goTo(i)}
+          aria-label={`Go to slide ${i + 1}`}
+          aria-current={i === active}
+          className={`relative h-1.5 overflow-hidden rounded-full transition-all duration-300 ${
+            i === active ? "w-10 bg-white/35" : "w-1.5 bg-white/50 hover:bg-white/80"
+          }`}
+        >
+          {i === active && (
+            <span className="absolute inset-y-0 left-0 w-full origin-left rounded-full bg-white motion-safe:animate-[hero-progress_6s_linear_forwards]" />
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function HeroSlider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState(0);
@@ -49,7 +79,7 @@ export default function HeroSlider({ children }: { children: ReactNode }) {
       <div className="absolute inset-0 bg-neutral-950/45" />
       <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/60 via-neutral-950/20 to-neutral-950/80" />
 
-      {children}
+      <SliderContext.Provider value={{ active, goTo }}>{children}</SliderContext.Provider>
 
       <button
         type="button"
@@ -68,26 +98,6 @@ export default function HeroSlider({ children }: { children: ReactNode }) {
         <ChevronRight className="size-5" />
       </button>
 
-      <div className="absolute bottom-24 left-1/2 flex -translate-x-1/2 items-center gap-2 md:bottom-[13.5rem]">
-        {slides.map((slide, i) => (
-          <button
-            key={slide.id}
-            type="button"
-            onClick={() => goTo(i)}
-            aria-label={`Go to slide ${i + 1}`}
-            aria-current={i === active}
-            className={`relative h-1.5 overflow-hidden rounded-full transition-all duration-300 ${
-              i === active ? "w-10 bg-white/35" : "w-1.5 bg-white/50 hover:bg-white/80"
-            }`}
-          >
-            {i === active && (
-              <span
-                className="absolute inset-y-0 left-0 w-full origin-left rounded-full bg-white motion-safe:animate-[hero-progress_6s_linear_forwards]"
-              />
-            )}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }

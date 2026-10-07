@@ -42,13 +42,17 @@ export default function GuestsRoomsField({
           {inline ? (
             <button
               type="button"
-              className="flex w-full flex-col items-start rounded-xl px-4 py-3 text-left transition hover:bg-white data-[state=open]:bg-white data-[state=open]:shadow-md"
+              className="flex w-full items-center gap-2.5 rounded-2xl px-3 py-2 text-left transition hover:bg-white/70 data-[state=open]:bg-white data-[state=open]:shadow-md data-[state=open]:ring-1 data-[state=open]:ring-sky-200"
             >
-              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-                <Users className="size-3.5" />
-                Guests &amp; Rooms
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+                <Users className="size-4" />
               </span>
-              <span className="mt-1 truncate text-sm font-semibold text-neutral-900">{summary}</span>
+              <span className="min-w-0">
+                <span className="block text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                  Guests &amp; Rooms
+                </span>
+                <span className="block truncate text-sm font-bold text-neutral-900">{summary}</span>
+              </span>
             </button>
           ) : (
             <button

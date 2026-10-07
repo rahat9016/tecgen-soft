@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { ArrowRight, BadgePercent, CalendarCheck, Headphones, Lock, ShieldCheck } from "lucide-react";
 import { hotel, roomDiscount } from "@/src/data/hotels";
-import HeroSlider from "./HeroSlider";
+import HeroSlider, { HeroSliderDots } from "./HeroSlider";
 import SearchWidget from "./SearchWidget";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -24,7 +24,7 @@ export default function Hero() {
   return (
     <section className="relative -mt-(--hotel-header-h)">
       <HeroSlider>
-        <div className={`${jakarta.className} container relative flex min-h-[calc(560px+var(--hotel-header-h))] flex-col items-center justify-center pb-36 pt-[calc(var(--hotel-header-h)+3rem)] text-center text-white md:min-h-[calc(700px+var(--hotel-header-h))] md:pb-60`}>
+        <div className={`${jakarta.className} container relative flex min-h-[calc(560px+var(--hotel-header-h))] flex-col items-center justify-center pb-28 pt-[calc(var(--hotel-header-h)+3rem)] text-center text-white md:min-h-[calc(700px+var(--hotel-header-h))] md:pb-40`}>
           <a
             href="#rooms"
             className="group flex max-w-full items-center gap-2 rounded-full border border-white/20 bg-white/10 py-1 pl-1 pr-3 text-xs font-medium text-white backdrop-blur-md transition hover:bg-white/20"
@@ -72,10 +72,14 @@ export default function Hero() {
               </li>
             ))}
           </ul>
+
+          <div className="mt-8">
+            <HeroSliderDots />
+          </div>
         </div>
       </HeroSlider>
 
-      <div className="container relative z-10 -mt-20 md:-mt-48 md:mb-12">
+      <div className="container relative z-10 -mt-20 md:-mt-32 md:mb-12">
         <SearchWidget />
       </div>
     </section>

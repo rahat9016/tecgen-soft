@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { CalendarSearch } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { toDayKey } from "@/src/lib/hotelDates";
-import DatePickerField from "@/src/components/hotel/shared/DatePickerField";
+import DateRangeField from "@/src/components/hotel/shared/DateRangeField";
 import GuestsRoomsField, {
   type GuestsRoomsValue,
 } from "@/src/components/hotel/shared/GuestsRoomsField";
@@ -14,8 +14,11 @@ export default function SearchWidget() {
   const router = useRouter();
   const [checkIn, setCheckIn] = useState<Date | null>(null);
   const [checkOut, setCheckOut] = useState<Date | null>(null);
-  const [checkOutOpen, setCheckOutOpen] = useState(false);
-  const [guests, setGuests] = useState<GuestsRoomsValue>({ adults: 2, children: 0, rooms: 1 });
+  const [guests, setGuests] = useState<GuestsRoomsValue>({
+    adults: 2,
+    children: 0,
+    rooms: 1,
+  });
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -28,53 +31,33 @@ export default function SearchWidget() {
   };
 
   return (
-    <div className="rounded-3xl border border-white/50 bg-white/70 p-3 shadow-2xl shadow-neutral-950/25 backdrop-blur-2xl backdrop-saturate-150 md:p-4">
-      <p className="px-1 pb-0.5 text-sm font-bold text-neutral-900">Check room availability</p>
-
-      <div className="mt-3 grid rounded-2xl border border-white/70 bg-white/55 p-1.5 md:grid-cols-[1fr_1fr_1fr_auto] md:items-center">
-        <div className="border-b border-neutral-900/10 md:border-b-0 md:border-r">
-          <DatePickerField
-            variant="inline"
-            label="Check-in"
-            value={checkIn}
-            onChange={(date) => {
-              setCheckIn(date);
-              if (date && (!checkOut || checkOut <= date)) setCheckOut(null);
-              setCheckOutOpen(true);
-            }}
-          />
-        </div>
-
-        <div className="border-b border-neutral-900/10 md:border-b-0 md:border-r">
-          <DatePickerField
-            variant="inline"
-            label="Check-out"
-            value={checkOut}
-            onChange={setCheckOut}
-            disabledBefore={
-              checkIn ? new Date(checkIn.getTime() + 86400000) : undefined
-            }
-            open={checkOutOpen}
-            onOpenChange={setCheckOutOpen}
-          />
-        </div>
-
-        <div>
-          <GuestsRoomsField
-            variant="inline"
-            value={guests}
-            onChange={setGuests}
-          />
-        </div>
-
-        <Button
-          onClick={handleSearch}
-          className="mt-1.5 h-13 rounded-xl bg-sky-600 px-8 text-base font-semibold shadow-lg shadow-sky-600/30 hover:bg-sky-700 md:mt-0 md:ml-1.5"
-        >
-          <CalendarSearch className="size-5" />
-          Check Availability
-        </Button>
+    <div className="mx-auto grid max-w-4xl gap-1 rounded-3xl border border-white/60 bg-white/75 p-2 shadow-2xl shadow-neutral-950/30 ring-1 ring-black/5 backdrop-blur-2xl backdrop-saturate-150 md:grid-cols-[1fr_auto_auto] md:items-center md:rounded-[1.75rem]">
+      <div className="border-b border-neutral-900/10 pb-1 md:border-b-0 md:border-r md:pb-0 md:pr-1">
+        <DateRangeField
+          checkIn={checkIn}
+          checkOut={checkOut}
+          onChange={(nextIn, nextOut) => {
+            setCheckIn(nextIn);
+            setCheckOut(nextOut);
+          }}
+        />
       </div>
+
+      <div className="md:w-56">
+        <GuestsRoomsField
+          variant="inline"
+          value={guests}
+          onChange={setGuests}
+        />
+      </div>
+
+      <Button
+        onClick={handleSearch}
+        className="h-12 rounded-2xl bg-gradient-to-r from-sky-500 to-sky-700 px-6 text-sm font-semibold shadow-lg shadow-sky-600/30 transition hover:from-sky-600 hover:to-sky-800 md:h-14 md:rounded-[1.25rem]"
+      >
+        <CalendarSearch className="size-5" />
+        Check Availability
+      </Button>
     </div>
   );
 }
