@@ -30,7 +30,7 @@ function Half({
       className={`flex min-w-0 items-center transition ${
         compact ? "gap-2 rounded-xl p-2.5" : "gap-2.5 rounded-2xl px-3 py-2"
       } ${
-        active ? "bg-white shadow-md ring-1 ring-sky-200" : "group-hover:bg-white/70"
+        active ? "bg-white shadow-md ring-2 ring-sky-400" : "bg-white ring-1 ring-neutral-900/10"
       }`}
     >
       <span
@@ -41,7 +41,9 @@ function Half({
         <Icon className="size-4" />
       </span>
       <span className="min-w-0">
-        <span className="block text-[11px] font-semibold uppercase tracking-wider text-neutral-500">{label}</span>
+        <span className="block whitespace-nowrap text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+          {label}
+        </span>
         <span
           className={`block truncate text-sm font-bold ${
             date ? "text-neutral-900" : "text-neutral-400"
@@ -111,9 +113,8 @@ export default function DateRangeField({
           <Half icon={LogIn} label="Check-in" date={checkIn} active={open && !checkIn} compact={compact} />
           {!compact && (
             <span className="relative flex h-full items-center justify-center px-1">
-              <span className="absolute inset-y-2 left-1/2 w-px -translate-x-1/2 bg-neutral-900/10" />
               {nights > 0 && (
-                <span className="relative flex items-center gap-1 whitespace-nowrap rounded-full bg-sky-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm ring-1 ring-sky-600">
+                <span className="relative hidden sm:flex items-center gap-1 whitespace-nowrap rounded-full bg-sky-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm ring-1 ring-sky-600">
                   <Moon className="size-3" /> {nights} night{nights !== 1 ? "s" : ""}
                 </span>
               )}

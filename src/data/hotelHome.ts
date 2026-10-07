@@ -1,6 +1,6 @@
 export const whyChoose = [
   "0.5 km from Laboni Beach",
-  "Sea views from every room type",
+  "Sea-view rooms & top-floor suites",
   "Free cancellation up to 24 hours",
   "Free breakfast with most rooms",
   "24/7 room service & front desk",

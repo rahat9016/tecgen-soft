@@ -31,8 +31,8 @@ export default function SearchWidget() {
   };
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-1 rounded-3xl border border-white/60 bg-white/75 p-2 shadow-2xl shadow-neutral-950/30 ring-1 ring-black/5 backdrop-blur-2xl backdrop-saturate-150 md:grid-cols-[1fr_auto_auto] md:items-center md:rounded-[1.75rem]">
-      <div className="border-b border-neutral-900/10 pb-1 md:border-b-0 md:border-r md:pb-0 md:pr-1">
+    <div className="mx-auto grid max-w-4xl gap-2 rounded-3xl border border-white/60 bg-white/75 p-2 shadow-2xl shadow-neutral-950/30 ring-1 ring-black/5 backdrop-blur-2xl backdrop-saturate-150 md:grid-cols-[1fr_auto_auto] md:items-center md:rounded-[1.75rem]">
+      <div>
         <DateRangeField
           checkIn={checkIn}
           checkOut={checkOut}

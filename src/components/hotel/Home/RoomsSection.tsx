@@ -9,7 +9,7 @@ export default function RoomsSection() {
     <section id="rooms" className="container scroll-mt-24 pb-4 pt-12">
       <SectionHeading
         title="Our Rooms"
-        subtitle="Sea-view rooms for couples, families and everyone in between."
+        subtitle="From great-value twins to top-floor ocean suites — six room types to choose from."
         href="/hotel-management/rooms"
         linkLabel="View all rooms"
       />

@@ -42,6 +42,8 @@ export const amenityIcons: Record<string, React.ComponentType<{ className?: stri
   Balcony: Building2,
   "Trekking Guide": Mountain,
   Jacuzzi: Bath,
+  Bathtub: Bath,
+  "Garden View": Trees,
 };
 
 export default function AmenitiesGrid({ amenities }: { amenities: string[] }) {

@@ -17,6 +17,10 @@ export interface RoomType {
   capacity: number;
   price: number;
   originalPrice: number;
+  /** Short label shown on the room card, e.g. "Most popular". */
+  highlight: string;
+  rating: number;
+  reviewsCount: number;
   /** How many physical rooms of this type the hotel has. */
   totalRooms: number;
   reservations: RoomReservation[];
@@ -25,12 +29,20 @@ export interface RoomType {
 }
 
 export interface HotelReview {
+  /** The room type this guest stayed in. */
+  roomId: string;
   name: string;
   location: string;
   rating: number;
   date: string;
   comment: string;
   avatar: number;
+}
+
+export interface NearbyPlace {
+  name: string;
+  distance: string;
+  type: "beach" | "temple" | "airport" | "park";
 }
 
 export interface Hotel {
@@ -46,7 +58,7 @@ export interface Hotel {
   amenities: string[];
   rooms: RoomType[];
   policies: string[];
-  nearby: { name: string; distance: string }[];
+  nearby: NearbyPlace[];
   reviews: HotelReview[];
 }
 
@@ -64,7 +76,7 @@ export const hotel: Hotel = {
   address: "Marine Drive Road, Kolatoli, Cox's Bazar",
   phone: "+8801880982822",
   rating: 4.6,
-  reviewsCount: 342,
+  reviewsCount: 532,
   description:
     "Sea Paradise Hotel sits right on the world's longest natural sea beach, with panoramic ocean views, private beach access and an outdoor pool. Comfortable rooms for couples, families and groups — a relaxed beachfront stay in Cox's Bazar.",
   images: [
@@ -88,7 +100,32 @@ export const hotel: Hotel = {
   ],
   rooms: [
     {
+      id: "standard-twin",
+      highlight: "Best value",
+      rating: 4.3,
+      reviewsCount: 92,
+      name: "Standard Twin Room",
+      description:
+        "A cosy twin room facing our tropical garden — great value for friends or colleagues travelling together.",
+      size: "280 sq ft",
+      beds: "2 Twin Beds",
+      capacity: 2,
+      price: 2400,
+      originalPrice: 3200,
+      totalRooms: 8,
+      reservations: [{ checkIn: day(5), checkOut: day(7), rooms: 4 }],
+      amenities: ["Garden View", "Free WiFi", "AC", "Breakfast Included"],
+      images: [
+        photo("1595576508898-0ad5c879a061"),
+        photo("1522771739844-6a9f6d5f14af"),
+        photo("1552321554-5fefe8c9ef14"),
+      ],
+    },
+    {
       id: "deluxe-sea-view",
+      highlight: "Most popular",
+      rating: 4.5,
+      reviewsCount: 156,
       name: "Deluxe Sea View Room",
       description:
         "A bright, calm room with a king bed and wide windows facing the Bay of Bengal. Ideal for couples or solo travellers who want to wake up to the sea.",
@@ -111,7 +148,32 @@ export const hotel: Hotel = {
       ],
     },
     {
+      id: "superior-triple",
+      highlight: "Great for small groups",
+      rating: 4.4,
+      reviewsCount: 57,
+      name: "Superior Triple Room",
+      description:
+        "A queen bed plus a single, a sitting corner and partial sea views — room for three without booking two rooms.",
+      size: "420 sq ft",
+      beds: "1 Queen + 1 Single Bed",
+      capacity: 3,
+      price: 3900,
+      originalPrice: 5200,
+      totalRooms: 4,
+      reservations: [{ checkIn: day(1), checkOut: day(3), rooms: 1 }],
+      amenities: ["Sea View", "Free WiFi", "AC", "Breakfast Included"],
+      images: [
+        photo("1591088398332-8a7791972843"),
+        photo("1540518614846-7eded433c457"),
+        photo("1584622650111-993a426fbf0a"),
+      ],
+    },
+    {
       id: "family-suite",
+      highlight: "Best for families",
+      rating: 4.7,
+      reviewsCount: 118,
       name: "Family Suite",
       description:
         "Two queen beds, a separate living area and a private balcony with sea views — plenty of space for a family of four to spread out.",
@@ -134,6 +196,9 @@ export const hotel: Hotel = {
     },
     {
       id: "honeymoon-suite",
+      highlight: "Couples' favourite",
+      rating: 4.8,
+      reviewsCount: 68,
       name: "Honeymoon Suite",
       description:
         "Our most romantic room: a king bed, in-room jacuzzi and a sea-view balcony made for sunsets together.",
@@ -154,6 +219,28 @@ export const hotel: Hotel = {
         photo("1512918728675-ed5a9ecdebfd"),
       ],
     },
+    {
+      id: "premium-ocean-suite",
+      highlight: "Top-floor views",
+      rating: 4.9,
+      reviewsCount: 41,
+      name: "Premium Ocean Suite",
+      description:
+        "Our top-floor suite: a wraparound balcony, separate lounge and a deep soaking tub with panoramic views over the Bay of Bengal.",
+      size: "650 sq ft",
+      beds: "1 King + 1 Sofa Bed",
+      capacity: 3,
+      price: 7500,
+      originalPrice: 9500,
+      totalRooms: 2,
+      reservations: [{ checkIn: day(3), checkOut: day(6), rooms: 2 }],
+      amenities: ["Sea View", "Balcony", "Bathtub", "Free WiFi", "AC", "Breakfast Included"],
+      images: [
+        photo("1590490359683-658d3d23f972"),
+        photo("1600011689032-8b628b8a8747"),
+        photo("1620626011761-996317b8d101"),
+      ],
+    },
   ],
   policies: [
     "Check-in from 2:00 PM, Check-out until 12:00 PM",
@@ -164,13 +251,59 @@ export const hotel: Hotel = {
     "Valid photo ID required at check-in",
   ],
   nearby: [
-    { name: "Laboni Beach Point", distance: "0.5 km" },
-    { name: "Aggmeda Khyang", distance: "3 km" },
-    { name: "Cox's Bazar Airport", distance: "6 km" },
-    { name: "Himchari National Park", distance: "12 km" },
+    { name: "Laboni Beach Point", distance: "0.5 km", type: "beach" },
+    { name: "Aggmeda Khyang", distance: "3 km", type: "temple" },
+    { name: "Cox's Bazar Airport", distance: "6 km", type: "airport" },
+    { name: "Himchari National Park", distance: "12 km", type: "park" },
   ],
   reviews: [
     {
+      roomId: "premium-ocean-suite",
+      name: "Tasnim Chowdhury",
+      location: "Dhaka, Bangladesh",
+      rating: 5,
+      date: "2026-07-05",
+      comment: "The wraparound balcony is incredible — we watched sunrise and sunset from the same suite.",
+      avatar: 32,
+    },
+    {
+      roomId: "standard-twin",
+      name: "Farhan Kabir",
+      location: "Rajshahi, Bangladesh",
+      rating: 4,
+      date: "2026-06-30",
+      comment: "Good value twin room for our work trip — clean, quiet and the garden view was a nice surprise.",
+      avatar: 59,
+    },
+    {
+      roomId: "superior-triple",
+      name: "Imran Hossain",
+      location: "Mymensingh, Bangladesh",
+      rating: 4,
+      date: "2026-06-18",
+      comment: "Three of us shared the room comfortably. Comfortable beds and a generous breakfast.",
+      avatar: 68,
+    },
+    {
+      roomId: "family-suite",
+      name: "Shahana Begum",
+      location: "Khulna, Bangladesh",
+      rating: 5,
+      date: "2026-07-02",
+      comment: "Plenty of room for our two kids, and the balcony sea view was the highlight of the trip.",
+      avatar: 44,
+    },
+    {
+      roomId: "honeymoon-suite",
+      name: "Rafiq Ahmed",
+      location: "Dhaka, Bangladesh",
+      rating: 5,
+      date: "2026-06-25",
+      comment: "Jacuzzi with a sea view at sunset — perfect for our anniversary. Staff added flowers too.",
+      avatar: 51,
+    },
+    {
+      roomId: "honeymoon-suite",
       name: "Mahmudul Hasan",
       location: "Chattogram, Bangladesh",
       rating: 5,
@@ -179,6 +312,7 @@ export const hotel: Hotel = {
       avatar: 15,
     },
     {
+      roomId: "deluxe-sea-view",
       name: "Tamim Rahman",
       location: "Dhaka, Bangladesh",
       rating: 5,
@@ -187,6 +321,7 @@ export const hotel: Hotel = {
       avatar: 12,
     },
     {
+      roomId: "deluxe-sea-view",
       name: "Kamrul Hasan",
       location: "Sylhet, Bangladesh",
       rating: 5,
@@ -195,6 +330,7 @@ export const hotel: Hotel = {
       avatar: 22,
     },
     {
+      roomId: "family-suite",
       name: "Nusrat Jahan",
       location: "Chattogram, Bangladesh",
       rating: 5,
@@ -203,6 +339,7 @@ export const hotel: Hotel = {
       avatar: 47,
     },
     {
+      roomId: "family-suite",
       name: "Sadia Islam",
       location: "Dhaka, Bangladesh",
       rating: 4,
@@ -211,6 +348,7 @@ export const hotel: Hotel = {
       avatar: 9,
     },
     {
+      roomId: "deluxe-sea-view",
       name: "Arif Hossain",
       location: "Rajshahi, Bangladesh",
       rating: 4,

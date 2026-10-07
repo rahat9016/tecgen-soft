@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import {
   BadgeCheck,
   BedDouble,
-  ChevronRight,
   Clock3,
   Coffee,
   DoorOpen,
@@ -31,8 +29,7 @@ import AmenitiesGrid from "./AmenitiesGrid";
 import OtherRooms from "./OtherRooms";
 import ReviewsSection from "./ReviewsSection";
 import PoliciesSection, { parseCheckTimes } from "./PoliciesSection";
-import NearbySpots from "./NearbySpots";
-import MapCard from "./MapCard";
+import LocationCard from "@/src/components/hotel/shared/LocationCard";
 import BookingSidebar from "./BookingSidebar";
 
 const sections = [
@@ -171,18 +168,6 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
 
   return (
     <div className="container pb-28 pt-6 lg:pb-10">
-      <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1 text-xs text-neutral-500">
-        <Link href="/hotel-management" className="hover:text-sky-700">
-          Home
-        </Link>
-        <ChevronRight className="size-3.5" />
-        <Link href={`/hotel-management/rooms?${query}`} className="hover:text-sky-700">
-          Rooms
-        </Link>
-        <ChevronRight className="size-3.5" />
-        <span className="font-medium text-neutral-800">{room.name}</span>
-      </nav>
-
       <Gallery photos={photos} />
 
       <nav className="sticky top-16 z-20 -mx-4 mt-4 border-b border-neutral-200/70 bg-white/90 px-4 backdrop-blur-xl md:top-18">
@@ -333,9 +318,8 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
 
           <section id="location" className="scroll-mt-36">
             <h2 className="text-xl font-bold text-neutral-900">Location &amp; Nearby</h2>
-            <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_280px]">
-              <MapCard address={hotel.address} />
-              <NearbySpots nearby={hotel.nearby} />
+            <div className="mt-4">
+              <LocationCard hotel={hotel} />
             </div>
           </section>
         </div>
