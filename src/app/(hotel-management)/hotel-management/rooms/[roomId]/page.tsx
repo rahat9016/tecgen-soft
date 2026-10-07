@@ -1,16 +1,17 @@
 import { notFound } from "next/navigation";
-import { getHotelBySlug } from "@/src/data/hotels";
-import HotelDetailsClient from "@/src/components/hotel/HotelDetails/HotelDetailsClient";
+import { getRoomById, hotel } from "@/src/data/hotels";
+import RoomDetailsClient from "@/src/components/hotel/HotelDetails/RoomDetailsClient";
 
-export default async function HotelDetailsPage({
+export default async function RoomDetailsPage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ roomId: string }>;
 }) {
-  const { slug } = await params;
-  const hotel = getHotelBySlug(slug);
+  const { roomId } = await params;
+  const room = getRoomById(roomId);
 
-  if (!hotel) notFound();
+  if (!room) notFound();
 
-  return <HotelDetailsClient hotel={hotel} />;
+  // Keyed so switching to another room resets the page state.
+  return <RoomDetailsClient key={room.id} hotel={hotel} room={room} />;
 }

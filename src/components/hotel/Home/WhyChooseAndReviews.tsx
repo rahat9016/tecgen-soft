@@ -1,15 +1,10 @@
-import Link from "next/link";
 import { format } from "date-fns";
-import { BedDouble, CheckCircle2, Quote, Star } from "lucide-react";
+import { CheckCircle2, Quote, Star } from "lucide-react";
 import { whyChoose } from "@/src/data/hotelHome";
-import { hotels } from "@/src/data/hotels";
+import { hotel } from "@/src/data/hotels";
 import SectionHeading from "./SectionHeading";
 
-const allReviews = hotels.flatMap((hotel) => hotel.reviews.map((review) => ({ ...review, hotel })));
-const latestReviews = [...allReviews].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
-const totalReviews = hotels.reduce((sum, hotel) => sum + hotel.reviewsCount, 0);
-const averageRating =
-  hotels.reduce((sum, hotel) => sum + hotel.rating * hotel.reviewsCount, 0) / totalReviews;
+const latestReviews = [...hotel.reviews].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
 
 function Stars({ rating, className }: { rating: number; className: string }) {
   return (
@@ -28,8 +23,8 @@ function Stars({ rating, className }: { rating: number; className: string }) {
 
 export default function WhyChooseAndReviews() {
   return (
-    <section className="container py-10">
-      <SectionHeading title="What Our Guests Say" subtitle="Real stories from travellers who booked with us." />
+    <section id="reviews" className="container scroll-mt-24 py-10">
+      <SectionHeading title="What Our Guests Say" subtitle="Real stories from guests who stayed with us." />
 
       <div className="mt-6 grid gap-5 lg:grid-cols-[340px_1fr]">
         <div className="relative overflow-hidden rounded-3xl bg-sky-950 p-6 text-white md:p-8">
@@ -38,19 +33,19 @@ export default function WhyChooseAndReviews() {
 
           <p className="relative text-sm font-medium text-sky-200">Overall guest rating</p>
           <div className="relative mt-2 flex items-end gap-2">
-            <span className="text-6xl font-extrabold leading-none">{averageRating.toFixed(1)}</span>
+            <span className="text-6xl font-extrabold leading-none">{hotel.rating.toFixed(1)}</span>
             <span className="pb-1 text-lg font-medium text-sky-200">/ 5</span>
           </div>
           <div className="relative mt-3">
-            <Stars rating={averageRating} className="size-5" />
+            <Stars rating={hotel.rating} className="size-5" />
           </div>
           <p className="relative mt-2 text-sm text-sky-200">
-            Based on {totalReviews.toLocaleString()} guest reviews
+            Based on {hotel.reviewsCount.toLocaleString()} guest reviews
           </p>
 
           <div className="relative my-6 h-px bg-white/10" />
 
-          <p className="relative text-sm font-semibold">Why guests choose TripWave</p>
+          <p className="relative text-sm font-semibold">Why guests choose {hotel.name}</p>
           <ul className="relative mt-4 space-y-3">
             {whyChoose.map((item) => (
               <li key={item} className="flex items-center gap-2.5 text-sm text-sky-50">
@@ -64,7 +59,7 @@ export default function WhyChooseAndReviews() {
         <div className="grid gap-4 sm:grid-cols-2">
           {latestReviews.map((review) => (
             <article
-              key={`${review.hotel.slug}-${review.name}`}
+              key={review.name}
               className="flex flex-col rounded-2xl border border-neutral-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
             >
               <div className="flex items-start justify-between">
@@ -90,13 +85,6 @@ export default function WhyChooseAndReviews() {
                 </div>
               </div>
 
-              <Link
-                href={`/hotel-management/hotel/${review.hotel.slug}`}
-                className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 transition hover:bg-sky-100"
-              >
-                <BedDouble className="size-3.5" />
-                Stayed at {review.hotel.name}
-              </Link>
             </article>
           ))}
         </div>

@@ -1,6 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Facebook, Instagram, Twitter, Youtube, Phone, Mail, MapPin } from "lucide-react";
 import { footerLinks, paymentMethods } from "@/src/data/hotelHome";
+import { hotel } from "@/src/data/hotels";
 
 export default function HotelFooter() {
   return (
@@ -17,8 +19,7 @@ export default function HotelFooter() {
             />
           </div>
           <p className="mt-3 text-sm text-sky-200">
-            Your trusted travel partner for hotels, resorts, cottages and more across
-            Bangladesh.
+            {hotel.name} — sea-view rooms on Marine Drive, {hotel.location}.
           </p>
           <div className="mt-4 flex items-center gap-2">
             {[Facebook, Instagram, Twitter, Youtube].map((Icon, i) => (
@@ -60,13 +61,13 @@ export default function HotelFooter() {
         </div>
 
         <div className="text-sm">
-          <p className="font-semibold text-white">For Partners</p>
+          <p className="font-semibold text-white">Explore</p>
           <ul className="mt-3 space-y-2 text-sky-300">
-            {footerLinks.partners.map((link) => (
-              <li key={link}>
-                <a href="#" className="hover:text-amber-400">
-                  {link}
-                </a>
+            {footerLinks.explore.map((link) => (
+              <li key={link.label}>
+                <Link href={link.href} className="hover:text-amber-400">
+                  {link.label}
+                </Link>
               </li>
             ))}
           </ul>
@@ -83,7 +84,7 @@ export default function HotelFooter() {
             </li>
             <li className="flex items-start gap-2">
               <MapPin className="mt-0.5 size-3.5 shrink-0" />
-              House-12, Road-5, Dhanmondi, Dhaka-1205, Bangladesh
+              {hotel.address}
             </li>
           </ul>
 

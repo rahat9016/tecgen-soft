@@ -58,9 +58,9 @@ export const PROJECTS: Project[] = [
         height: 2835,
       },
       {
-        label: "Hotel Details",
+        label: "Room Details",
         image: "/hotel-detail.webp",
-        href: "/hotel-management/hotel/sea-paradise-resort",
+        href: "/hotel-management/rooms/deluxe-sea-view",
         width: 1440,
         height: 900,
       },

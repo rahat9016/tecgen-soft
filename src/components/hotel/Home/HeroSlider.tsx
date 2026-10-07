@@ -5,10 +5,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const slides = [
   { id: "1542314831-068cd1dbfeeb", alt: "Luxury hotel pool lit up at dusk" },
-  { id: "1540541338287-41700207dee6", alt: "Clifftop resort pool overlooking the ocean" },
-  { id: "1520250497591-112f2f40a3f4", alt: "Tropical resort pool surrounded by palms" },
+  { id: "1540541338287-41700207dee6", alt: "Clifftop pool overlooking the ocean" },
+  { id: "1584132967334-10e028bd69f7", alt: "Infinity pool by the sea" },
   { id: "1571003123894-1f0594d2b5d9", alt: "Poolside cabanas at sunset" },
-  { id: "1566073771259-6a8506099945", alt: "Wooden beach resort with sun loungers" },
+  { id: "1566073771259-6a8506099945", alt: "Beachfront deck with sun loungers" },
 ];
 
 const INTERVAL = 6000;
@@ -68,7 +68,7 @@ export default function HeroSlider({ children }: { children: ReactNode }) {
         <ChevronRight className="size-5" />
       </button>
 
-      <div className="absolute bottom-24 left-1/2 flex -translate-x-1/2 items-center gap-2">
+      <div className="absolute bottom-24 left-1/2 flex -translate-x-1/2 items-center gap-2 md:bottom-[13.5rem]">
         {slides.map((slide, i) => (
           <button
             key={slide.id}

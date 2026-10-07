@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -13,7 +14,8 @@ import { Label } from "@/src/components/ui/label";
 import { Button } from "@/src/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/src/lib/redux/hooks";
 import { clearSelection, setLastBookingId } from "@/src/lib/redux/features/hotelBooking/hotelBookingSlice";
-import { saveBooking } from "@/src/lib/hotelBookingHistory";
+import { getBookingHistory, reservationsFromHistory, saveBooking } from "@/src/lib/hotelBookingHistory";
+import { availableRooms, getRoomById } from "@/src/data/hotels";
 import {
   guestInfoValidationSchema,
   type GuestInfoFormType,
@@ -37,9 +39,9 @@ export default function GuestInfoForm() {
     return (
       <div className="rounded-xl border border-neutral-100 bg-white p-6 text-center text-sm text-neutral-500">
         No room selected yet.{" "}
-        <a href="/hotel-management" className="text-sky-700 hover:underline">
-          Browse hotels
-        </a>{" "}
+        <Link href="/hotel-management/rooms" className="text-sky-700 hover:underline">
+          Browse rooms
+        </Link>{" "}
         to start a booking.
       </div>
     );
@@ -59,10 +61,31 @@ export default function GuestInfoForm() {
     // Real-time availability check simulation before final confirmation
     await new Promise((resolve) => setTimeout(resolve, 800));
 
+    // Re-check against the hotel's reservations and bookings already made in this browser.
+    const room = getRoomById(selection.roomId);
+    if (room) {
+      const free = availableRooms(
+        room,
+        checkIn,
+        checkOut,
+        reservationsFromHistory(getBookingHistory(), room.id)
+      );
+      if (free < selection.rooms) {
+        setConfirming(false);
+        toast.error(
+          free === 0
+            ? "Sorry — this room was just booked for your dates. Please choose other dates."
+            : `Sorry — only ${free} of this room ${free === 1 ? "is" : "are"} left for your dates.`
+        );
+        return;
+      }
+    }
+
     const bookingId = `TW-${Date.now().toString().slice(-8)}`;
 
     saveBooking({
       bookingId,
+      roomId: selection.roomId,
       hotelSlug: selection.hotelSlug,
       hotelName: selection.hotelName,
       hotelLocation: selection.hotelLocation,

@@ -7,12 +7,21 @@ import { usePathname } from "next/navigation";
 import { ClipboardList } from "lucide-react";
 import HotelProfileMenu from "./HotelProfileMenu";
 
+// `match` marks which page highlights the link; section anchors on the home page never highlight.
 const navLinks = [
-  { label: "Home", href: "/hotel-management" },
-  { label: "Hotels", href: "#" },
-  { label: "Resorts", href: "#" },
-  { label: "Cottages", href: "#" },
-  { label: "Offers", href: "#" },
+  {
+    label: "Home",
+    href: "/hotel-management",
+    match: (path: string) => path === "/hotel-management",
+  },
+  {
+    label: "Rooms",
+    href: "/hotel-management/rooms",
+    match: (path: string) => path.startsWith("/hotel-management/rooms"),
+  },
+  { label: "Facilities", href: "/hotel-management#facilities" },
+  { label: "Gallery", href: "/hotel-management#gallery" },
+  { label: "Location", href: "/hotel-management#location" },
 ];
 
 const subscribeToScroll = (onChange: () => void) => {
@@ -28,7 +37,8 @@ export default function HotelHeader() {
     () => false
   );
   // Home floats a rounded glass bar over the photo hero; other pages get an always-on full-width bar.
-  const isHome = usePathname() === "/hotel-management";
+  const pathname = usePathname();
+  const isHome = pathname === "/hotel-management";
   const onDark = isHome && !scrolled;
 
   const glass = "bg-white/80 backdrop-blur-2xl backdrop-saturate-[1.8]";
@@ -93,8 +103,8 @@ export default function HotelHeader() {
                 onDark ? "text-white/90" : "text-neutral-700"
               }`}
             >
-              {navLinks.map((link, i) => {
-                const active = i === 0;
+              {navLinks.map((link) => {
+                const active = link.match?.(pathname) ?? false;
                 const tone = onDark
                   ? active
                     ? "bg-white/15 font-semibold text-white"

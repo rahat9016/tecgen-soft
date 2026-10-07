@@ -23,6 +23,8 @@ export const amenityIcons: Record<string, React.ComponentType<{ className?: stri
   "Swimming Pool": Waves,
   "Free Breakfast": Utensils,
   "AC Rooms": Wind,
+  AC: Wind,
+  "Breakfast Included": Utensils,
   "Free Parking": ParkingCircle,
   "Couple Friendly": Heart,
   "Family Friendly": Users,
@@ -44,12 +46,17 @@ export const amenityIcons: Record<string, React.ComponentType<{ className?: stri
 
 export default function AmenitiesGrid({ amenities }: { amenities: string[] }) {
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {amenities.map((amenity) => {
         const Icon = amenityIcons[amenity] ?? CheckCircle2;
         return (
-          <div key={amenity} className="flex items-center gap-2 text-sm text-neutral-700">
-            <Icon className="size-4 shrink-0 text-sky-600" />
+          <div
+            key={amenity}
+            className="flex items-center gap-3 rounded-xl border border-neutral-200/70 bg-white p-3 text-sm font-medium text-neutral-700"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+              <Icon className="size-4" />
+            </span>
             {amenity}
           </div>
         );

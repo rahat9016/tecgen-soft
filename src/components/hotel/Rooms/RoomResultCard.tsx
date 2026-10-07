@@ -1,190 +1,121 @@
 import Link from "next/link";
-import {
-  BedDouble,
-  Check,
-  CheckCircle2,
-  ChevronRight,
-  Coffee,
-  Flame,
-  Images,
-  MapPin,
-  Navigation,
-  Star,
-} from "lucide-react";
-import type { Hotel } from "@/src/data/hotels";
-import { amenityIcons } from "@/src/components/hotel/HotelDetails/AmenitiesGrid";
-import { ratingLabel } from "@/src/components/hotel/shared/ratingLabel";
+import { BedDouble, Check, Coffee, Flame, Maximize, Users, XCircle } from "lucide-react";
+import type { RoomType } from "@/src/data/hotels";
 
-export default function HotelResultCard({
-  hotel,
+export default function RoomResultCard({
+  room,
   query,
-  nights,
+  guestsPerRoom,
+  roomsNeeded,
+  available,
 }: {
-  hotel: Hotel;
+  room: RoomType;
   query: string;
-  nights: number;
+  guestsPerRoom: number;
+  roomsNeeded: number;
+  /** Free rooms of this type for the searched dates, or null when no dates were chosen. */
+  available: number | null;
 }) {
-  const availableRooms = hotel.rooms.filter((room) => room.available > 0);
-  const roomsLeft = availableRooms.reduce((sum, room) => sum + room.available, 0);
-  const cheapestRoom = [...availableRooms].sort((a, b) => a.price - b.price)[0];
-  const freeCancellation = hotel.policies.some((p) => p.toLowerCase().includes("free cancellation"));
-  const breakfast = hotel.amenities.includes("Free Breakfast");
-  const review = hotel.reviews[0];
-  const nearby = hotel.nearby[0];
+  const isAvailable = available === null || available >= roomsNeeded;
+  const tooSmall = room.capacity < guestsPerRoom;
+  const isBreakfast = (a: string) => a.toLowerCase().includes("breakfast");
+  const breakfast = room.amenities.some(isBreakfast);
 
   return (
     <Link
-      href={`/hotel-management/hotel/${hotel.slug}?${query}`}
-      className="group grid overflow-hidden rounded-2xl border border-neutral-200/70 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-sky-200 hover:shadow-xl sm:grid-cols-[260px_1fr] lg:grid-cols-[300px_1fr_230px]"
+      href={`/hotel-management/rooms/${room.id}${query ? `?${query}` : ""}`}
+      className={`group relative flex w-full flex-col gap-4 rounded-2xl border-2 border-neutral-200/70 bg-white p-3 text-left transition sm:flex-row ${
+        isAvailable ? "hover:border-sky-200 hover:shadow-md" : "opacity-60"
+      }`}
     >
-      <div className="relative h-56 overflow-hidden sm:h-full sm:min-h-72">
+      <div className="relative h-44 shrink-0 overflow-hidden rounded-xl sm:h-auto sm:w-56">
         <img
-          src={hotel.images[0]}
-          alt={hotel.name}
-          className="absolute inset-0 size-full object-cover transition duration-500 group-hover:scale-105"
+          src={room.images[0]}
+          alt={room.name}
+          className={`absolute inset-0 size-full object-cover transition duration-500 ${
+            isAvailable ? "group-hover:scale-105" : "grayscale"
+          }`}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
-        {hotel.discount > 0 && (
-          <span className="absolute left-3 top-3 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white shadow-md">
-            -{hotel.discount}% OFF
+        {isAvailable ? (
+          available !== null &&
+          available <= 2 && (
+            <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-bold text-white">
+              <Flame className="size-3" /> Only {available} left for your dates
+            </span>
+          )
+        ) : (
+          <span className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 bg-neutral-950/55 px-3 text-center text-sm font-bold text-white">
+            <span className="flex items-center gap-1">
+              <XCircle className="size-4" /> Not available
+            </span>
+            <span className="text-xs font-medium text-white/80">
+              {available ? `Only ${available} left — you need ${roomsNeeded}` : "Fully booked for your dates"}
+            </span>
           </span>
         )}
-        <span className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
-          <Images className="size-3.5" /> {hotel.images.length} photos
-        </span>
       </div>
 
-      <div className="flex min-w-0 flex-col p-4 md:p-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700">
-            {hotel.category}
+      <div className="flex min-w-0 flex-1 flex-col py-1 pr-1">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-base font-bold text-neutral-900">{room.name}</p>
+          <span
+            className={`flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-neutral-300 text-transparent transition ${
+              isAvailable ? "group-hover:border-sky-600 group-hover:bg-sky-600 group-hover:text-white" : ""
+            }`}
+          >
+            <Check className="size-3.5" strokeWidth={3} />
           </span>
-          <span className="flex items-center gap-0.5" aria-label={`${hotel.rating} out of 5`}>
-            {Array.from({ length: 5 }, (_, i) => (
-              <Star
-                key={i}
-                className={`size-3.5 ${
-                  i < Math.round(hotel.rating)
-                    ? "fill-amber-400 text-amber-400"
-                    : "fill-neutral-200 text-neutral-200"
-                }`}
-              />
+        </div>
+
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-600">
+          <span className="flex items-center gap-1">
+            <Maximize className="size-3.5 text-neutral-400" /> {room.size}
+          </span>
+          <span className="flex items-center gap-1">
+            <BedDouble className="size-3.5 text-neutral-400" /> {room.beds}
+          </span>
+          <span className={`flex items-center gap-1 ${tooSmall ? "font-semibold text-amber-700" : ""}`}>
+            <Users className="size-3.5 text-neutral-400" /> Up to {room.capacity} guests
+          </span>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {room.amenities
+            .filter((a) => !isBreakfast(a))
+            .map((a) => (
+              <span
+                key={a}
+                className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-medium text-neutral-600"
+              >
+                {a}
+              </span>
             ))}
-          </span>
         </div>
 
-        <h2 className="mt-2 text-lg font-bold text-neutral-900 transition group-hover:text-sky-700">
-          {hotel.name}
-        </h2>
-        <p className="mt-1 flex items-start gap-1 text-xs text-neutral-500">
-          <MapPin className="mt-px size-3.5 shrink-0" /> {hotel.address}
-        </p>
-        {nearby && (
-          <p className="mt-1 flex items-center gap-1 text-xs text-neutral-500">
-            <Navigation className="size-3.5 shrink-0" /> {nearby.distance} from {nearby.name}
-          </p>
-        )}
-
-        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-neutral-600">
-          {hotel.description}
-        </p>
-
-        <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
-          {hotel.amenities.slice(0, 5).map((amenity) => {
-            const Icon = amenityIcons[amenity] ?? CheckCircle2;
-            return (
-              <li key={amenity} className="flex items-center gap-1.5 text-xs text-neutral-600">
-                <Icon className="size-3.5 text-sky-600" />
-                {amenity}
-              </li>
-            );
-          })}
-          {hotel.amenities.length > 5 && (
-            <li className="text-xs font-medium text-sky-700">+{hotel.amenities.length - 5} more</li>
-          )}
-        </ul>
-
-        {cheapestRoom && (
-          <p className="mt-3 flex flex-wrap items-center gap-x-1.5 rounded-xl bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
-            <BedDouble className="size-4 text-neutral-500" />
-            <span className="font-semibold text-neutral-800">{cheapestRoom.name}</span>
-            &middot; {cheapestRoom.beds} &middot; {cheapestRoom.size} &middot; up to{" "}
-            {cheapestRoom.capacity} guests
-          </p>
-        )}
-
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
-          {freeCancellation && (
-            <span className="flex items-center gap-1 text-emerald-700">
-              <Check className="size-3.5" /> Free cancellation
-            </span>
-          )}
-          {breakfast && (
-            <span className="flex items-center gap-1 text-emerald-700">
-              <Coffee className="size-3.5" /> Breakfast included
-            </span>
-          )}
-          {roomsLeft > 0 && roomsLeft <= 5 && (
-            <span className="flex items-center gap-1 text-rose-600">
-              <Flame className="size-3.5" /> Only {roomsLeft} room{roomsLeft !== 1 ? "s" : ""} left
-            </span>
-          )}
-        </div>
-
-        {review && (
-          <div className="mt-4 flex items-start gap-3 border-t border-neutral-100 pt-4">
-            <img
-              src={`https://i.pravatar.cc/64?img=${review.avatar}`}
-              alt={review.name}
-              className="size-9 shrink-0 rounded-full object-cover ring-2 ring-white shadow"
-            />
-            <div className="min-w-0">
-              <p className="line-clamp-2 text-sm italic text-neutral-700">&ldquo;{review.comment}&rdquo;</p>
-              <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-neutral-500">
-                <span className="font-semibold text-neutral-700">{review.name}</span>
-                &middot; {review.location}
-                <span className="flex items-center gap-0.5 font-semibold text-amber-600">
-                  <Star className="size-3 fill-amber-400 text-amber-400" /> {review.rating}
-                </span>
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-3 pt-4">
+          <div>
+            {breakfast && (
+              <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                <Coffee className="size-3.5" /> Breakfast included
               </p>
+            )}
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl font-extrabold text-neutral-900">
+                BDT {room.price.toLocaleString()}
+              </span>
+              <span className="text-xs text-neutral-400 line-through">
+                BDT {room.originalPrice.toLocaleString()}
+              </span>
             </div>
+            <p className="text-xs text-neutral-500">per night</p>
           </div>
-        )}
-      </div>
 
-      <div className="flex flex-col justify-between gap-4 border-t border-neutral-100 p-4 sm:col-span-2 md:p-5 lg:col-span-1 lg:border-l lg:border-t-0">
-        <div className="flex items-center justify-between gap-3 lg:justify-end">
-          <div className="lg:text-right">
-            <p className="text-sm font-bold text-neutral-900">{ratingLabel(hotel.rating)}</p>
-            <p className="text-xs text-neutral-500">{hotel.reviewsCount.toLocaleString()} reviews</p>
-          </div>
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl rounded-bl-none bg-sky-700 text-base font-bold text-white">
-            {hotel.rating.toFixed(1)}
-          </span>
-        </div>
-
-        <div className="sm:text-right">
-          {roomsLeft === 0 ? (
-            <p className="text-sm font-semibold text-rose-600">Sold out for these dates</p>
-          ) : (
-            <>
-              <p className="text-xs text-neutral-400 line-through">
-                BDT {hotel.originalPrice.toLocaleString()}
-              </p>
-              <p className="text-2xl font-extrabold text-neutral-900">
-                BDT {hotel.price.toLocaleString()}
-              </p>
-              <p className="text-xs text-neutral-500">per night</p>
-              {nights > 0 && (
-                <p className="mt-1 text-xs font-medium text-neutral-700">
-                  BDT {(hotel.price * nights).toLocaleString()} for {nights} night
-                  {nights !== 1 ? "s" : ""}
-                </p>
-              )}
-            </>
-          )}
-          <span className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-600/25 transition group-hover:bg-sky-700">
-            See availability <ChevronRight className="size-4 transition group-hover:translate-x-0.5" />
+          <span
+            className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${
+              isAvailable ? "bg-sky-50 text-sky-700 group-hover:bg-sky-100" : "bg-neutral-100 text-neutral-400"
+            }`}
+          >
+            {isAvailable ? "Select room" : "Try other dates"}
           </span>
         </div>
       </div>

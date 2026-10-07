@@ -1,5 +1,10 @@
+import type { RoomReservation } from "@/src/data/hotels";
+import { toDayKey } from "@/src/lib/hotelDates";
+
 export interface BookingRecord {
   bookingId: string;
+  /** Missing on bookings saved before rooms had their own pages. */
+  roomId?: string;
   hotelSlug: string;
   hotelName: string;
   hotelLocation: string;
@@ -20,7 +25,7 @@ export interface BookingRecord {
   createdAt: string;
 }
 
-const STORAGE_KEY = "tripwave_booking_history";
+export const STORAGE_KEY = "tripwave_booking_history";
 
 export function getBookingHistory(): BookingRecord[] {
   try {
@@ -42,4 +47,15 @@ export function saveBooking(record: BookingRecord): void {
   } catch {
     // localStorage unavailable — booking still succeeds, just isn't persisted
   }
+}
+
+/** Bookings made in this browser that hold units of the given room type. */
+export function reservationsFromHistory(history: BookingRecord[], roomId: string): RoomReservation[] {
+  return history
+    .filter((b) => b.roomId === roomId)
+    .map((b) => ({
+      checkIn: toDayKey(new Date(b.checkIn)),
+      checkOut: toDayKey(new Date(b.checkOut)),
+      rooms: b.rooms,
+    }));
 }

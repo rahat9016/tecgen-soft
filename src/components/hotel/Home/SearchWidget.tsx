@@ -2,23 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, CalendarSearch, Landmark, Home, Trees } from "lucide-react";
+import { CalendarSearch } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
+import { toDayKey } from "@/src/lib/hotelDates";
 import DatePickerField from "@/src/components/hotel/shared/DatePickerField";
 import GuestsRoomsField, {
   type GuestsRoomsValue,
 } from "@/src/components/hotel/shared/GuestsRoomsField";
 
-const searchTabs = [
-  { label: "Hotels", icon: Building2 },
-  { label: "Resorts", icon: Landmark },
-  { label: "Cottages", icon: Home },
-  { label: "Eco Resorts", icon: Trees },
-];
-
 export default function SearchWidget() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("Hotels");
   const [checkIn, setCheckIn] = useState<Date | null>(null);
   const [checkOut, setCheckOut] = useState<Date | null>(null);
   const [checkOutOpen, setCheckOutOpen] = useState(false);
@@ -26,43 +19,20 @@ export default function SearchWidget() {
 
   const handleSearch = () => {
     const params = new URLSearchParams();
-    if (checkIn) params.set("checkIn", checkIn.toISOString());
-    if (checkOut) params.set("checkOut", checkOut.toISOString());
+    if (checkIn) params.set("checkIn", toDayKey(checkIn));
+    if (checkOut) params.set("checkOut", toDayKey(checkOut));
     params.set("adults", String(guests.adults));
     params.set("children", String(guests.children));
     params.set("rooms", String(guests.rooms));
-    params.set("type", activeTab);
-    router.push(`/hotel-management/search?${params.toString()}`);
+    router.push(`/hotel-management/rooms?${params.toString()}`);
   };
 
   return (
-    <div className="rounded-3xl bg-white p-3 shadow-2xl shadow-neutral-900/15 ring-1 ring-neutral-900/5 md:p-4">
-      <div
-        role="tablist"
-        aria-label="Property type"
-        className="flex w-full gap-1 overflow-x-auto rounded-full bg-neutral-100 p-1 text-sm font-medium text-neutral-600 sm:w-fit"
-      >
-        {searchTabs.map(({ label, icon: Icon }) => (
-          <button
-            key={label}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === label}
-            onClick={() => setActiveTab(label)}
-            className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 transition ${
-              activeTab === label
-                ? "bg-white font-semibold text-sky-700 shadow-sm"
-                : "hover:text-neutral-900"
-            }`}
-          >
-            <Icon className="size-4" />
-            {label}
-          </button>
-        ))}
-      </div>
+    <div className="rounded-3xl border border-white/50 bg-white/70 p-3 shadow-2xl shadow-neutral-950/25 backdrop-blur-2xl backdrop-saturate-150 md:p-4">
+      <p className="px-1 pb-0.5 text-sm font-bold text-neutral-900">Check room availability</p>
 
-      <div className="mt-3 grid rounded-2xl border border-neutral-200 bg-neutral-50 p-1.5 md:grid-cols-[1fr_1fr_1fr_auto] md:items-center">
-        <div className="border-b border-neutral-200 md:border-b-0 md:border-r">
+      <div className="mt-3 grid rounded-2xl border border-white/70 bg-white/55 p-1.5 md:grid-cols-[1fr_1fr_1fr_auto] md:items-center">
+        <div className="border-b border-neutral-900/10 md:border-b-0 md:border-r">
           <DatePickerField
             variant="inline"
             label="Check-in"
@@ -75,7 +45,7 @@ export default function SearchWidget() {
           />
         </div>
 
-        <div className="border-b border-neutral-200 md:border-b-0 md:border-r">
+        <div className="border-b border-neutral-900/10 md:border-b-0 md:border-r">
           <DatePickerField
             variant="inline"
             label="Check-out"
