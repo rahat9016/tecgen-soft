@@ -13,9 +13,7 @@ import {
 } from "lucide-react";
 import type { Hotel } from "@/src/data/hotels";
 import { amenityIcons } from "@/src/components/hotel/HotelDetails/AmenitiesGrid";
-
-const ratingLabel = (rating: number) =>
-  rating >= 4.5 ? "Excellent" : rating >= 4 ? "Very Good" : rating >= 3.5 ? "Good" : "Pleasant";
+import { ratingLabel } from "@/src/components/hotel/shared/ratingLabel";
 
 export default function HotelResultCard({
   hotel,

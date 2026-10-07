@@ -1,63 +1,92 @@
 import Link from "next/link";
-import { Heart, Star, ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle2, MapPin, Star } from "lucide-react";
 import { hotels } from "@/src/data/hotels";
-
-const badgeColors = ["bg-orange-500", "bg-emerald-600", "bg-emerald-600", "bg-orange-500"];
+import { amenityIcons } from "@/src/components/hotel/HotelDetails/AmenitiesGrid";
+import { ratingLabel } from "@/src/components/hotel/shared/ratingLabel";
+import SectionHeading from "./SectionHeading";
 
 export default function TopDeals() {
   return (
-    <section id="deals" className="container scroll-mt-20 py-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-neutral-900">Top Deals for You</h2>
-        <Link href="/hotel-management/search" className="flex items-center gap-1 text-sm font-medium text-sky-700 hover:underline">
-          View All Deals <ArrowRight className="size-3.5" />
-        </Link>
-      </div>
+    <section id="deals" className="container scroll-mt-24 py-10">
+      <SectionHeading
+        title="Top Deals for You"
+        subtitle="Limited-time prices on our top-rated stays."
+        href="/hotel-management/search?sort=price"
+        linkLabel="View all deals"
+      />
 
-      <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {hotels.map((hotel, i) => (
-          <Link
-            key={hotel.slug}
-            href={`/hotel-management/hotel/${hotel.slug}`}
-            className="overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-sm transition hover:shadow-md"
-          >
-            <div className="relative">
-              <img
-                src={hotel.images[0]}
-                alt={hotel.name}
-                className="aspect-[4/3] w-full object-cover"
-              />
-              <span
-                className={`absolute left-2 top-2 rounded-full ${badgeColors[i % badgeColors.length]} px-2 py-0.5 text-xs font-bold text-white`}
-              >
-                -{hotel.discount}%
-              </span>
-              <span className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-white/90 text-neutral-500">
-                <Heart className="size-3.5" />
-              </span>
-              <span className="absolute -bottom-3 left-3 flex items-center gap-1 rounded-full bg-white px-2 py-1 text-xs font-semibold text-neutral-800 shadow">
-                <Star className="size-3.5 fill-amber-400 text-amber-400" />
-                {hotel.rating}
-                <span className="font-normal text-neutral-400">({hotel.reviewsCount})</span>
-              </span>
-            </div>
-
-            <div className="p-4 pt-5">
-              <p className="font-semibold text-neutral-900">{hotel.name}</p>
-              <p className="text-xs text-neutral-500">{hotel.location}</p>
-
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-base font-bold text-neutral-900">
-                  BDT {hotel.price.toLocaleString()}
+      <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {hotels.map((hotel) => {
+          const savings = hotel.originalPrice - hotel.price;
+          return (
+            <Link
+              key={hotel.slug}
+              href={`/hotel-management/hotel/${hotel.slug}`}
+              className="group flex flex-col overflow-hidden rounded-2xl border border-neutral-200/70 bg-white shadow-sm transition hover:-translate-y-1 hover:border-sky-200 hover:shadow-xl"
+            >
+              <div className="relative aspect-[4/3] overflow-hidden">
+                <img
+                  src={hotel.images[0]}
+                  alt={hotel.name}
+                  className="absolute inset-0 size-full object-cover transition duration-500 group-hover:scale-105"
+                />
+                <span className="absolute left-3 top-3 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white shadow-md">
+                  -{hotel.discount}% OFF
                 </span>
-                <span className="text-xs text-neutral-400 line-through">
-                  BDT {hotel.originalPrice.toLocaleString()}
+                <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-neutral-800 backdrop-blur-sm">
+                  {hotel.category}
                 </span>
-                <span className="text-xs text-neutral-500">/night</span>
               </div>
-            </div>
-          </Link>
-        ))}
+
+              <div className="flex flex-1 flex-col p-4">
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="flex items-center gap-1 rounded-md bg-sky-700 px-1.5 py-0.5 font-bold text-white">
+                    <Star className="size-3 fill-white" /> {hotel.rating.toFixed(1)}
+                  </span>
+                  <span className="font-semibold text-neutral-800">{ratingLabel(hotel.rating)}</span>
+                  <span className="text-neutral-400">&middot; {hotel.reviewsCount} reviews</span>
+                </div>
+
+                <h3 className="mt-2 font-bold text-neutral-900 transition group-hover:text-sky-700">
+                  {hotel.name}
+                </h3>
+                <p className="mt-0.5 flex items-center gap-1 text-xs text-neutral-500">
+                  <MapPin className="size-3.5" /> {hotel.location}
+                </p>
+
+                <ul className="mb-4 mt-3 flex flex-wrap gap-x-3 gap-y-1">
+                  {hotel.amenities.slice(0, 3).map((amenity) => {
+                    const Icon = amenityIcons[amenity] ?? CheckCircle2;
+                    return (
+                      <li key={amenity} className="flex items-center gap-1 text-[11px] text-neutral-600">
+                        <Icon className="size-3.5 text-sky-600" />
+                        {amenity}
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <div className="mt-auto flex items-end justify-between gap-2 border-t border-neutral-100 pt-3">
+                  <div>
+                    <p className="text-xs text-neutral-400 line-through">
+                      BDT {hotel.originalPrice.toLocaleString()}
+                    </p>
+                    <p className="text-lg font-extrabold leading-tight text-neutral-900">
+                      BDT {hotel.price.toLocaleString()}
+                      <span className="text-xs font-medium text-neutral-500"> /night</span>
+                    </p>
+                    <p className="mt-0.5 text-[11px] font-semibold text-emerald-700">
+                      You save BDT {savings.toLocaleString()}
+                    </p>
+                  </div>
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sky-600 text-white shadow-md shadow-sky-600/25 transition group-hover:bg-sky-700">
+                    <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
+                  </span>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
