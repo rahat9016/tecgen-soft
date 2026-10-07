@@ -21,14 +21,7 @@ export const facilityDetails: Record<string, string> = {
 };
 
 export const footerLinks = {
-  company: ["About Us", "How It Works", "Careers", "Blog", "Contact Us"],
-  support: [
-    "Help Center",
-    "Terms & Conditions",
-    "Privacy Policy",
-    "Refund Policy",
-    "Sitemap",
-  ],
+  support: ["About Us", "Help Center", "Cancellation Policy", "Terms & Conditions", "Privacy Policy"],
   explore: [
     { label: "Rooms", href: "/hotel-management/rooms" },
     { label: "Facilities", href: "/hotel-management#facilities" },
@@ -38,4 +31,11 @@ export const footerLinks = {
   ],
 };
 
-export const paymentMethods = ["VISA", "Mastercard", "bKash", "Nagad", "Rocket"];
+// Official logos, saved locally in /public/payments.
+export const paymentMethods = [
+  { name: "Visa", logo: "/payments/visa.svg" },
+  { name: "Mastercard", logo: "/payments/mastercard.svg" },
+  { name: "bKash", logo: "/payments/bkash.webp" },
+  { name: "Nagad", logo: "/payments/nagad.webp" },
+  { name: "Rocket", logo: "/payments/rocket.webp" },
+];
