@@ -138,9 +138,9 @@ function Field({
   );
 }
 
-function SelectBox({ children }: { children: ReactNode }) {
+function SelectBox({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className="relative">
+    <div className={`relative ${className}`}>
       {children}
       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
     </div>
@@ -380,10 +380,10 @@ export default function GuestInfoForm() {
             className="mt-4"
           >
             <div className="flex gap-2">
-              <SelectBox>
+              <SelectBox className="w-32 shrink-0 sm:w-48">
                 <select
                   aria-label="Country code"
-                  className={`${control} w-36 appearance-none pr-9 sm:w-44`}
+                  className={`${control} appearance-none pr-9`}
                   {...register("phoneCountry")}
                 >
                   {countries.map((c) => (

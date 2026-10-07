@@ -3,9 +3,34 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { CheckCircle2, Printer, Mail, MessageSquareText } from "lucide-react";
+import {
+  Building2,
+  CheckCircle2,
+  Clock3,
+  CreditCard,
+  Globe2,
+  IdCard,
+  Mail,
+  MessageSquareText,
+  Plane,
+  Printer,
+  Smartphone,
+  StickyNote,
+} from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { getBookingById, type BookingRecord } from "@/src/lib/hotelBookingHistory";
+import { hotel } from "@/src/data/hotels";
+import { parseCheckTimes } from "@/src/components/hotel/HotelDetails/PoliciesSection";
+import BookingSteps from "./BookingSteps";
+
+const paymentLabels = {
+  hotel: { label: "Pay at hotel", detail: "Cash or card on arrival", icon: Building2 },
+  card: { label: "Card", detail: "Visa / Mastercard", icon: CreditCard },
+  wallet: { label: "Mobile wallet", detail: "bKash / Nagad / Rocket", icon: Smartphone },
+} as const;
+
+// Show only the last 4 characters of an ID on screen and on the printed invoice.
+const maskId = (id: string) => (id.length > 4 ? `•••• ${id.slice(-4)}` : id);
 
 export default function BookingConfirmation({ bookingId }: { bookingId: string }) {
   const [booking, setBooking] = useState<BookingRecord | null | undefined>(undefined);
@@ -27,9 +52,28 @@ export default function BookingConfirmation({ bookingId }: { bookingId: string }
     );
   }
 
+  const times = parseCheckTimes(hotel.policies);
+  const payment = booking.paymentMethod ? paymentLabels[booking.paymentMethod] : null;
+  const { guest } = booking;
+  const guestDetails = [
+    guest.country && { icon: Globe2, label: "Country", value: guest.country },
+    guest.idNumber && {
+      icon: IdCard,
+      label: guest.idType === "nid" ? "NID" : "Passport",
+      value: maskId(guest.idNumber.toUpperCase()),
+    },
+    guest.arrivalTime && { icon: Clock3, label: "Arrival", value: guest.arrivalTime },
+    guest.airportPickup && { icon: Plane, label: "Airport pickup", value: "Requested — we'll confirm the price" },
+    guest.note && { icon: StickyNote, label: "Requests", value: guest.note },
+  ].filter(Boolean) as { icon: typeof Globe2; label: string; value: string }[];
+
   return (
-    <div className="container py-12">
+    <div className="container py-8 md:py-10">
       <div className="mx-auto max-w-2xl">
+        <div className="mb-8 flex justify-center print:hidden">
+          <BookingSteps current={3} />
+        </div>
+
         <div className="flex flex-col items-center text-center">
           <span className="flex size-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
             <CheckCircle2 className="size-8" />
@@ -71,14 +115,16 @@ export default function BookingConfirmation({ bookingId }: { bookingId: string }
             <div>
               <p className="text-xs text-neutral-500">Check-in</p>
               <p className="font-medium text-neutral-900">
-                {format(new Date(booking.checkIn), "dd/MM/yyyy")}
+                {format(new Date(booking.checkIn), "EEE, dd MMM yyyy")}
               </p>
+              {times && <p className="text-xs text-neutral-500">From {times.checkIn}</p>}
             </div>
             <div>
               <p className="text-xs text-neutral-500">Check-out</p>
               <p className="font-medium text-neutral-900">
-                {format(new Date(booking.checkOut), "dd/MM/yyyy")}
+                {format(new Date(booking.checkOut), "EEE, dd MMM yyyy")}
               </p>
+              {times && <p className="text-xs text-neutral-500">Until {times.checkOut}</p>}
             </div>
             <div>
               <p className="text-xs text-neutral-500">Nights</p>
@@ -106,18 +152,43 @@ export default function BookingConfirmation({ bookingId }: { bookingId: string }
               <span>BDT {booking.serviceFee.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-neutral-600">
-              <span>Tax</span>
+              <span>VAT</span>
               <span>BDT {booking.tax.toLocaleString()}</span>
             </div>
             <div className="flex justify-between border-t border-neutral-100 pt-2 text-base font-bold text-neutral-900">
-              <span>Total Paid</span>
+              <span>{booking.paymentMethod === "hotel" ? "Total due at hotel" : "Total"}</span>
               <span>BDT {booking.total.toLocaleString()}</span>
             </div>
           </div>
 
+          {payment && (
+            <div className="mt-4 flex items-center gap-3 rounded-xl bg-neutral-50 p-3 text-sm">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-sky-600 shadow-sm">
+                <payment.icon className="size-4" />
+              </span>
+              <div>
+                <p className="font-semibold text-neutral-900">{payment.label}</p>
+                <p className="text-xs text-neutral-500">{payment.detail} &middot; charged in BDT</p>
+              </div>
+            </div>
+          )}
+
+          {guestDetails.length > 0 && (
+            <dl className="mt-4 grid gap-3 border-t border-neutral-100 pt-4 text-sm sm:grid-cols-2">
+              {guestDetails.map(({ icon: Icon, label, value }) => (
+                <div key={label} className="flex items-start gap-2">
+                  <Icon className="mt-0.5 size-4 shrink-0 text-sky-600" />
+                  <div className="min-w-0">
+                    <dt className="text-xs text-neutral-500">{label}</dt>
+                    <dd className="break-words font-medium text-neutral-900">{value}</dd>
+                  </div>
+                </div>
+              ))}
+            </dl>
+          )}
+
           <div className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-500">
-            Billed to: {booking.guest.name} &middot; {booking.guest.email} &middot;{" "}
-            {booking.guest.phone}
+            Billed to: {guest.name} &middot; {guest.email} &middot; {guest.phone}
           </div>
         </div>
 
