@@ -21,7 +21,18 @@ export interface BookingRecord {
   serviceFee: number;
   tax: number;
   total: number;
-  guest: { name: string; email: string; phone: string; note?: string };
+  guest: {
+    name: string;
+    email: string;
+    phone: string;
+    note?: string;
+    country?: string;
+    idType?: "nid" | "passport";
+    idNumber?: string;
+    arrivalTime?: string;
+    airportPickup?: boolean;
+  };
+  paymentMethod?: "hotel" | "card" | "wallet";
   createdAt: string;
 }
 
