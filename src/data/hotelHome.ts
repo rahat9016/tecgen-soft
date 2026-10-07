@@ -61,33 +61,6 @@ export const destinations = [
   },
 ];
 
-export const moreThanStays = [
-  {
-    title: "Tour Packages",
-    subtitle: "Amazing holiday packages for you",
-    icon: "TourPackages",
-    bg: "bg-emerald-50 text-emerald-700",
-  },
-  {
-    title: "Car Rental",
-    subtitle: "Book cars at best prices",
-    icon: "CarRental",
-    bg: "bg-violet-50 text-violet-700",
-  },
-  {
-    title: "Bus Tickets",
-    subtitle: "Local & national bus service",
-    icon: "BusTickets",
-    bg: "bg-rose-50 text-rose-700",
-  },
-  {
-    title: "Flight Tickets",
-    subtitle: "Domestic flight booking",
-    icon: "FlightTickets",
-    bg: "bg-amber-50 text-amber-700",
-  },
-];
-
 export const whyChoose = [
   "5000+ Verified Properties",
   "Best Price Guarantee",

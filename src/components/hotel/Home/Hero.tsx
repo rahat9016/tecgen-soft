@@ -1,75 +1,76 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { Plus_Jakarta_Sans } from "next/font/google";
+import { ArrowRight, BadgePercent, CalendarCheck, Headphones, Lock, ShieldCheck } from "lucide-react";
+import HeroSlider from "./HeroSlider";
 import SearchWidget from "./SearchWidget";
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const trustPoints = [
+  { label: "Best Price Guarantee", icon: ShieldCheck },
+  { label: "Easy Booking", icon: CalendarCheck },
+  { label: "Secure Payment", icon: Lock },
+  { label: "24/7 Support", icon: Headphones },
+];
 
 export default function Hero() {
   return (
-    <section className="relative">
-      <div
-        className="relative h-[460px] bg-cover bg-center md:h-[520px]"
-        style={{
-          backgroundImage:
-            "url(https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80&auto=format&fit=crop)",
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/85 via-neutral-950/55 to-neutral-950/10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/70 via-transparent to-neutral-950/30" />
+    <section className="relative -mt-(--hotel-header-h)">
+      <HeroSlider>
+        <div className={`${jakarta.className} container relative flex min-h-[calc(560px+var(--hotel-header-h))] flex-col items-center justify-center pb-36 pt-[calc(var(--hotel-header-h)+3rem)] text-center text-white md:min-h-[calc(640px+var(--hotel-header-h))] md:pb-40`}>
+          <a
+            href="#deals"
+            className="group flex max-w-full items-center gap-2 rounded-full border border-white/20 bg-white/10 py-1 pl-1 pr-3 text-xs font-medium text-white backdrop-blur-md transition hover:bg-white/20"
+          >
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-rose-600 to-orange-500 px-2.5 py-1 font-bold">
+              <BadgePercent className="size-3.5" /> 40% OFF
+            </span>
+            <span className="truncate">On selected hotels this week</span>
+            <ArrowRight className="size-3.5 shrink-0 transition group-hover:translate-x-0.5" />
+          </a>
 
-        <div className="container relative flex h-full flex-col justify-center py-10 text-white">
-          <span className="w-fit rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-amber-300 backdrop-blur-sm">
-            Bangladesh&rsquo;s Trusted Booking Marketplace
-          </span>
-
-          <h1 className="mt-4 max-w-xl text-4xl font-extrabold leading-tight drop-shadow-md md:text-6xl">
+          <h1 className="mt-6 max-w-3xl text-4xl font-extrabold leading-[1.08] tracking-[-0.03em] drop-shadow-md sm:text-5xl md:text-7xl">
             Find The Perfect Stay
+            <span className="mt-1 block bg-gradient-to-r from-amber-200 via-amber-300 to-orange-300 bg-clip-text text-transparent">
+              For Your Journey
+            </span>
           </h1>
-          <p className="mt-1 max-w-lg font-serif text-2xl italic text-amber-400 drop-shadow-md md:text-3xl">
-            For Your Journey
-          </p>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-neutral-100 drop-shadow-sm md:text-base">
-            Book from 5000+ hotels, resorts and cottages across Bangladesh — best price
-            guaranteed, secure payment, support around the clock.
+
+          <p className="mt-5 max-w-xl text-sm leading-relaxed text-neutral-100/90 md:text-base">
+            Bangladesh&rsquo;s trusted booking platform — 5000+ hotels, resorts and cottages
+            with the best price guaranteed and support around the clock.
           </p>
 
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="mt-7 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row">
             <Link
               href="/hotel-management/search"
-              className="flex items-center gap-1.5 rounded-md bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-sky-700"
+              className="flex w-full items-center justify-center gap-1.5 rounded-full bg-sky-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-950/30 transition hover:bg-sky-700 sm:w-auto"
             >
               Explore Hotels <ArrowRight className="size-4" />
             </Link>
             <a
               href="#deals"
-              className="rounded-md border border-white/40 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/20"
+              className="flex w-full items-center justify-center rounded-full border border-white/40 bg-white/10 px-7 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 sm:w-auto"
             >
               View Today&rsquo;s Deals
             </a>
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs font-medium text-neutral-100 drop-shadow-sm">
-            <span>🛡️ Best Price Guarantee</span>
-            <span>🧳 Easy Booking</span>
-            <span>🔒 Secure Payment</span>
-            <span>🎧 24/7 Support</span>
-          </div>
+          <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium text-neutral-100 md:text-sm">
+            {trustPoints.map(({ label, icon: Icon }) => (
+              <li key={label} className="flex items-center gap-1.5">
+                <Icon className="size-4 text-amber-400" />
+                {label}
+              </li>
+            ))}
+          </ul>
         </div>
+      </HeroSlider>
 
-        <div className="absolute right-4 top-6 hidden flex-col items-center lg:flex lg:right-10">
-          <span className="rounded-t-md bg-violet-700 px-3 py-1 text-[10px] font-bold tracking-wide text-white">
-            SPECIAL OFFER
-          </span>
-          <div className="flex flex-col items-center gap-1 rounded-2xl rounded-tl-none bg-gradient-to-br from-rose-600 to-orange-500 px-6 py-4 text-center text-white shadow-lg">
-            <span className="text-xs font-medium">Up to</span>
-            <span className="text-3xl font-extrabold leading-none">40% OFF</span>
-            <span className="text-xs font-medium">On Selected Hotels</span>
-            <button className="mt-1 rounded-md bg-neutral-950 px-4 py-1.5 text-xs font-semibold text-white">
-              Book Now
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="container relative z-10 -mt-20 md:-mt-20">
+      <div className="container relative z-10 -mt-20">
         <SearchWidget />
       </div>
     </section>

@@ -18,7 +18,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+export const amenityIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   "Free WiFi": Wifi,
   "Swimming Pool": Waves,
   "Free Breakfast": Utensils,
@@ -46,7 +46,7 @@ export default function AmenitiesGrid({ amenities }: { amenities: string[] }) {
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
       {amenities.map((amenity) => {
-        const Icon = iconMap[amenity] ?? CheckCircle2;
+        const Icon = amenityIcons[amenity] ?? CheckCircle2;
         return (
           <div key={amenity} className="flex items-center gap-2 text-sm text-neutral-700">
             <Icon className="size-4 shrink-0 text-sky-600" />

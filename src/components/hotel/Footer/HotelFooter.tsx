@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Facebook, Instagram, Twitter, Youtube, Phone, Mail, MapPin } from "lucide-react";
 import { footerLinks, paymentMethods } from "@/src/data/hotelHome";
 
@@ -6,11 +7,15 @@ export default function HotelFooter() {
     <footer className="mt-8 bg-sky-950 text-sky-100 print:hidden">
       <div className="container grid gap-8 py-12 md:grid-cols-6">
         <div className="md:col-span-2">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🌴</span>
-            <span className="text-lg font-extrabold text-white">TripWave</span>
+          <div className="inline-flex rounded-xl bg-white px-3 py-2">
+            <Image
+              src="/TripWaveLogo.webp"
+              alt="TripWave — Hotel & Resort Booking"
+              width={614}
+              height={192}
+              className="h-12 w-auto"
+            />
           </div>
-          <p className="mt-1 text-xs font-medium text-sky-300">Hotel &amp; Resort Booking</p>
           <p className="mt-3 text-sm text-sky-200">
             Your trusted travel partner for hotels, resorts, cottages and more across
             Bangladesh.

@@ -4,7 +4,7 @@ import WhatsAppButton from "@/src/components/hotel/shared/WhatsAppButton";
 
 export default function HotelManagementLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div>
+    <div className="[--hotel-header-h:4.75rem] md:[--hotel-header-h:5.5rem]">
       <HotelHeader />
       {children}
       <HotelFooter />

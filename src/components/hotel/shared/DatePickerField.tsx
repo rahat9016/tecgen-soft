@@ -13,6 +13,7 @@ export default function DatePickerField({
   disabledBefore,
   open,
   onOpenChange,
+  variant = "boxed",
 }: {
   label: string;
   value: Date | null;
@@ -20,27 +21,47 @@ export default function DatePickerField({
   disabledBefore?: Date;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  variant?: "boxed" | "inline";
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = open ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
 
+  const inline = variant === "inline";
+
   return (
     <div>
-      <label className="text-xs font-medium text-neutral-500">{label}</label>
+      {!inline && <label className="text-xs font-medium text-neutral-500">{label}</label>}
       <Popover open={isOpen} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <button
-            type="button"
-            className="mt-1 flex h-9 w-full items-center gap-1.5 rounded-md border border-neutral-200 bg-transparent px-3 text-left text-sm"
-          >
-            <CalendarIcon className="size-3.5 shrink-0 text-neutral-400" />
-            <span className={value ? "text-neutral-900" : "text-neutral-400"}>
-              {value ? format(value, "dd/MM/yyyy") : "dd/mm/yyyy"}
-            </span>
-          </button>
+          {inline ? (
+            <button
+              type="button"
+              className="flex w-full flex-col items-start rounded-xl px-4 py-3 text-left transition hover:bg-white data-[state=open]:bg-white data-[state=open]:shadow-md"
+            >
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                <CalendarIcon className="size-3.5" />
+                {label}
+              </span>
+              <span
+                className={`mt-1 text-sm font-semibold ${value ? "text-neutral-900" : "text-neutral-400"}`}
+              >
+                {value ? format(value, "EEE, dd MMM yyyy") : "Add date"}
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="mt-1 flex h-9 w-full items-center gap-1.5 rounded-md border border-neutral-200 bg-transparent px-3 text-left text-sm"
+            >
+              <CalendarIcon className="size-3.5 shrink-0 text-neutral-400" />
+              <span className={value ? "text-neutral-900" : "text-neutral-400"}>
+                {value ? format(value, "dd/MM/yyyy") : "dd/mm/yyyy"}
+              </span>
+            </button>
+          )}
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className={inline ? "w-auto rounded-2xl p-0 shadow-xl" : "w-auto p-0"} align="start">
           <Calendar
             mode="single"
             selected={value ?? undefined}
