@@ -1,4 +1,5 @@
 import type { RoomReservation } from "@/src/data/hotels";
+import type { OnlinePaymentMethod, PaymentPlan } from "@/src/lib/hotelPayment";
 import { toDayKey } from "@/src/lib/hotelDates";
 
 export interface BookingRecord {
@@ -32,7 +33,11 @@ export interface BookingRecord {
     arrivalTime?: string;
     airportPickup?: boolean;
   };
-  paymentMethod?: "hotel" | "card" | "wallet";
+  /** "hotel" and "wallet" only appear on bookings saved before online deposits existed. */
+  paymentMethod?: OnlinePaymentMethod | "hotel" | "wallet";
+  paymentPlan?: PaymentPlan;
+  /** Paid online at booking time (deposit or full amount). */
+  amountPaid?: number;
   createdAt: string;
 }
 

@@ -1,4 +1,5 @@
 import * as yup from "yup";
+import { onlinePaymentMethods, paymentPlans } from "@/src/lib/hotelPayment";
 
 const digits = (value?: string) => (value ?? "").replace(/[\s()-]/g, "");
 const BD_MOBILE = /^0?1[3-9]\d{8}$/;
@@ -7,7 +8,8 @@ const NID = /^(\d{10}|\d{13}|\d{17})$/;
 const PASSPORT = /^[A-Z0-9]{6,12}$/i;
 
 export const titles = ["Mr", "Ms", "Mrs", "Dr"] as const;
-export const paymentOptions = ["hotel", "card", "wallet"] as const;
+export const TERMS_ACCEPTED = "accepted";
+export const AIRPORT_PICKUP = "airport-pickup";
 
 export const guestInfoValidationSchema = yup.object({
   title: yup.string().oneOf(titles).required(),
@@ -49,20 +51,22 @@ export const guestInfoValidationSchema = yup.object({
     .default("")
     .test("id", function (value) {
       if (!value) return true;
-      if (this.parent.idType === "nid") {
+      if (this.parent.country === "BD" && this.parent.idType === "nid") {
         return NID.test(value) || this.createError({ message: "NID numbers have 10, 13 or 17 digits" });
       }
       return PASSPORT.test(value) || this.createError({ message: "Enter a valid passport number" });
     }),
 
   arrivalTime: yup.string().default(""),
-  airportPickup: yup.boolean().default(false),
+  // Checkbox groups (ControlledCheckboxField) store the checked option values as an array.
+  requests: yup.array(yup.string().required()).default([]),
   note: yup.string().default(""),
-  paymentMethod: yup.string().oneOf(paymentOptions).required("Choose how you'd like to pay"),
+  paymentPlan: yup.string().oneOf(paymentPlans).required(),
+  paymentMethod: yup.string().oneOf(onlinePaymentMethods).required("Choose how you'd like to pay"),
   acceptTerms: yup
-    .boolean()
-    .default(false)
-    .test("accepted", "Please accept the hotel policies to continue", (value) => value === true),
+    .array(yup.string().required())
+    .default([])
+    .test("accepted", "Please accept the hotel policies to continue", (value) => value?.includes(TERMS_ACCEPTED) ?? false),
 });
 
 export type GuestInfoFormType = yup.InferType<typeof guestInfoValidationSchema>;

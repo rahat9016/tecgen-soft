@@ -178,7 +178,7 @@ export default function HotelFooter() {
 
       <div className="relative border-t border-white/10">
         <div className="container flex flex-col items-center justify-between gap-4 py-5 text-xs text-sky-200/60 md:flex-row">
-          <p>© {new Date().getFullYear()} TripWave · {hotel.name}. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {hotel.name}. All rights reserved.</p>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <span className="mr-1">We accept</span>
             {paymentMethods.map((method) => (

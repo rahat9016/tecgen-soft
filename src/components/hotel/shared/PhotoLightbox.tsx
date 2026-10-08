@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/src/components/ui/dialog";
 
@@ -22,6 +23,14 @@ export default function PhotoLightbox({
   onIndexChange: (index: number | null) => void;
 }) {
   const current = index === null ? null : photos[index];
+  const stripRef = useRef<HTMLDivElement>(null);
+
+  // Keep the active thumbnail in view when paging with the arrows or keyboard.
+  useEffect(() => {
+    if (index === null) return;
+    const thumb = stripRef.current?.children[index] as HTMLElement | undefined;
+    thumb?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [index]);
   const step = (delta: number) => {
     if (index !== null) onIndexChange((index + delta + photos.length) % photos.length);
   };
@@ -79,7 +88,10 @@ export default function PhotoLightbox({
               </span>
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div
+              ref={stripRef}
+              className="flex gap-2 overflow-x-auto p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
               {photos.map((photo, i) => (
                 <button
                   key={photo.src}
@@ -88,7 +100,9 @@ export default function PhotoLightbox({
                   aria-label={`Show photo ${i + 1}`}
                   aria-current={i === index}
                   className={`relative h-14 w-20 shrink-0 overflow-hidden rounded-lg transition ${
-                    i === index ? "ring-2 ring-amber-400" : "opacity-50 hover:opacity-100"
+                    i === index
+                      ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-neutral-950"
+                      : "opacity-50 hover:opacity-100"
                   }`}
                 >
                   <img src={sizedPhoto(photo.src, 200)} alt="" className="size-full object-cover" />

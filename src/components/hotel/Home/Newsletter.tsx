@@ -47,7 +47,7 @@ export default function Newsletter() {
         <div className="grid items-center gap-10 px-6 py-10 sm:px-10 md:py-14 lg:grid-cols-[1.1fr_0.9fr] lg:px-14">
           <div className="text-white">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-amber-300 backdrop-blur-md">
-              <Sparkles className="size-3.5" /> Sea Paradise insiders
+              <Sparkles className="size-3.5" /> TripWave insiders
             </span>
             <h2 className="mt-4 text-3xl font-extrabold leading-tight md:text-4xl">
               Get our best offers

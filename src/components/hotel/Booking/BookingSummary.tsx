@@ -8,6 +8,7 @@ import { parseCheckTimes } from "@/src/components/hotel/HotelDetails/PoliciesSec
 import { ratingLabel } from "@/src/components/hotel/shared/ratingLabel";
 import { toDayKey } from "@/src/lib/hotelDates";
 import { currencyCodes, formatInCurrency, type CurrencyCode } from "@/src/lib/currency";
+import { DEPOSIT_RATE, type PaymentPlan } from "@/src/lib/hotelPayment";
 import type { HotelBookingSelection } from "@/src/lib/redux/features/hotelBooking/hotelBookingTypes";
 
 export default function BookingSummary({
@@ -19,6 +20,8 @@ export default function BookingSummary({
   serviceFee,
   tax,
   total,
+  dueNow,
+  plan,
   currency,
   onCurrencyChange,
 }: {
@@ -30,6 +33,9 @@ export default function BookingSummary({
   serviceFee: number;
   tax: number;
   total: number;
+  /** Taken online now: the deposit, or the full total. */
+  dueNow: number;
+  plan: PaymentPlan;
   currency: CurrencyCode;
   onCurrencyChange: (currency: CurrencyCode) => void;
 }) {
@@ -72,7 +78,7 @@ export default function BookingSummary({
         </div>
 
         <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
-          <div className="rounded-2xl bg-neutral-50 p-3">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-3">
             <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
               <LogIn className="size-3.5" /> Check-in
             </p>
@@ -84,7 +90,7 @@ export default function BookingSummary({
               <Moon className="size-3" /> {nights}
             </span>
           </span>
-          <div className="rounded-2xl bg-neutral-50 p-3">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-3">
             <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
               <LogOut className="size-3.5" /> Check-out
             </p>
@@ -107,28 +113,45 @@ export default function BookingSummary({
           )}
         </ul>
 
-        <div className="mt-5 space-y-2 border-t border-neutral-100 pt-4 text-sm">
-          <p className="font-bold text-neutral-900">Price details</p>
-          <div className="flex justify-between text-neutral-600">
-            <span>
-              BDT {selection.pricePerNight.toLocaleString()} &times; {nights} night{nights !== 1 ? "s" : ""}
-              {selection.rooms > 1 && ` × ${selection.rooms} rooms`}
-            </span>
-            <span>BDT {subtotal.toLocaleString()}</span>
+        <div className="mt-5 space-y-3 text-sm">
+          <div className="overflow-hidden rounded-2xl border border-neutral-200">
+            <p className="border-b border-neutral-200 bg-neutral-50 px-3 py-2.5 font-bold text-neutral-900">
+              Price details
+            </p>
+            <div className="divide-y divide-neutral-100">
+              <div className="flex justify-between gap-3 px-3 py-2.5 text-neutral-600">
+                <span>
+                  BDT {selection.pricePerNight.toLocaleString()} &times; {nights} night{nights !== 1 ? "s" : ""}
+                  {selection.rooms > 1 && ` × ${selection.rooms} rooms`}
+                </span>
+                <span className="shrink-0 text-neutral-900">BDT {subtotal.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between px-3 py-2.5 text-neutral-600">
+                <span>Service fee (3%)</span>
+                <span className="text-neutral-900">BDT {serviceFee.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between px-3 py-2.5 text-neutral-600">
+                <span>VAT (5%)</span>
+                <span className="text-neutral-900">BDT {tax.toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between border-t border-neutral-200 bg-neutral-50 px-3 py-3">
+              <span className="font-bold text-neutral-900">Total</span>
+              <span className="text-xl font-extrabold text-neutral-900">BDT {total.toLocaleString()}</span>
+            </div>
           </div>
-          <div className="flex justify-between text-neutral-600">
-            <span>Service fee (3%)</span>
-            <span>BDT {serviceFee.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-neutral-600">
-            <span>VAT (5%)</span>
-            <span>BDT {tax.toLocaleString()}</span>
-          </div>
-          <div className="flex items-end justify-between border-t border-dashed border-neutral-200 pt-3">
-            <span className="font-bold text-neutral-900">Total</span>
-            <span className="text-right">
-              <span className="block text-2xl font-extrabold text-neutral-900">BDT {total.toLocaleString()}</span>
-            </span>
+
+          <div className="overflow-hidden rounded-2xl border border-sky-100">
+            <div className="flex items-center justify-between bg-sky-600 px-3 py-2.5 text-white">
+              <span className="text-sm font-semibold">
+                {plan === "full" ? "Pay now (full amount)" : `Pay now (${DEPOSIT_RATE * 100}% deposit)`}
+              </span>
+              <span className="text-base font-extrabold">BDT {dueNow.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between bg-sky-50 px-3 py-2 text-sm text-sky-900">
+              <span>Pay at hotel on arrival</span>
+              <span className="font-semibold">BDT {(total - dueNow).toLocaleString()}</span>
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-3 rounded-xl bg-neutral-50 px-3 py-2">

@@ -70,15 +70,15 @@ const photo = (id: string, width = 1200) =>
   `https://images.unsplash.com/photo-${id}?w=${width}&q=80&auto=format&fit=crop`;
 
 export const hotel: Hotel = {
-  slug: "sea-paradise-hotel",
-  name: "Sea Paradise Hotel",
+  slug: "tripwave-hotel",
+  name: "TripWave Hotel",
   location: "Cox's Bazar",
   address: "Marine Drive Road, Kolatoli, Cox's Bazar",
   phone: "+8801880982822",
   rating: 4.6,
   reviewsCount: 532,
   description:
-    "Sea Paradise Hotel sits right on the world's longest natural sea beach, with panoramic ocean views, private beach access and an outdoor pool. Comfortable rooms for couples, families and groups — a relaxed beachfront stay in Cox's Bazar.",
+    "TripWave Hotel sits right on the world's longest natural sea beach, with panoramic ocean views, private beach access and an outdoor pool. Comfortable rooms for couples, families and groups — a relaxed beachfront stay in Cox's Bazar.",
   images: [
     photo("1582719508461-905c673771fd"),
     photo("1540541338287-41700207dee6"),
