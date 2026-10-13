@@ -16,7 +16,7 @@ const INTERVAL = 6000;
 const imageUrl = (id: string, width: number) =>
   `https://images.unsplash.com/photo-${id}?w=${width}&q=85&auto=format&fit=crop`;
 
-// Dots live in the hero content (normal flow, under the trust row) so they can never sit on the search bar.
+// Dots live in the hero content (normal flow, pinned to the bottom) so they can never sit on the search bar.
 const SliderContext = createContext<{ active: number; goTo: (index: number) => void } | null>(null);
 
 export function HeroSliderDots() {

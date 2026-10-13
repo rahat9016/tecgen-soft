@@ -83,7 +83,7 @@ export default function FacilitiesSection() {
             return (
               <li
                 key={amenity}
-                className="group rounded-3xl border border-white/80 bg-white/40 p-4 shadow-[0_8px_32px_rgba(12,74,110,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl backdrop-saturate-150 transition duration-300 hover:-translate-y-1 hover:bg-white/60 hover:shadow-[0_16px_40px_rgba(12,74,110,0.14),inset_0_1px_0_rgba(255,255,255,0.9)] md:p-5"
+                className="group rounded-lg border border-white/80 bg-white/40 p-4 shadow-[0_8px_32px_rgba(12,74,110,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl backdrop-saturate-150 transition duration-300 hover:-translate-y-1 hover:bg-white/60 hover:shadow-[0_16px_40px_rgba(12,74,110,0.14),inset_0_1px_0_rgba(255,255,255,0.9)] md:p-5"
               >
                 <span className="flex size-11 items-center justify-center rounded-2xl bg-white/70 text-sky-600 shadow-sm ring-1 ring-white transition duration-300 group-hover:bg-sky-600 group-hover:text-white group-hover:ring-sky-600 md:size-12">
                   <Icon className="size-5 md:size-6" />
