@@ -1,6 +1,7 @@
 import AboutSection from "@/src/components/agency/AboutSection";
 import AgencyFooter from "@/src/components/agency/AgencyFooter";
 import AgencyHeader from "@/src/components/agency/AgencyHeader";
+import AuroraBackground from "@/src/components/agency/AuroraBackground";
 import FaqSection from "@/src/components/agency/FaqSection";
 import FinalCta from "@/src/components/agency/FinalCta";
 import Hero from "@/src/components/agency/Hero";
@@ -13,10 +14,10 @@ import WhyUsSection from "@/src/components/agency/WhyUsSection";
 
 export default function RootPage() {
   return (
-    <div className="min-h-screen bg-white">
-      <AgencyHeader />
-      <SmoothScroll>
-        <div className="h-16" aria-hidden="true" />
+    <div className="relative isolate min-h-screen overflow-x-clip bg-[#0a0a0a]">
+      <AuroraBackground />
+      <AgencyHeader overlay />
+      {/* <SmoothScroll> */}
         <Hero />
         <PortfolioSection />
         <SolutionsSection />
@@ -27,7 +28,7 @@ export default function RootPage() {
         <FaqSection />
         <FinalCta />
         <AgencyFooter />
-      </SmoothScroll>
+      {/* </SmoothScroll> */}
     </div>
   );
 }

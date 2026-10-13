@@ -1,6 +1,5 @@
 import {
   ArrowUpRight,
-  Briefcase,
   Facebook,
   Hotel,
   Mail,
@@ -9,7 +8,8 @@ import {
   Rocket,
   Shirt,
   ShoppingBag,
-  UtensilsCrossed,
+  Smartphone,
+  Trophy,
 } from "lucide-react";
 
 import Reveal from "@/src/components/agency/Reveal";
@@ -19,15 +19,15 @@ const audiences = [
   { icon: Rocket, label: "নতুন উদ্যোক্তা" },
   { icon: ShoppingBag, label: "FB / Insta Seller" },
   { icon: Shirt, label: "Clothing ও Cosmetics" },
-  { icon: UtensilsCrossed, label: "Restaurant" },
+  { icon: Smartphone, label: "Gadget Shop" },
   { icon: Hotel, label: "Hotel / Resort" },
-  { icon: Briefcase, label: "Service Business" },
+  { icon: Trophy, label: "Turf / খেলার মাঠ" },
 ];
 
 const approach = [
   { title: "Clear pricing ও scope", desc: "কাজ শুরুর আগেই খরচ ও কী পাবেন — সব জানানো।" },
   { title: "Real demo দেখানো", desc: "কেনার আগে আসল product নিজে ব্যবহার করে দেখুন।" },
-  { title: "Delivery-র পর support", desc: "নির্দিষ্ট সময় support — নিশ্চিন্তে decision নিন।" },
+  { title: "Subscription-এ সবসময় support", desc: "যতদিন সাথে আছেন, ততদিন support, updates ও bug fix।" },
 ];
 
 const contacts = [
@@ -42,9 +42,9 @@ export default function AboutSection() {
     <section id="about" className="py-14 md:py-20">
       <div className="mx-auto grid max-w-7xl gap-5 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
         {/* intro + contact — brand card */}
-        <Reveal className="relative overflow-hidden rounded-3xl bg-[#061531] p-7 sm:p-10 lg:col-span-7 lg:row-span-2">
-          <div className="pointer-events-none absolute -top-24 -right-24 size-80 rounded-full bg-[#3D2EF9]/40 blur-[100px]" />
-          <div className="pointer-events-none absolute -bottom-32 -left-20 size-72 rounded-full bg-indigo-400/15 blur-[90px]" />
+        <Reveal className="glass relative overflow-hidden rounded-3xl p-7 sm:p-10 lg:col-span-7 lg:row-span-2">
+          <div className="pointer-events-none absolute -top-24 -right-24 size-80 rounded-full bg-white/[0.08] blur-[100px]" />
+          <div className="pointer-events-none absolute -bottom-32 -left-20 size-72 rounded-full bg-white/[0.04] blur-[90px]" />
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.06]"
             style={{
@@ -57,7 +57,7 @@ export default function AboutSection() {
           />
 
           <div className="relative flex h-full flex-col">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-indigo-200">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-xs font-medium text-indigo-200">
               <span className="size-1.5 rounded-full bg-emerald-400" />
               About Us · Dhaka, Bangladesh
             </span>
@@ -70,7 +70,7 @@ export default function AboutSection() {
               ?
             </h2>
 
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-300 sm:text-lg">
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-neutral-300 sm:text-lg">
               <span className="font-semibold text-white">Tecgen Soft</span> is a technology agency dedicated to
               engineering <span className="font-semibold text-white">reliable, cost-effective digital solutions</span>{" "}
               for growing businesses. We design and build high-performance e-commerce platforms, booking systems, and
@@ -83,16 +83,16 @@ export default function AboutSection() {
                 <a
                   key={label}
                   href={href}
-                  className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5 backdrop-blur-sm transition hover:border-white/25 hover:bg-white/[0.08]"
+                  className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5 transition hover:border-white/25 hover:bg-white/[0.08]"
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#3D2EF9] text-white shadow-lg shadow-indigo-900/40">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#3D2EF9] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_8px_20px_-6px_rgba(61,46,249,0.8)]">
                     <Icon className="size-4.5" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[11px] tracking-wide text-slate-400 uppercase">{label}</span>
+                    <span className="block text-[11px] tracking-wide text-neutral-400 uppercase">{label}</span>
                     <span className="block truncate text-sm font-semibold text-white">{value}</span>
                   </span>
-                  <ArrowUpRight className="size-4 text-slate-500 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white" />
+                  <ArrowUpRight className="size-4 text-neutral-500 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white" />
                 </a>
               ))}
             </div>
@@ -100,18 +100,18 @@ export default function AboutSection() {
         </Reveal>
 
         {/* who we work with */}
-        <Reveal delay={0.1} className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 lg:col-span-5">
-          <p className="text-sm font-semibold text-slate-900">আমরা যাদের সাথে কাজ করি</p>
+        <Reveal delay={0.1} className="glass rounded-3xl p-6 sm:p-7 lg:col-span-5">
+          <p className="text-sm font-semibold text-white">আমরা যাদের সাথে কাজ করি</p>
           <ul className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             {audiences.map(({ icon: Icon, label }) => (
               <li
                 key={label}
-                className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50/70 px-2 py-4 text-center transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-white hover:shadow-md"
+                className="group flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-2 py-4 text-center transition hover:-translate-y-0.5 hover:border-indigo-300/40 hover:bg-white/[0.07]"
               >
-                <span className="flex size-10 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm ring-1 ring-slate-100 transition group-hover:bg-[#3D2EF9] group-hover:text-white">
+                <span className="flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-indigo-200 transition group-hover:border-transparent group-hover:bg-[#3D2EF9] group-hover:text-white">
                   <Icon className="size-5" />
                 </span>
-                <span className="text-xs leading-snug font-medium text-slate-700">{label}</span>
+                <span className="text-xs leading-snug font-medium text-neutral-300">{label}</span>
               </li>
             ))}
           </ul>
@@ -120,20 +120,20 @@ export default function AboutSection() {
         {/* approach */}
         <Reveal
           delay={0.15}
-          className="rounded-3xl border border-indigo-100 bg-linear-to-br from-indigo-50 via-white to-white p-6 sm:p-7 lg:col-span-5"
+          className="glass rounded-3xl border-white/15 bg-linear-to-br from-white/[0.09] via-white/[0.03] to-transparent p-6 sm:p-7 lg:col-span-5"
         >
-          <p className="text-sm font-semibold text-slate-900">
-            আমাদের approach — <span className="text-indigo-600">সহজ</span>
+          <p className="text-sm font-semibold text-white">
+            আমাদের approach — <span className="text-indigo-300">সহজ</span>
           </p>
-          <ol className="relative mt-5 space-y-5 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-px before:bg-indigo-200">
+          <ol className="relative mt-5 space-y-5 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-px before:bg-indigo-300/25">
             {approach.map((step, i) => (
               <li key={step.title} className="relative flex gap-4">
-                <span className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#3D2EF9] text-xs font-bold text-white ring-4 ring-white">
+                <span className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#3D2EF9] text-xs font-bold text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3),0_0_0_4px_rgba(61,46,249,0.18)]">
                   {i + 1}
                 </span>
                 <div className="pt-0.5">
-                  <p className="text-sm font-semibold text-slate-900">{step.title}</p>
-                  <p className="mt-0.5 text-sm leading-relaxed text-slate-500">{step.desc}</p>
+                  <p className="text-sm font-semibold text-white">{step.title}</p>
+                  <p className="mt-0.5 text-sm leading-relaxed text-neutral-400">{step.desc}</p>
                 </div>
               </li>
             ))}

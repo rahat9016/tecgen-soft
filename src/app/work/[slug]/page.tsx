@@ -266,10 +266,10 @@ export default async function ProjectDetailPage({
                     {solution.name}
                   </h3>
                   <p className="mt-2 text-3xl font-extrabold text-indigo-600 sm:text-4xl">
-                    Starting from {solution.price}
+                    {solution.price}<span className="text-lg font-semibold text-slate-500">/মাস</span>
                   </p>
                   <p className="mt-3 text-sm text-slate-500 sm:text-base">
-                    {solution.included.slice(0, 3).join(" · ")} · Delivery in {solution.delivery}
+                    {solution.included.slice(0, 3).join(" · ")} · Live in {solution.setup}
                   </p>
                 </div>
                 <Link
@@ -382,7 +382,7 @@ export default async function ProjectDetailPage({
             আপনার ব্যবসার জন্য এমন একটি website তৈরি করুন
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-sm leading-loose text-indigo-100 sm:text-base">
-            আপনার business idea, budget এবং requirements অনুযায়ী আমরা তৈরি করি professional digital
+            আপনার business idea ও requirements অনুযায়ী আমরা তৈরি করি professional digital
             solutions।
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-4">

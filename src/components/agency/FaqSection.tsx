@@ -8,20 +8,28 @@ import Reveal from "@/src/components/agency/Reveal";
 
 const faqs = [
   {
-    q: "Website বানাতে কতদিন লাগে?",
-    a: "প্যাকেজের ধরন অনুযায়ী সাধারণত ৫–১৪ দিনের মধ্যে ডেলিভারি দেওয়া হয়। প্রতিটি সলিউশনের নির্দিষ্ট ডেলিভারি টাইম প্রোডাক্ট পেজে দেখানো আছে।",
+    q: "Website live হতে কতদিন লাগে?",
+    a: "Order confirm করার পর সাধারণত ১–৩ দিনের মধ্যে আপনার website live হয়ে যায়।",
+  },
+  {
+    q: "মাসিক কত টাকা দিতে হবে?",
+    a: "Product অনুযায়ী ৳৮৯৯ থেকে ৳১,২৯৯ পর্যন্ত মাসিক fee — hosting, SSL, updates ও support সহ। কোনো upfront বা setup খরচ নেই।",
+  },
+  {
+    q: "Payment কখন করতে হবে?",
+    a: "Website live হওয়ার পর থেকে মাসিক payment শুরু হয় — তার আগে কোনো টাকা দিতে হয় না।",
   },
   {
     q: "Domain কি আপনারা দেবেন?",
-    a: "আমরা domain কিনতে সাহায্য করি ও guide করি, তবে domain-এর খরচ ও renewal সাধারণত প্যাকেজে included নয় — অর্ডারের আগেই এটা পরিষ্কার করে জানানো হয়।",
+    a: "Domain আপনি নিজের নামে কিনবেন, তাই এটি সম্পূর্ণ আপনার। কেনা থেকে website-এ connect করা পর্যন্ত পুরো setup আমরা করে দিই। Domain-এর খরচ ও renewal subscription-এ included নয়।",
   },
   {
     q: "Hosting কি included?",
-    a: "প্যাকেজ অনুযায়ী নির্ভর করে। কোনো কোনো প্যাকেজে hosting guidance/সেটআপ included, কিন্তু hosting-এর মাসিক/বার্ষিক খরচ আলাদা — কোনো hidden cost নেই।",
+    a: "হ্যাঁ। Hosting ও SSL মাসিক subscription-এর মধ্যেই included — আলাদা কোনো hosting খরচ নেই।",
   },
   {
     q: "Website-এর পরে আমি নিজে product add করতে পারব?",
-    a: "হ্যাঁ। E-commerce ও অন্যান্য প্যাকেজে Admin Dashboard থাকে, যেখান থেকে আপনি নিজেই product, order ইত্যাদি manage করতে পারবেন। আমরা delivery-র সময় training দিয়ে দিই।",
+    a: "হ্যাঁ। প্রতিটি product-এ Admin Dashboard থাকে, যেখান থেকে আপনি নিজেই product, order, booking ইত্যাদি manage করতে পারবেন। Setup-এর সময় training দিয়ে দিই।",
   },
   {
     q: "Facebook Page-এর সাথে website connect করা যাবে?",
@@ -29,23 +37,19 @@ const faqs = [
   },
   {
     q: "bKash/Nagad/SSLCommerz payment কি included?",
-    a: "এটি একটি add-on হিসেবে যোগ করা যায়। Basic প্যাকেজে included না থাকলেও, পরে চাইলে যেকোনো সময় যুক্ত করা সম্ভব।",
+    a: "এটি একটি add-on হিসেবে যোগ করা যায় — subscription-এ included না থাকলেও, পরে চাইলে যেকোনো সময় যুক্ত করা সম্ভব।",
   },
   {
     q: "Website mobile-এ কাজ করবে?",
-    a: "অবশ্যই। প্রতিটি ওয়েবসাইট Mobile, Tablet ও Desktop — সব ডিভাইসের জন্য Responsive করে বানানো হয়।",
+    a: "অবশ্যই। প্রতিটি ওয়েবসাইট Mobile, Tablet ও Desktop — সব ডিভাইসের জন্য Responsive করে বানানো।",
   },
   {
-    q: "Website delivery পাওয়ার পরে support পাব?",
-    a: "হ্যাঁ, প্রতিটি প্যাকেজের সাথে একটি নির্দিষ্ট সময়ের (যেমন ২–৩ মাস) Support included থাকে। এরপরও চাইলে মাসিক ভিত্তিতে সাপোর্ট নেওয়া যায়।",
+    q: "Support কতদিন পাব?",
+    a: "যতদিন subscription চালু থাকবে, ততদিন support, updates ও bug fix included — আলাদা কোনো চার্জ নেই।",
   },
   {
     q: "পরে নতুন feature যোগ করা যাবে?",
-    a: "হ্যাঁ। আপনার ব্যবসা বড় হলে Payment, Inventory, Delivery Integration, Mobile App-এর মতো ফিচার পরে যোগ করা যায়।",
-  },
-  {
-    q: "মাসিক কোনো charge আছে?",
-    a: "মূল website-এর জন্য কোনো বাধ্যতামূলক মাসিক চার্জ নেই। শুধু আপনি যদি Domain/Hosting renewal বা Extended Support নিতে চান, তার খরচ আলাদাভাবে জানানো থাকে।",
+    a: "হ্যাঁ। আপনার ব্যবসা বড় হলে Payment, Inventory, Delivery Integration, Mobile App-এর মতো ফিচার পরে যোগ করা যায় — খরচ আগে থেকেই জানানো হয়।",
   },
   {
     q: "আমি website না বুঝলেও কি আপনারা আমাকে শেখাবেন?",
@@ -53,34 +57,33 @@ const faqs = [
   },
   {
     q: "Source code কি পাব?",
-    a: "হ্যাঁ, ডেলিভারির পর আপনার website-এর source code আপনাকে দেওয়া হয় — এটি নির্দিষ্ট চুক্তির অংশ হিসেবে প্যাকেজ পেজে উল্লেখ থাকে।",
-  },
-  {
-    q: "Website-এর ownership কার থাকবে?",
-    a: "সম্পূর্ণ পেমেন্ট সম্পন্ন হওয়ার পর website, domain ও এর সব content-এর মালিকানা সম্পূর্ণভাবে আপনার।",
+    a: "না। এটি subscription service — website-এর software, hosting ও updates আমরা maintain করি, তাই source code দেওয়া হয় না। আপনার domain ও content/data সবসময় আপনার।",
   },
   {
     q: "Domain আমার নামে থাকবে?",
-    a: "হ্যাঁ। Domain কেনার সময় আপনার তথ্য দিয়ে registration করা হয়, তাই ownership শুরু থেকেই আপনার নামে থাকে।",
+    a: "হ্যাঁ। Domain আপনার তথ্য দিয়ে registration করা হয়, তাই ownership শুরু থেকেই আপনার নামে থাকে।",
   },
   {
-    q: "Support শেষ হওয়ার পরে কী হবে?",
-    a: "Support period শেষ হলে বাধ্যতামূলক কোনো চার্জ নেই। পরে প্রয়োজন হলে আপনি মাসিক ভিত্তিতে extended support নিতে পারেন — খরচ আগে থেকেই জানানো হবে।",
+    q: "Subscription বন্ধ করলে কী হবে?",
+    a: "যেকোনো মাসে cancel করতে পারবেন — কোনো minimum সময় নেই। Cancel করলে website offline হয়ে যাবে, তবে domain আপনার থাকবে এবং আপনার content/data export করে দেওয়া হবে।",
   },
   {
     q: "Bug হলে কী হবে?",
-    a: "Support period-এর মধ্যে কোনো bug/error ধরা পড়লে আমরা বিনামূল্যে ঠিক করে দিই। নতুন feature request বা scope-এর বাইরের কাজ এর আওতায় পড়ে না।",
+    a: "Subscription চলাকালীন যেকোনো bug/error আমরা বিনামূল্যে ঠিক করে দিই। নতুন feature request বা scope-এর বাইরের কাজ এর আওতায় পড়ে না।",
   },
 ];
 
 export default function FaqSection() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 md:py-18 lg:px-8">
+    <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 md:py-18 lg:px-8">
       <Reveal className="mx-auto max-w-2xl text-center">
-        <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          প্রশ্ন থাকতে পারে? উত্তর এখানে।
+        <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          প্রশ্ন থাকতে পারে?{" "}
+          <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
+            উত্তর এখানে।
+          </span>
         </h2>
-        <p className="mt-3 text-base text-slate-500">Frequently Asked Questions</p>
+        <p className="mt-3 text-base text-neutral-400">Frequently Asked Questions</p>
       </Reveal>
 
       <div className="mt-10 grid items-start gap-4 lg:grid-cols-2 lg:gap-6">
@@ -88,15 +91,15 @@ export default function FaqSection() {
           <Reveal
             key={col}
             delay={0.1 + col * 0.05}
-            className="rounded-2xl border border-slate-200 bg-white px-6 shadow-sm sm:px-7"
+            className="glass rounded-2xl px-6 sm:px-7"
           >
             <Accordion type="single" collapsible>
               {column.map((faq) => (
-                <AccordionItem key={faq.q} value={faq.q} className="border-slate-200 last:border-b-0">
-                  <AccordionTrigger className="py-5 text-left text-base font-semibold text-slate-900 hover:text-indigo-600 hover:no-underline">
+                <AccordionItem key={faq.q} value={faq.q} className="border-white/10 last:border-b-0">
+                  <AccordionTrigger className="py-5 text-left text-base font-semibold text-white hover:text-indigo-300 hover:no-underline data-[state=open]:text-indigo-200 [&>svg]:text-neutral-400">
                     {faq.q}
                   </AccordionTrigger>
-                  <AccordionContent className="text-bn text-sm leading-relaxed text-slate-600">
+                  <AccordionContent className="text-bn text-sm leading-relaxed text-neutral-300">
                     {faq.a}
                   </AccordionContent>
                 </AccordionItem>

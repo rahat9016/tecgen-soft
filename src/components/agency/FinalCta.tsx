@@ -15,17 +15,11 @@ import Reveal from "@/src/components/agency/Reveal";
 import { CONTACT } from "@/src/lib/contact";
 
 const businessTypes = [
-  "E-commerce",
   "Hotel Booking",
-  "Restaurant",
-  "Business Website",
+  "Gadget E-commerce",
+  "Fashion E-commerce",
+  "Turf Booking",
   "অন্য কিছু",
-];
-const budgets = [
-  "৳১০,০০০-এর কম",
-  "৳১০,০০০ – ৳২০,০০০",
-  "৳২০,০০০+",
-  "এখনো ঠিক করিনি",
 ];
 
 const channels = [
@@ -34,28 +28,28 @@ const channels = [
     label: "WhatsApp",
     value: "Chat with us",
     href: CONTACT.whatsappHref,
-    accent: "bg-emerald-500",
+    accent: "bg-emerald-500 text-white",
   },
   {
     icon: Phone,
     label: "Call",
     value: CONTACT.phoneDisplay,
     href: CONTACT.phoneHref,
-    accent: "bg-white/15",
+    accent: "bg-white/15 text-white",
   },
   {
     icon: Mail,
     label: "Email",
     value: CONTACT.email,
     href: `mailto:${CONTACT.email}`,
-    accent: "bg-white/15",
+    accent: "bg-white/15 text-white",
   },
   {
     icon: Facebook,
     label: "Facebook",
     value: "Message our Page",
     href: CONTACT.facebookHref,
-    accent: "bg-white/15",
+    accent: "bg-white/15 text-white",
   },
 ];
 
@@ -63,12 +57,11 @@ const emptyForm = {
   name: "",
   phone: "",
   business: "",
-  budget: "",
   message: "",
 };
 
 const inputClass =
-  "w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100";
+  "w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white placeholder:text-white/35 transition outline-none [color-scheme:dark] focus:border-indigo-300/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-indigo-400/15";
 
 export default function FinalCta() {
   const [form, setForm] = useState(emptyForm);
@@ -86,8 +79,7 @@ export default function FinalCta() {
       "Hello Tecgen Soft! আমি একটি website নিয়ে কথা বলতে চাই।\n",
       `নাম: ${form.name.trim()}`,
       `ফোন: ${form.phone.trim()}`,
-      form.business && `ব্যবসার ধরন: ${form.business}`,
-      form.budget && `বাজেট: ${form.budget}`,
+      form.business && `যে solution দরকার: ${form.business}`,
       form.message.trim() && `বিস্তারিত: ${form.message.trim()}`,
     ]
       .filter(Boolean)
@@ -105,22 +97,24 @@ export default function FinalCta() {
   return (
     <section
       id="contact"
-      className="relative overflow-hidden bg-linear-to-br from-[#3D2EF9] via-[#4732e8] to-[#061531] py-16 md:py-24"
+      className="relative overflow-x-clip py-16 md:py-24"
     >
-      <div className="pointer-events-none absolute -top-24 -right-24 size-96 rounded-full bg-indigo-400/30 blur-[100px]" />
-      <div className="pointer-events-none absolute -bottom-24 -left-24 size-96 rounded-full bg-blue-500/20 blur-[100px]" />
+      <div className="pointer-events-none absolute top-1/4 -left-32 size-[30rem] rounded-full bg-white/[0.08] blur-[120px]" />
+      <div className="pointer-events-none absolute top-1/3 -right-24 size-[28rem] rounded-full bg-white/[0.05] blur-[120px]" />
+      <div className="pointer-events-none absolute top-24 right-1/4 size-72 rounded-full bg-white/[0.04] blur-[100px]" />
 
       <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:px-8">
         <Reveal>
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-indigo-100 backdrop-blur-sm">
+          <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-neutral-200">
             আজই শুরু করুন
           </span>
           <h2 className="mt-5 text-3xl leading-tight font-bold tracking-tight text-white sm:text-4xl md:text-5xl">
             আপনার ব্যবসাকে অনলাইনে নতুনভাবে উপস্থাপন করুন
           </h2>
-          <p className="mt-5 max-w-lg text-base leading-relaxed text-indigo-100">
-            আমাদের সাথে কথা বলুন। আপনার business, budget এবং requirements শুনে
-            আমরা আপনাকে suitable solution suggest করব — কোনো চাপ ছাড়াই।
+          <p className="mt-5 max-w-lg text-base leading-relaxed text-neutral-300">
+            আমাদের সাথে কথা বলুন। আপনার business ও requirements শুনে আমরা
+            suitable solution suggest করব — কোনো চাপ ছাড়াই। ১–৩ দিনে live,
+            মাসিক subscription-এ।
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -132,10 +126,10 @@ export default function FinalCta() {
                 rel={
                   href.startsWith("http") ? "noopener noreferrer" : undefined
                 }
-                className="group flex items-center gap-3 rounded-2xl border border-white/15 bg-white/[0.07] p-3.5 backdrop-blur-sm transition hover:border-white/30 hover:bg-white/[0.12]"
+                className="glass group flex items-center gap-3 rounded-2xl p-3.5 transition hover:border-white/25 hover:bg-white/[0.1]"
               >
                 <span
-                  className={`flex size-10 shrink-0 items-center justify-center rounded-xl text-white ${accent}`}
+                  className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${accent}`}
                 >
                   <Icon className="size-4.5" />
                 </span>
@@ -156,20 +150,20 @@ export default function FinalCta() {
         <Reveal delay={0.1}>
           <div
             id="contact-form"
-            className="rounded-3xl bg-white p-6 shadow-2xl shadow-black/25 sm:p-8"
+            className="glass-strong rounded-3xl p-6 sm:p-8"
           >
             <form onSubmit={handleSubmit} noValidate>
-              <h3 className="text-xl font-bold text-slate-900">
+              <h3 className="text-xl font-bold text-white">
                 Free Consultation নিন
               </h3>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-neutral-400">
                 তথ্য দিন — WhatsApp-এ সরাসরি আমাদের কাছে পৌঁছাবে।
               </p>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-semibold text-slate-700">
-                    আপনার নাম <span className="text-rose-500">*</span>
+                  <span className="mb-1.5 block text-xs font-semibold text-neutral-200">
+                    আপনার নাম <span className="text-rose-400">*</span>
                   </span>
                   <input
                     value={form.name}
@@ -180,8 +174,8 @@ export default function FinalCta() {
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-semibold text-slate-700">
-                    ফোন নম্বর <span className="text-rose-500">*</span>
+                  <span className="mb-1.5 block text-xs font-semibold text-neutral-200">
+                    ফোন নম্বর <span className="text-rose-400">*</span>
                   </span>
                   <input
                     value={form.phone}
@@ -196,8 +190,8 @@ export default function FinalCta() {
               </div>
 
               <fieldset className="mt-5">
-                <legend className="mb-2 text-xs font-semibold text-slate-700">
-                  ব্যবসার ধরন
+                <legend className="mb-2 text-xs font-semibold text-neutral-200">
+                  কোন solution দরকার?
                 </legend>
                 <div className="flex flex-wrap gap-2">
                   {businessTypes.map((type) => (
@@ -211,7 +205,7 @@ export default function FinalCta() {
                       className={`rounded-full border px-3.5 py-1.5 text-sm transition ${
                         form.business === type
                           ? "border-[#3D2EF9] bg-[#3D2EF9] text-white"
-                          : "border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
+                          : "border-white/15 bg-white/[0.04] text-neutral-300 hover:border-indigo-300/50 hover:text-white"
                       }`}
                     >
                       {type}
@@ -221,25 +215,7 @@ export default function FinalCta() {
               </fieldset>
 
               <label className="mt-5 block">
-                <span className="mb-1.5 block text-xs font-semibold text-slate-700">
-                  আনুমানিক বাজেট
-                </span>
-                <select
-                  value={form.budget}
-                  onChange={(e) => update("budget")(e.target.value)}
-                  className={`${inputClass} ${form.budget ? "" : "text-slate-400"}`}
-                >
-                  <option value="">বাছাই করুন (optional)</option>
-                  {budgets.map((b) => (
-                    <option key={b} value={b} className="text-slate-900">
-                      {b}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="mt-5 block">
-                <span className="mb-1.5 block text-xs font-semibold text-slate-700">
+                <span className="mb-1.5 block text-xs font-semibold text-neutral-200">
                   কী ধরনের website চান?
                 </span>
                 <textarea
@@ -253,12 +229,12 @@ export default function FinalCta() {
 
               <button
                 type="submit"
-                className="group mt-6 inline-flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 text-base font-semibold text-white shadow-lg shadow-emerald-600/25 transition hover:-translate-y-0.5 hover:bg-emerald-600"
+                className="group mt-6 inline-flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 text-base font-semibold text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3),0_14px_32px_-10px_rgba(16,185,129,0.7)] transition hover:-translate-y-0.5 hover:bg-emerald-600"
               >
                 <Send className="size-4 transition group-hover:translate-x-0.5" />
                 WhatsApp-এ পাঠান
               </button>
-              <p className="mt-3 text-center text-xs text-slate-400">
+              <p className="mt-3 text-center text-xs text-neutral-500">
                 আপনার তথ্য শুধু আপনার সাথে যোগাযোগের জন্য ব্যবহার হবে।
               </p>
             </form>

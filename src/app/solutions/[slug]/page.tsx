@@ -40,7 +40,7 @@ export default async function SolutionDetailPage({
 
           <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 text-sm text-slate-300">
             <span className="flex items-center gap-2">
-              <Clock className="size-4 text-indigo-300" /> Delivery: {solution.delivery}
+              <Clock className="size-4 text-indigo-300" /> Live in: {solution.setup}
             </span>
             <span className="flex items-center gap-2">
               <Smartphone className="size-4 text-indigo-300" /> Mobile Responsive
@@ -54,9 +54,9 @@ export default async function SolutionDetailPage({
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            {solution.image && (
+            {solution.demoHref && (
               <Link
-                href="#"
+                href={solution.demoHref}
                 className="inline-flex h-12 items-center gap-2 rounded-lg bg-white px-6 text-sm font-semibold text-indigo-700 shadow-md transition hover:bg-indigo-50"
               >
                 View Live Demo
@@ -166,35 +166,34 @@ export default async function SolutionDetailPage({
       {/* Payment */}
       <section className="bg-slate-50 py-16 md:py-20">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Payment</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Monthly Subscription</h2>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <div className="rounded-2xl border border-slate-200 bg-white px-6 py-4">
-              <p className="text-xs text-slate-400">Requirement Confirmation</p>
+              <p className="text-xs text-slate-400">Order ও Setup</p>
               <p className="text-sm font-semibold text-slate-700">No Payment Needed</p>
             </div>
             <ArrowRight className="size-5 shrink-0 rotate-90 text-indigo-400 sm:rotate-0" />
             <div className="rounded-2xl border border-slate-200 bg-white px-6 py-4">
-              <p className="text-xs text-slate-400">Design & Development</p>
-              <p className="text-sm font-semibold text-slate-700">In Progress</p>
+              <p className="text-xs text-slate-400">Website Live</p>
+              <p className="text-sm font-semibold text-slate-700">{solution.setup}-এর মধ্যে</p>
             </div>
             <ArrowRight className="size-5 shrink-0 rotate-90 text-indigo-400 sm:rotate-0" />
             <div className="rounded-2xl border border-indigo-200 bg-white px-6 py-4">
-              <p className="text-xs text-slate-400">Project Complete</p>
-              <p className="text-lg font-bold text-indigo-600">১০০% Payment</p>
+              <p className="text-xs text-slate-400">প্রতি মাসে</p>
+              <p className="text-lg font-bold text-indigo-600">{solution.price}</p>
             </div>
           </div>
 
           <p className="mx-auto mt-4 max-w-md text-sm text-slate-500">
-            কোনো advance লাগে না — প্রজেক্ট সম্পূর্ণ শেষ হয়ে, আপনি review করে সন্তুষ্ট হওয়ার পরই পুরো পেমেন্ট করবেন।
+            কোনো upfront বা setup খরচ নেই — website live হওয়ার পর থেকে মাসিক payment শুরু হয়।
           </p>
 
           <ul className="mx-auto mt-8 max-w-md space-y-2 text-left text-sm text-slate-600">
-            <li>• Domain ownership: আপনার নামে registered থাকবে।</li>
-            <li>• Hosting ownership: আপনার account-এ setup করা হয়।</li>
-            <li>• Source code: সম্পূর্ণ পেমেন্টের পর আপনাকে দেওয়া হয়।</li>
-            <li>• Renewal cost: Domain ও hosting renewal আপনার নিজের খরচে।</li>
-            <li>• Support period: {solution.support}, এরপর optional মাসিক support।</li>
+            <li>• Domain: আপনার নামে registered থাকবে — কেনা ও setup-এ আমরা সাহায্য করি।</li>
+            <li>• Hosting ও SSL: monthly subscription-এর মধ্যেই included।</li>
+            <li>• Updates, bug fix ও support: {solution.support} included।</li>
+            <li>• Cancel: যেকোনো মাসে cancel করা যায় — website offline হবে, domain ও আপনার content/data আপনার থাকবে।</li>
             <li>• Additional features: প্রতিটির খরচ আগে থেকে জানিয়ে দেওয়া হয়।</li>
           </ul>
         </div>
@@ -206,7 +205,7 @@ export default async function SolutionDetailPage({
             আপনার business idea আমাদের বলুন।
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-indigo-100 sm:text-base">
-            আপনার business, budget এবং requirements শুনে আমরা আপনাকে suitable solution suggest করব।
+            আপনার business ও requirements শুনে আমরা আপনাকে suitable solution suggest করব।
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link

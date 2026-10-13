@@ -20,7 +20,7 @@ export type Project = {
 export const PROJECTS: Project[] = [
   {
     slug: "ecommerce-demo",
-    name: "E-commerce Website",
+    name: "Fashion E-commerce",
     category: "E-commerce",
     description:
       "Fashion ও product business-এর জন্য অনলাইন শপ — product, cart, checkout, admin dashboard।",
@@ -42,7 +42,7 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: "hotel-booking-demo",
-    name: "Hotel Booking Website",
+    name: "Hotel Booking Management",
     category: "Hotel Booking",
     description: "Room browsing, booking ও admin management সহ হোটেল/রিসোর্ট বুকিং সিস্টেম।",
     image: "/hotel-management.webp",
