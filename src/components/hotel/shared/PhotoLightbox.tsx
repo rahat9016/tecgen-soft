@@ -11,7 +11,8 @@ export interface LightboxPhoto {
 }
 
 // Unsplash URLs carry their width as `w=`; swap it to fetch a size that fits the slot.
-export const sizedPhoto = (src: string, width: number) => src.replace(/w=\d+/, `w=${width}`);
+// Only resizes CDN links (Unsplash `w=`); uploaded photos are data URLs and pass through untouched.
+export const sizedPhoto = (src: string, width: number) => (src.startsWith("http") ? src.replace(/w=\d+/, `w=${width}`) : src);
 
 export default function PhotoLightbox({
   photos,

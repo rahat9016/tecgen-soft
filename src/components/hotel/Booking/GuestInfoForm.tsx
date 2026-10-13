@@ -4,7 +4,13 @@ import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Controller, FormProvider, useForm, useFormState, useWatch } from "react-hook-form";
+import {
+  Controller,
+  FormProvider,
+  useForm,
+  useFormState,
+  useWatch,
+} from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { differenceInCalendarDays } from "date-fns";
 import { toast } from "react-toastify";
@@ -24,20 +30,26 @@ import ControlledSelectField from "@/src/components/shared/FromController/Contro
 import ControlledTextareaField from "@/src/components/shared/FromController/ControlledTextareaField";
 import ControlledCheckboxField from "@/src/components/shared/FromController/ControlledCheckboxField";
 import { useAppDispatch, useAppSelector } from "@/src/lib/redux/hooks";
-import { clearSelection, setLastBookingId } from "@/src/lib/redux/features/hotelBooking/hotelBookingSlice";
-import { getBookingHistory, reservationsFromHistory, saveBooking } from "@/src/lib/hotelBookingHistory";
-import { availableRooms, getRoomById, hotel } from "@/src/data/hotels";
+import {
+  clearSelection,
+  setLastBookingId,
+} from "@/src/lib/redux/features/hotelBooking/hotelBookingSlice";
 import { countries, getCountry } from "@/src/data/countries";
 import type { CurrencyCode } from "@/src/lib/currency";
+import { toDayKey } from "@/src/lib/hotelDates";
 import {
-  amountDueNow,
-  DEPOSIT_RATE,
-  depositAmount,
   onlinePaymentMethods,
   paymentMethodInfo,
   type OnlinePaymentMethod,
   type PaymentPlan,
 } from "@/src/lib/hotelPayment";
+import {
+  createOnlineBooking,
+  quoteStay,
+  useCurrentGuest,
+  useHotelDB,
+  useHotelSite,
+} from "@/src/lib/hotel-store/store";
 import BookingSummary from "./BookingSummary";
 import {
   AIRPORT_PICKUP,
@@ -46,8 +58,6 @@ import {
   titles,
   type GuestInfoFormType,
 } from "./schema/GuestInfoSchema";
-
-const newBookingId = () => `TW-${Date.now().toString().slice(-8)}`;
 
 const UNSURE_ARRIVAL = "unsure";
 
@@ -72,19 +82,21 @@ const arrivalOptions = [
   ].map((slot) => ({ label: slot, value: slot })),
 ];
 
-const airport = hotel.nearby.find((place) => place.type === "airport");
-const requestOptions = [
-  ...["Early check-in", "Late check-out", "High floor", "Extra bed", "Baby cot", "Quiet room"].map((label) => ({
-    label,
-    value: label,
-  })),
-  ...(airport
-    ? [{ label: `Airport pickup from ${airport.name} (${airport.distance}) — price confirmed later`, value: AIRPORT_PICKUP }]
-    : []),
-];
+const baseRequests = [
+  "Early check-in",
+  "Late check-out",
+  "High floor",
+  "Extra bed",
+  "Baby cot",
+  "Quiet room",
+].map((label) => ({
+  label,
+  value: label,
+}));
 const termsOptions = [
   {
-    label: "I agree to the house rules and cancellation policy, and confirm the guest details are correct.",
+    label:
+      "I agree to the house rules and cancellation policy, and confirm the guest details are correct.",
     value: TERMS_ACCEPTED,
   },
 ];
@@ -93,12 +105,11 @@ const termsOptions = [
 const checkboxGridClass =
   "[&>div]:grid [&>div]:gap-2.5 [&>div>*]:!m-0 sm:[&>div]:grid-cols-2 [&>div>div]:rounded-xl [&>div>div]:border [&>div>div]:border-neutral-200 [&>div>div]:bg-white [&>div>div]:px-3 [&>div>div]:py-2.5 [&>div>div]:transition [&>div>div:has([data-state=checked])]:border-sky-400 [&>div>div:has([data-state=checked])]:bg-sky-50/60 [&_label]:text-sm [&_label]:leading-snug [&_label]:text-neutral-700 [&_[data-state=checked]]:border-sky-600 [&_[data-state=checked]]:bg-sky-600";
 
-const methodChoices = onlinePaymentMethods.map((value) => ({ value, ...paymentMethodInfo[value] }));
-
 // Passed to the shared controlled fields; border colour is left to them so their error state still shows.
 const inputClass =
   "h-11 rounded-xl px-3.5 shadow-none placeholder:text-neutral-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
-const selectClass = "h-11 rounded-xl px-3.5 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
+const selectClass =
+  "h-11 rounded-xl px-3.5 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
 
 function Section({
   step,
@@ -124,7 +135,9 @@ function Section({
         </span>
         <div>
           <h2 className="font-bold text-neutral-900">{title}</h2>
-          {subtitle && <p className="mt-0.5 text-sm text-neutral-500">{subtitle}</p>}
+          {subtitle && (
+            <p className="mt-0.5 text-sm text-neutral-500">{subtitle}</p>
+          )}
         </div>
       </div>
       <div className="mt-5">{children}</div>
@@ -136,7 +149,9 @@ function Section({
 function FieldError({ name }: { name: keyof GuestInfoFormType }) {
   const { errors } = useFormState<GuestInfoFormType>({ name });
   const message = errors[name]?.message;
-  return message ? <div className="mt-1 pl-2 text-xs text-rose-500">{String(message)}</div> : null;
+  return message ? (
+    <div className="mt-1 pl-2 text-xs text-rose-500">{String(message)}</div>
+  ) : null;
 }
 
 /** Label + control + hint. Controlled fields render their own error; the hint hides while `name` has one. */
@@ -162,10 +177,14 @@ function Field({
     <div className={className}>
       <p className="text-sm font-medium text-neutral-800">
         {label}
-        {optional && <span className="font-normal text-neutral-400"> (optional)</span>}
+        {optional && (
+          <span className="font-normal text-neutral-400"> (optional)</span>
+        )}
       </p>
       <div className="mt-1.5">{children}</div>
-      {hint && !hasError && <p className="mt-1.5 text-xs text-neutral-500">{hint}</p>}
+      {hint && !hasError && (
+        <p className="mt-1.5 text-xs text-neutral-500">{hint}</p>
+      )}
     </div>
   );
 }
@@ -174,8 +193,29 @@ export default function GuestInfoForm() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const selection = useAppSelector((state) => state.hotelBooking.selection);
+  const hotel = useHotelSite();
+  const { settings } = useHotelDB();
+  const user = useCurrentGuest();
   const [confirming, setConfirming] = useState(false);
-  const [currencyChoice, setCurrencyChoice] = useState<{ country: string; currency: CurrencyCode } | null>(null);
+  const methodChoices = onlinePaymentMethods
+    .filter((value) => settings.onlineMethods[value])
+    .map((value) => ({ value, ...paymentMethodInfo[value] }));
+  const airport = hotel.nearby.find((place) => place.type === "airport");
+  const requestOptions = [
+    ...baseRequests,
+    ...(airport
+      ? [
+          {
+            label: `Airport pickup from ${airport.name} (${airport.distance}) — price confirmed later`,
+            value: AIRPORT_PICKUP,
+          },
+        ]
+      : []),
+  ];
+  const [currencyChoice, setCurrencyChoice] = useState<{
+    country: string;
+    currency: CurrencyCode;
+  } | null>(null);
 
   const methods = useForm<GuestInfoFormType>({
     resolver: yupResolver(guestInfoValidationSchema),
@@ -195,7 +235,7 @@ export default function GuestInfoForm() {
       requests: [],
       note: "",
       paymentPlan: "deposit",
-      paymentMethod: "bkash",
+      paymentMethod: methodChoices[0]?.value ?? "bkash",
       acceptTerms: [],
     },
   });
@@ -215,6 +255,17 @@ export default function GuestInfoForm() {
     return () => subscription.unsubscribe();
   }, [methods, setValue]);
 
+  // Signed-in guests don't retype what their account already knows.
+  useEffect(() => {
+    if (!user || methods.getValues("email")) return;
+    const [first, ...rest] = user.name.split(" ");
+    setValue("firstName", first ?? "");
+    setValue("lastName", rest.join(" "));
+    setValue("email", user.email);
+    const local = user.phone.replace(/^\+880\s?/, "0").replace(/[\s-]/g, "");
+    if (user.phone.startsWith("+880")) setValue("phone", local);
+  }, [user, methods, setValue]);
+
   if (!selection) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-neutral-200 bg-white p-10 text-center">
@@ -222,7 +273,9 @@ export default function GuestInfoForm() {
           <BedDouble className="size-6" />
         </span>
         <p className="font-semibold text-neutral-900">No room selected yet</p>
-        <p className="text-sm text-neutral-500">Pick a room and your dates to start a booking.</p>
+        <p className="text-sm text-neutral-500">
+          Pick a room and your dates to start a booking.
+        </p>
         <Link
           href="/hotel-management/rooms"
           className="mt-1 rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700"
@@ -237,124 +290,155 @@ export default function GuestInfoForm() {
   // Only Bangladeshi residents choose between NID and passport; everyone else books with a passport.
   const idKind = isLocal ? idType : "passport";
   const currency =
-    currencyChoice?.country === country ? currencyChoice.currency : (getCountry(country)?.currency ?? "USD");
+    currencyChoice?.country === country
+      ? currencyChoice.currency
+      : (getCountry(country)?.currency ?? "USD");
 
   const checkIn = new Date(selection.checkIn!);
   const checkOut = new Date(selection.checkOut!);
   const nights = Math.max(1, differenceInCalendarDays(checkOut, checkIn));
-  const subtotal = selection.pricePerNight * nights * selection.rooms;
-  const serviceFee = Math.round(subtotal * 0.03);
-  const tax = Math.round(subtotal * 0.05);
-  const total = subtotal + serviceFee + tax;
+  const { subtotal, serviceFee, tax, total, deposit } = quoteStay(
+    settings,
+    selection.pricePerNight,
+    nights,
+    selection.rooms
+  );
   const plan = (paymentPlan ?? "deposit") as PaymentPlan;
-  const dueNow = amountDueNow(total, plan);
-  const deposit = depositAmount(total);
+  const dueNow = plan === "full" ? total : deposit;
   const methodLabel = paymentMethodInfo[paymentMethod ?? "bkash"]?.label ?? "";
 
   const onSubmit = async (data: GuestInfoFormType) => {
     setConfirming(true);
-
-    // Real-time availability check simulation before final confirmation
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    // Re-check against the hotel's reservations and bookings already made in this browser.
-    const room = getRoomById(selection.roomId);
-    if (room) {
-      const free = availableRooms(room, checkIn, checkOut, reservationsFromHistory(getBookingHistory(), room.id));
-      if (free < selection.rooms) {
-        setConfirming(false);
-        toast.error(
-          free === 0
-            ? "Sorry — this room was just booked for your dates. Please choose other dates."
-            : `Sorry — only ${free} of this room ${free === 1 ? "is" : "are"} left for your dates.`
-        );
-        return;
-      }
-    }
-
-    const dial = data.phoneCountry === "OTHER" ? data.customDial.replace(/^\+/, "") : getCountry(data.phoneCountry)?.dial;
-    const localNumber = data.phone.replace(/[\s()-]/g, "").replace(/^0/, "");
     // DEMO ONLY: no payment gateway is connected. Before going live, send the guest to the bKash/Nagad/Rocket or
-    // card gateway (e.g. SSLCommerz) here and only save the booking once the gateway confirms the payment.
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    const paidNow = amountDueNow(total, data.paymentPlan as PaymentPlan);
+    // card gateway (e.g. SSLCommerz) here and only create the booking once the gateway confirms the payment.
+    await new Promise((resolve) => setTimeout(resolve, 1200));
 
-    const bookingId = newBookingId();
-    const requests = data.requests.filter((request) => request !== AIRPORT_PICKUP);
+    const dial =
+      data.phoneCountry === "OTHER"
+        ? data.customDial.replace(/^\+/, "")
+        : getCountry(data.phoneCountry)?.dial;
+    const localNumber = data.phone.replace(/[\s()-]/g, "").replace(/^0/, "");
+    const requests = data.requests.filter(
+      (request) => request !== AIRPORT_PICKUP
+    );
     const note = [...requests, data.note.trim()].filter(Boolean).join(", ");
 
-    saveBooking({
-      bookingId,
-      roomId: selection.roomId,
-      hotelSlug: selection.hotelSlug,
-      hotelName: selection.hotelName,
-      hotelLocation: selection.hotelLocation,
-      hotelImage: selection.hotelImage,
-      roomName: selection.roomName,
-      checkIn: selection.checkIn!,
-      checkOut: selection.checkOut!,
-      nights,
+    // The store re-checks availability against every booking at the moment of saving.
+    const result = createOnlineBooking({
+      roomTypeId: selection.roomId,
+      checkIn: toDayKey(checkIn),
+      checkOut: toDayKey(checkOut),
+      rooms: selection.rooms,
       adults: selection.adults,
       children: selection.children,
-      rooms: selection.rooms,
-      pricePerNight: selection.pricePerNight,
-      subtotal,
-      serviceFee,
-      tax,
-      total,
+      plan: data.paymentPlan as PaymentPlan,
+      method: data.paymentMethod as OnlinePaymentMethod,
       guest: {
-        name: `${data.title} ${data.firstName} ${data.lastName}`,
-        email: data.email,
+        name: `${data.title} ${data.firstName.trim()} ${data.lastName.trim()}`,
+        email: data.email.trim(),
         phone: `+${dial} ${localNumber}`,
         note,
-        country: data.country === "OTHER" ? data.otherCountry : getCountry(data.country)?.name,
-        idType: data.country === "BD" ? (data.idType as "nid" | "passport") : "passport",
+        country:
+          data.country === "OTHER"
+            ? data.otherCountry
+            : getCountry(data.country)?.name,
+        idType:
+          data.country === "BD"
+            ? (data.idType as "nid" | "passport")
+            : "passport",
         idNumber: data.idNumber.trim().toUpperCase(),
-        arrivalTime: data.arrivalTime === UNSURE_ARRIVAL ? "" : data.arrivalTime,
+        arrivalTime:
+          data.arrivalTime === UNSURE_ARRIVAL ? "" : data.arrivalTime,
         airportPickup: data.requests.includes(AIRPORT_PICKUP),
       },
-      paymentMethod: data.paymentMethod as OnlinePaymentMethod,
-      paymentPlan: data.paymentPlan as PaymentPlan,
-      amountPaid: paidNow,
-      createdAt: new Date().toISOString(),
     });
 
-    dispatch(setLastBookingId(bookingId));
-    dispatch(clearSelection());
+    if (!result.ok) {
+      setConfirming(false);
+      toast.error(
+        `Sorry — ${result.error} Please choose other dates or another room.`
+      );
+      return;
+    }
 
-    toast.success(`Payment of BDT ${paidNow.toLocaleString()} received — booking confirmed!`);
-    router.push(`/hotel-management/booking-success?bookingId=${bookingId}`);
+    const booking = result.value;
+    dispatch(setLastBookingId(booking.code));
+    dispatch(clearSelection());
+    toast.success(
+      booking.status === "pending"
+        ? `Payment of BDT ${dueNow.toLocaleString()} received — the hotel will confirm shortly.`
+        : `Payment of BDT ${dueNow.toLocaleString()} received — booking confirmed!`
+    );
+    router.push(`/hotel-management/booking-success?bookingId=${booking.code}`);
   };
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[1fr_400px]">
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
-          <Section step={1} icon={UserRound} title="Who's checking in?" subtitle="Use the name on your ID or passport.">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          className="space-y-5"
+        >
+          <Section
+            step={1}
+            icon={UserRound}
+            title="Who's checking in?"
+            subtitle="Use the name on your ID or passport."
+          >
             <div className="grid gap-4 sm:grid-cols-[110px_1fr_1fr]">
               <Field label="Title">
-                <ControlledSelectField name="title" options={titleOptions} className={selectClass} />
+                <ControlledSelectField
+                  name="title"
+                  options={titleOptions}
+                  className={selectClass}
+                />
               </Field>
               <Field label="First name">
-                <ControlledInputField name="firstName" placeholder="e.g. Tamim" className={inputClass} />
+                <ControlledInputField
+                  name="firstName"
+                  placeholder="e.g. Tamim"
+                  className={inputClass}
+                />
               </Field>
               <Field label="Last name">
-                <ControlledInputField name="lastName" placeholder="e.g. Rahman" className={inputClass} />
+                <ControlledInputField
+                  name="lastName"
+                  placeholder="e.g. Rahman"
+                  className={inputClass}
+                />
               </Field>
             </div>
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <Field label="Email" name="email" hint="We'll send your confirmation here.">
-                <ControlledInputField name="email" type="email" placeholder="you@example.com" className={inputClass} />
+              <Field
+                label="Email"
+                name="email"
+                hint="We'll send your confirmation here."
+              >
+                <ControlledInputField
+                  name="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  className={inputClass}
+                />
               </Field>
               <Field label="Country of residence">
-                <ControlledSelectField name="country" options={countryOptions} className={selectClass} />
+                <ControlledSelectField
+                  name="country"
+                  options={countryOptions}
+                  className={selectClass}
+                />
               </Field>
             </div>
 
             {country === "OTHER" && (
               <Field label="Your country" className="mt-4">
-                <ControlledInputField name="otherCountry" placeholder="e.g. Brazil" className={inputClass} />
+                <ControlledInputField
+                  name="otherCountry"
+                  placeholder="e.g. Brazil"
+                  className={inputClass}
+                />
               </Field>
             )}
 
@@ -370,18 +454,28 @@ export default function GuestInfoForm() {
             >
               <div className="flex items-start gap-2">
                 <div className="w-32 shrink-0 sm:w-48">
-                  <ControlledSelectField name="phoneCountry" options={dialOptions} className={selectClass} />
+                  <ControlledSelectField
+                    name="phoneCountry"
+                    options={dialOptions}
+                    className={selectClass}
+                  />
                 </div>
                 {phoneCountry === "OTHER" && (
                   <div className="w-24 shrink-0">
-                    <ControlledInputField name="customDial" placeholder="+971" className={inputClass} />
+                    <ControlledInputField
+                      name="customDial"
+                      placeholder="+971"
+                      className={inputClass}
+                    />
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <ControlledInputField
                     name="phone"
                     type="tel"
-                    placeholder={phoneCountry === "BD" ? "01XXXXXXXXX" : "Phone number"}
+                    placeholder={
+                      phoneCountry === "BD" ? "01XXXXXXXXX" : "Phone number"
+                    }
                     className={inputClass}
                   />
                 </div>
@@ -399,8 +493,9 @@ export default function GuestInfoForm() {
               <div className="mb-4 flex gap-2.5 rounded-2xl bg-sky-50 p-3 text-sm text-sky-900">
                 <Globe2 className="mt-0.5 size-4 shrink-0 text-sky-600" />
                 <p>
-                  <span className="font-semibold">International guests:</span> please bring your passport (and
-                  visa, if required) to check-in.
+                  <span className="font-semibold">International guests:</span>{" "}
+                  please bring your passport (and visa, if required) to
+                  check-in.
                 </p>
               </div>
             )}
@@ -410,7 +505,10 @@ export default function GuestInfoForm() {
                 name="idType"
                 control={control}
                 render={({ field }) => (
-                  <div className="mb-4 inline-flex rounded-full bg-neutral-100 p-1 text-sm font-medium" role="radiogroup">
+                  <div
+                    className="mb-4 inline-flex rounded-full bg-neutral-100 p-1 text-sm font-medium"
+                    role="radiogroup"
+                  >
                     {(["nid", "passport"] as const).map((type) => (
                       <button
                         key={type}
@@ -432,23 +530,44 @@ export default function GuestInfoForm() {
               />
             )}
 
-            <Field label={idKind === "nid" ? "NID number" : "Passport number"} optional>
+            <Field
+              label={idKind === "nid" ? "NID number" : "Passport number"}
+              optional
+            >
               <ControlledInputField
                 name="idNumber"
-                placeholder={idKind === "nid" ? "10, 13 or 17 digits" : "e.g. A01234567"}
+                placeholder={
+                  idKind === "nid" ? "10, 13 or 17 digits" : "e.g. A01234567"
+                }
                 className={`${inputClass} uppercase placeholder:normal-case`}
               />
             </Field>
           </Section>
 
-          <Section step={3} icon={Plane} title="Arrival & requests" subtitle="Requests aren't guaranteed, but we'll do our best.">
-            <Field label="Estimated arrival time" optional className="sm:max-w-sm">
-              <ControlledSelectField name="arrivalTime" options={arrivalOptions} className={selectClass} />
+          <Section
+            step={3}
+            icon={Plane}
+            title="Arrival & requests"
+            subtitle="Requests aren't guaranteed, but we'll do our best."
+          >
+            <Field
+              label="Estimated arrival time"
+              optional
+              className="sm:max-w-sm"
+            >
+              <ControlledSelectField
+                name="arrivalTime"
+                options={arrivalOptions}
+                className={selectClass}
+              />
             </Field>
 
             <Field label="Special requests" optional className="mt-5">
               <div className={checkboxGridClass}>
-                <ControlledCheckboxField name="requests" options={requestOptions} />
+                <ControlledCheckboxField
+                  name="requests"
+                  options={requestOptions}
+                />
               </div>
             </Field>
 
@@ -465,23 +584,33 @@ export default function GuestInfoForm() {
             step={4}
             icon={Wallet}
             title="Secure your booking"
-            subtitle={`Pay ${DEPOSIT_RATE * 100}% now to confirm your room — the rest is paid at the hotel.`}
+            subtitle={`Pay ${settings.depositRate}% now to confirm your room — the rest is paid at the hotel.`}
           >
             <Controller
               name="paymentPlan"
               control={control}
               render={({ field }) => (
-                <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="How much to pay now">
+                <div
+                  className="grid gap-3 sm:grid-cols-2"
+                  role="radiogroup"
+                  aria-label="How much to pay now"
+                >
                   {(
                     [
                       {
                         value: "deposit",
-                        title: `Pay ${DEPOSIT_RATE * 100}% now`,
+                        title: `Pay ${settings.depositRate}% now`,
                         now: deposit,
                         later: total - deposit,
                         badge: "Recommended",
                       },
-                      { value: "full", title: "Pay in full now", now: total, later: 0, badge: "" },
+                      {
+                        value: "full",
+                        title: "Pay in full now",
+                        now: total,
+                        later: 0,
+                        badge: "",
+                      },
                     ] as const
                   ).map((option) => {
                     const selected = field.value === option.value;
@@ -502,10 +631,14 @@ export default function GuestInfoForm() {
                           <span className="flex items-center gap-2 text-sm font-bold text-neutral-900">
                             <span
                               className={`flex size-4 shrink-0 items-center justify-center rounded-full border-2 ${
-                                selected ? "border-sky-600" : "border-neutral-300"
+                                selected
+                                  ? "border-sky-600"
+                                  : "border-neutral-300"
                               }`}
                             >
-                              {selected && <span className="size-2 rounded-full bg-sky-600" />}
+                              {selected && (
+                                <span className="size-2 rounded-full bg-sky-600" />
+                              )}
                             </span>
                             {option.title}
                           </span>
@@ -530,12 +663,18 @@ export default function GuestInfoForm() {
               )}
             />
 
-            <p className="mt-5 text-sm font-medium text-neutral-800">Pay with</p>
+            <p className="mt-5 text-sm font-medium text-neutral-800">
+              Pay with
+            </p>
             <Controller
               name="paymentMethod"
               control={control}
               render={({ field }) => (
-                <div className="mt-1.5 grid grid-cols-2 gap-2.5 sm:grid-cols-4" role="radiogroup" aria-label="Payment method">
+                <div
+                  className="mt-1.5 grid grid-cols-2 gap-2.5 sm:grid-cols-4"
+                  role="radiogroup"
+                  aria-label="Payment method"
+                >
                   {methodChoices.map(({ value, label, detail, logos }) => {
                     const selected = field.value === value;
                     return (
@@ -553,12 +692,23 @@ export default function GuestInfoForm() {
                       >
                         <span className="flex h-8 items-center justify-center gap-1.5">
                           {logos.map((logo) => (
-                            <Image key={logo} src={logo} alt="" width={56} height={32} className="max-h-7 w-auto object-contain" />
+                            <Image
+                              key={logo}
+                              src={logo}
+                              alt=""
+                              width={56}
+                              height={32}
+                              className="max-h-7 w-auto object-contain"
+                            />
                           ))}
                         </span>
                         <span>
-                          <span className="block text-sm font-semibold text-neutral-900">{label}</span>
-                          <span className="block text-[11px] text-neutral-500">{detail}</span>
+                          <span className="block text-sm font-semibold text-neutral-900">
+                            {label}
+                          </span>
+                          <span className="block text-[11px] text-neutral-500">
+                            {detail}
+                          </span>
                         </span>
                       </button>
                     );
@@ -570,15 +720,20 @@ export default function GuestInfoForm() {
             <div className="mt-4 flex gap-2.5 rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-800">
               <ShieldCheck className="mt-0.5 size-4 shrink-0" />
               <p>
-                Secure payment in BDT — we never see or store your card number or wallet PIN. Cancel for free up to 24
-                hours before check-in and your {plan === "full" ? "payment" : "deposit"} is refunded in full.
+                Secure payment in BDT — we never see or store your card number
+                or wallet PIN.{" "}
+                {settings.freeCancellationHours > 0 &&
+                  ` Cancel for free up to ${settings.freeCancellationHours} hours before check-in and your ${plan === "full" ? "payment" : "deposit"} is refunded in full.`}
               </p>
             </div>
           </Section>
 
           <div className="rounded-3xl border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
             <div className="[&_label]:text-sm [&_label]:leading-snug [&_label]:text-neutral-700 [&_[data-state=checked]]:border-sky-600 [&_[data-state=checked]]:bg-sky-600 [&>div>div]:items-start [&_button]:mt-0.5">
-              <ControlledCheckboxField name="acceptTerms" options={termsOptions} />
+              <ControlledCheckboxField
+                name="acceptTerms"
+                options={termsOptions}
+              />
             </div>
             <FieldError name="acceptTerms" />
             <Link
@@ -596,11 +751,13 @@ export default function GuestInfoForm() {
             >
               {confirming ? (
                 <>
-                  <Loader2 className="size-5 animate-spin" /> Processing BDT {dueNow.toLocaleString()} via {methodLabel}…
+                  <Loader2 className="size-5 animate-spin" /> Processing BDT{" "}
+                  {dueNow.toLocaleString()} via {methodLabel}…
                 </>
               ) : (
                 <>
-                  <Lock className="size-4" /> {`Pay BDT ${dueNow.toLocaleString()} & confirm`}
+                  <Lock className="size-4" />{" "}
+                  {`Pay BDT ${dueNow.toLocaleString()} & confirm`}
                 </>
               )}
             </button>
@@ -608,7 +765,9 @@ export default function GuestInfoForm() {
               {plan === "deposit"
                 ? `Remaining BDT ${(total - deposit).toLocaleString()} is paid at the hotel on arrival.`
                 : "Paid in full — nothing more to pay at the hotel."}{" "}
-              Instant confirmation by email.
+              {settings.requireConfirmation
+                ? "The hotel confirms your booking shortly."
+                : "Instant confirmation by email."}
             </p>
           </div>
         </form>
@@ -627,7 +786,9 @@ export default function GuestInfoForm() {
           dueNow={dueNow}
           plan={plan}
           currency={currency}
-          onCurrencyChange={(next) => setCurrencyChoice({ country, currency: next })}
+          onCurrencyChange={(next) =>
+            setCurrencyChoice({ country, currency: next })
+          }
         />
       </aside>
     </div>

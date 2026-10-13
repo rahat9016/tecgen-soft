@@ -1,27 +1,31 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
-const slides = [
-  { id: "1542314831-068cd1dbfeeb", alt: "Luxury hotel pool lit up at dusk" },
-  { id: "1540541338287-41700207dee6", alt: "Clifftop pool overlooking the ocean" },
-  { id: "1584132967334-10e028bd69f7", alt: "Infinity pool by the sea" },
-  { id: "1571003123894-1f0594d2b5d9", alt: "Poolside cabanas at sunset" },
-  { id: "1566073771259-6a8506099945", alt: "Beachfront deck with sun loungers" },
-];
+import { sizedPhoto } from "@/src/components/hotel/shared/PhotoLightbox";
+import { useHotelDB } from "@/src/lib/hotel-store/store";
 
 const INTERVAL = 6000;
 
-const imageUrl = (id: string, width: number) =>
-  `https://images.unsplash.com/photo-${id}?w=${width}&q=85&auto=format&fit=crop`;
+/** Slides are managed in the admin panel (Content → Homepage). */
+const useSlides = () => useHotelDB().content.hero.slides;
 
 // Dots live in the hero content (normal flow, pinned to the bottom) so they can never sit on the search bar.
-const SliderContext = createContext<{ active: number; goTo: (index: number) => void } | null>(null);
+const SliderContext = createContext<{
+  active: number;
+  goTo: (index: number) => void;
+} | null>(null);
 
 export function HeroSliderDots() {
   const slider = useContext(SliderContext);
-  if (!slider) return null;
+  const slides = useSlides();
+  if (!slider || slides.length < 2) return null;
   const { active, goTo } = slider;
 
   return (
@@ -34,7 +38,9 @@ export function HeroSliderDots() {
           aria-label={`Go to slide ${i + 1}`}
           aria-current={i === active}
           className={`relative h-1.5 overflow-hidden rounded-full transition-all duration-300 ${
-            i === active ? "w-10 bg-white/35" : "w-1.5 bg-white/50 hover:bg-white/80"
+            i === active
+              ? "w-10 bg-white/35"
+              : "w-1.5 bg-white/50 hover:bg-white/80"
           }`}
         >
           {i === active && (
@@ -47,15 +53,26 @@ export function HeroSliderDots() {
 }
 
 export default function HeroSlider({ children }: { children: ReactNode }) {
-  const [active, setActive] = useState(0);
+  const slides = useSlides();
+  const [picked, setActive] = useState(0);
+  // Slides can be removed in the admin while this page is open.
+  const active = slides.length ? picked % slides.length : 0;
 
-  const goTo = (index: number) => setActive((index + slides.length) % slides.length);
+  const goTo = (index: number) =>
+    setActive((index + slides.length) % Math.max(1, slides.length));
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const timer = setTimeout(() => setActive((i) => (i + 1) % slides.length), INTERVAL);
+    if (
+      slides.length < 2 ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+    const timer = setTimeout(
+      () => setActive((i) => (i + 1) % slides.length),
+      INTERVAL
+    );
     return () => clearTimeout(timer);
-  }, [active]);
+  }, [active, slides.length]);
 
   return (
     <div className="relative overflow-hidden bg-neutral-900">
@@ -63,8 +80,14 @@ export default function HeroSlider({ children }: { children: ReactNode }) {
         // eslint-disable-next-line @next/next/no-img-element -- images are unoptimized app-wide; Unsplash srcSet serves the right size
         <img
           key={slide.id}
-          src={imageUrl(slide.id, 1920)}
-          srcSet={[1280, 1920, 2560].map((w) => `${imageUrl(slide.id, w)} ${w}w`).join(", ")}
+          src={sizedPhoto(slide.src, 1920)}
+          srcSet={
+            slide.src.startsWith("http")
+              ? [1280, 1920, 2560]
+                  .map((w) => `${sizedPhoto(slide.src, w)} ${w}w`)
+                  .join(", ")
+              : undefined
+          }
           sizes="100vw"
           alt={i === active ? slide.alt : ""}
           aria-hidden={i !== active}
@@ -79,25 +102,30 @@ export default function HeroSlider({ children }: { children: ReactNode }) {
       <div className="absolute inset-0 bg-neutral-950/45" />
       <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/60 via-neutral-950/20 to-neutral-950/80" />
 
-      <SliderContext.Provider value={{ active, goTo }}>{children}</SliderContext.Provider>
+      <SliderContext.Provider value={{ active, goTo }}>
+        {children}
+      </SliderContext.Provider>
 
-      <button
-        type="button"
-        onClick={() => goTo(active - 1)}
-        aria-label="Previous slide"
-        className="absolute left-4 top-1/2 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/25 md:flex lg:left-8"
-      >
-        <ChevronLeft className="size-5" />
-      </button>
-      <button
-        type="button"
-        onClick={() => goTo(active + 1)}
-        aria-label="Next slide"
-        className="absolute right-4 top-1/2 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/25 md:flex lg:right-8"
-      >
-        <ChevronRight className="size-5" />
-      </button>
-
+      {slides.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={() => goTo(active - 1)}
+            aria-label="Previous slide"
+            className="absolute left-4 top-1/2 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/25 md:flex lg:left-8"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => goTo(active + 1)}
+            aria-label="Next slide"
+            className="absolute right-4 top-1/2 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/25 md:flex lg:right-8"
+          >
+            <ChevronRight className="size-5" />
+          </button>
+        </>
+      )}
     </div>
   );
 }

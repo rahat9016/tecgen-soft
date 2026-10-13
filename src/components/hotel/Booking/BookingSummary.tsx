@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { format, subDays } from "date-fns";
 import { BadgeCheck, BedDouble, Headphones, LogIn, LogOut, Moon, ShieldCheck, Star, Users } from "lucide-react";
-import { getRoomById, hotel } from "@/src/data/hotels";
 import { parseCheckTimes } from "@/src/components/hotel/HotelDetails/PoliciesSection";
 import { ratingLabel } from "@/src/components/hotel/shared/ratingLabel";
 import { toDayKey } from "@/src/lib/hotelDates";
 import { currencyCodes, formatInCurrency, type CurrencyCode } from "@/src/lib/currency";
-import { DEPOSIT_RATE, type PaymentPlan } from "@/src/lib/hotelPayment";
+import type { PaymentPlan } from "@/src/lib/hotelPayment";
+import { useHotelDB, useHotelSite } from "@/src/lib/hotel-store/store";
 import type { HotelBookingSelection } from "@/src/lib/redux/features/hotelBooking/hotelBookingTypes";
 
 export default function BookingSummary({
@@ -39,7 +39,9 @@ export default function BookingSummary({
   currency: CurrencyCode;
   onCurrencyChange: (currency: CurrencyCode) => void;
 }) {
-  const room = getRoomById(selection.roomId);
+  const hotel = useHotelSite();
+  const { settings } = useHotelDB();
+  const room = hotel.rooms.find((r) => r.id === selection.roomId);
   const times = parseCheckTimes(hotel.policies);
   const freeCancellation = hotel.policies.some((p) => p.toLowerCase().includes("free cancellation"));
   const changeHref = `/hotel-management/rooms/${selection.roomId}?${new URLSearchParams({
@@ -127,11 +129,11 @@ export default function BookingSummary({
                 <span className="shrink-0 text-neutral-900">BDT {subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between px-3 py-2.5 text-neutral-600">
-                <span>Service fee (3%)</span>
+                <span>Service fee ({settings.serviceFeeRate}%)</span>
                 <span className="text-neutral-900">BDT {serviceFee.toLocaleString()}</span>
               </div>
               <div className="flex justify-between px-3 py-2.5 text-neutral-600">
-                <span>VAT (5%)</span>
+                <span>VAT ({settings.vatRate}%)</span>
                 <span className="text-neutral-900">BDT {tax.toLocaleString()}</span>
               </div>
             </div>
@@ -144,7 +146,7 @@ export default function BookingSummary({
           <div className="overflow-hidden rounded-2xl border border-sky-100">
             <div className="flex items-center justify-between bg-sky-600 px-3 py-2.5 text-white">
               <span className="text-sm font-semibold">
-                {plan === "full" ? "Pay now (full amount)" : `Pay now (${DEPOSIT_RATE * 100}% deposit)`}
+                {plan === "full" ? "Pay now (full amount)" : `Pay now (${settings.depositRate}% deposit)`}
               </span>
               <span className="text-base font-extrabold">BDT {dueNow.toLocaleString()}</span>
             </div>

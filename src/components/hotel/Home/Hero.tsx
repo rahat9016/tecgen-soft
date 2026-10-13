@@ -1,7 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { ArrowRight } from "lucide-react";
-import { hotel } from "@/src/data/hotels";
+import { useHotelDB } from "@/src/lib/hotel-store/store";
 import HeroSlider, { HeroSliderDots } from "./HeroSlider";
 import SearchWidget from "./SearchWidget";
 
@@ -11,14 +13,15 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export default function Hero() {
+  const { title, highlight } = useHotelDB().content.hero;
   return (
     <section className="relative -mt-(--hotel-header-h)">
       <HeroSlider>
         <div className={`${jakarta.className} container relative flex min-h-[calc(460px+var(--hotel-header-h))] flex-col items-center justify-center pb-24 pt-[calc(var(--hotel-header-h)+2rem)] text-center text-white sm:min-h-[calc(560px+var(--hotel-header-h))] sm:pt-[calc(var(--hotel-header-h)+3rem)] md:min-h-[calc(700px+var(--hotel-header-h))] md:pb-36`}>
           <h1 className="mt-auto max-w-3xl text-[min(2.5rem,calc((100vw_-_2rem)*0.094))] font-extrabold leading-[1.08] tracking-[-0.03em] drop-shadow-md sm:text-5xl md:text-7xl">
-            Your Beachfront Stay
+            {title}
             <span className="mt-1 block bg-gradient-to-r from-amber-200 via-amber-300 to-orange-300 bg-clip-text text-transparent">
-              in {hotel.location}
+              {highlight}
             </span>
           </h1>
 

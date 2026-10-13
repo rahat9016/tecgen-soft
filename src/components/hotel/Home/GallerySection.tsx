@@ -3,21 +3,10 @@
 import { useState } from "react";
 import { Expand, Images } from "lucide-react";
 import PhotoLightbox, { sizedPhoto } from "@/src/components/hotel/shared/PhotoLightbox";
-import { hotel } from "@/src/data/hotels";
+import { galleryCategoryLabels } from "@/src/lib/hotel-store/format";
+import { useHotelDB } from "@/src/lib/hotel-store/store";
+import type { GalleryCategory } from "@/src/lib/hotel-store/types";
 import SectionHeading from "./SectionHeading";
-
-// Alternate hotel shots with each room's photos so the first tiles show both the hotel and its rooms.
-const hotelPhotos = hotel.images.map((src) => ({ src, title: hotel.name, subtitle: "Hotel & facilities" }));
-const roomPhotos = hotel.rooms.map((room) =>
-  room.images.map((src) => ({ src, title: room.name, subtitle: `${room.beds} · ${room.size}` }))
-);
-const longest = Math.max(hotelPhotos.length, ...roomPhotos.map((list) => list.length));
-const photos = Array.from({ length: longest }, (_, i) => [
-  hotelPhotos[i],
-  ...roomPhotos.map((list) => list[i]),
-])
-  .flat()
-  .filter(Boolean);
 
 // Bento layout for the 7 visible tiles on md+ (grid-flow-dense fills the gaps).
 const tileSpans = [
@@ -32,6 +21,12 @@ const tileSpans = [
 
 export default function GallerySection() {
   const [index, setIndex] = useState<number | null>(null);
+  const [category, setCategory] = useState<GalleryCategory | "all">("all");
+  // Photos, their order and captions are managed in the admin panel (Gallery).
+  const visible = useHotelDB().content.gallery.filter((g) => g.visible);
+  const categories = (Object.keys(galleryCategoryLabels) as GalleryCategory[]).filter((c) => visible.some((g) => g.category === c));
+  const photos = visible.filter((g) => category === "all" || g.category === category);
+  if (!visible.length) return null;
 
   return (
     <section id="gallery" className="container scroll-mt-24 py-10">
@@ -40,12 +35,34 @@ export default function GallerySection() {
         subtitle="A look inside our rooms, pool and beachfront."
       />
 
+      {categories.length > 1 && (
+        <div className="mt-5 flex gap-2 overflow-x-auto [scrollbar-width:none]" role="tablist" aria-label="Photo categories">
+          {(["all", ...categories] as const).map((c) => (
+            <button
+              key={c}
+              type="button"
+              role="tab"
+              aria-selected={category === c}
+              onClick={() => {
+                setCategory(c);
+                setIndex(null);
+              }}
+              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                category === c ? "bg-sky-600 text-white shadow-sm" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              }`}
+            >
+              {c === "all" ? "All photos" : galleryCategoryLabels[c]}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="mt-6 grid auto-rows-[140px] grid-flow-dense grid-cols-2 gap-3 md:auto-rows-[190px] md:grid-cols-4">
         {photos.slice(0, tileSpans.length).map((photo, i) => {
           const isLast = i === tileSpans.length - 1 && photos.length > tileSpans.length;
           return (
             <button
-              key={photo.src}
+              key={photo.id}
               type="button"
               onClick={() => setIndex(i)}
               aria-label={`Open photo of ${photo.title}`}

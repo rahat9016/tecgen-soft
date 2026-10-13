@@ -10,6 +10,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { roomDiscount, type RoomType } from "@/src/data/hotels";
+import { quoteStay, useHotelDB } from "@/src/lib/hotel-store/store";
 import { Button } from "@/src/components/ui/button";
 import DateRangeField from "@/src/components/hotel/shared/DateRangeField";
 import GuestsRoomsField, {
@@ -41,15 +42,13 @@ export default function BookingSidebar({
   cancellationPolicy?: string;
 }) {
   const [datesOpen, setDatesOpen] = useState(false);
+  const { settings } = useHotelDB();
 
   const nights =
     checkIn && checkOut
       ? Math.max(1, differenceInCalendarDays(checkOut, checkIn))
       : 0;
-  const subtotal = room.price * nights * guests.rooms;
-  const serviceFee = subtotal ? Math.round(subtotal * 0.03) : 0;
-  const tax = subtotal ? Math.round(subtotal * 0.05) : 0;
-  const total = subtotal + serviceFee + tax;
+  const { subtotal, serviceFee, tax, total } = quoteStay(settings, room.price, nights, guests.rooms);
 
   const guestsPerRoom = Math.ceil(
     (guests.adults + guests.children) / guests.rooms
@@ -168,11 +167,11 @@ export default function BookingSidebar({
             <span>BDT {subtotal.toLocaleString()}</span>
           </div>
           <div className="flex justify-between text-neutral-600">
-            <span>Service fee</span>
+            <span>Service fee ({settings.serviceFeeRate}%)</span>
             <span>BDT {serviceFee.toLocaleString()}</span>
           </div>
           <div className="flex justify-between text-neutral-600">
-            <span>Tax</span>
+            <span>VAT ({settings.vatRate}%)</span>
             <span>BDT {tax.toLocaleString()}</span>
           </div>
           <div className="flex justify-between border-t border-neutral-100 pt-3 text-base font-bold text-neutral-900">

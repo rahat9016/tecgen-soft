@@ -1,8 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import Link from "next/link";
-import { differenceInCalendarDays, format, subDays } from "date-fns";
+import { differenceInCalendarDays, format } from "date-fns";
 import { toast } from "react-toastify";
 import {
   BadgeCheck,
@@ -31,30 +30,34 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import type { BookingRecord } from "@/src/lib/hotelBookingHistory";
-import { useBookingHistory } from "@/src/lib/useBookingHistory";
-import { hotel } from "@/src/data/hotels";
-import { parseCheckTimes } from "@/src/components/hotel/HotelDetails/PoliciesSection";
-import { bookingPayment } from "@/src/lib/hotelPayment";
+import { paymentMethodInfo } from "@/src/lib/hotelPayment";
+import { dayOf, statusLabels } from "@/src/lib/hotel-store/format";
+import {
+  cancellationTerms,
+  dueOf,
+  folioTotal,
+  guestBookings,
+  isLive,
+  paidOf,
+  paymentStatus,
+  siteHotel,
+  useCurrentGuest,
+  useCurrentStaff,
+  useHotelDB,
+  useHydrated,
+  useSession,
+} from "@/src/lib/hotel-store/store";
+import type { Booking } from "@/src/lib/hotel-store/types";
 import BookingSteps from "./BookingSteps";
-import PrintableInvoice, { invoiceNumber } from "./PrintableInvoice";
+import PrintableInvoice, { invoiceNumber, printWithTitle } from "./PrintableInvoice";
 
 // Show only the last 4 characters of an ID on screen and on the printed invoice.
 const maskId = (id: string) => (id.length > 4 ? `•••• ${id.slice(-4)}` : id);
 
-const noopSubscribe = () => () => {};
-
-// Print/Save-as-PDF uses the document title as the file name, so swap it for the invoice number while printing.
-function printWithTitle(title: string) {
-  const previousTitle = document.title;
-  document.title = title;
-  window.print();
-  document.title = previousTitle;
-}
-
 /** Builds an .ics file so the stay can be added to Google/Apple/Outlook calendars. */
 function downloadCalendarFile(
-  booking: BookingRecord,
+  booking: Booking,
+  hotel: { name: string; address: string; phone: string },
   checkInTime?: string,
   checkOutTime?: string
 ) {
@@ -69,13 +72,13 @@ function downloadCalendarFile(
     "VERSION:2.0",
     "PRODID:-//TripWave//Hotel Booking//EN",
     "BEGIN:VEVENT",
-    `UID:${booking.bookingId}@tripwave`,
+    `UID:${booking.code}@tripwave`,
     `DTSTAMP:${format(new Date(), "yyyyMMdd'T'HHmmss")}`,
-    `DTSTART:${toIcsTime(new Date(booking.checkIn), checkInTime)}`,
-    `DTEND:${toIcsTime(new Date(booking.checkOut), checkOutTime)}`,
-    `SUMMARY:Stay at ${booking.hotelName} — ${booking.roomName}`,
+    `DTSTART:${toIcsTime(dayOf(booking.checkIn), checkInTime)}`,
+    `DTEND:${toIcsTime(dayOf(booking.checkOut), checkOutTime)}`,
+    `SUMMARY:Stay at ${hotel.name} — ${booking.roomName}`,
     `LOCATION:${hotel.address.replace(/,/g, "\\,")}`,
-    `DESCRIPTION:Booking ID ${booking.bookingId}. Hotel phone ${hotel.phone}.`,
+    `DESCRIPTION:Booking ID ${booking.code}. Hotel phone ${hotel.phone}.`,
     "END:VEVENT",
     "END:VCALENDAR",
   ];
@@ -84,7 +87,7 @@ function downloadCalendarFile(
   );
   const link = Object.assign(document.createElement("a"), {
     href: url,
-    download: `${booking.bookingId}.ics`,
+    download: `${booking.code}.ics`,
   });
   link.click();
   URL.revokeObjectURL(url);
@@ -117,16 +120,16 @@ export default function BookingConfirmation({
 }: {
   bookingId: string;
 }) {
-  const history = useBookingHistory();
-  // Bookings live in this browser's storage, so wait for the client before deciding "not found".
-  const hydrated = useSyncExternalStore(
-    noopSubscribe,
-    () => true,
-    () => false
-  );
+  const db = useHotelDB();
+  const ses = useSession();
+  const user = useCurrentGuest();
+  const staff = useCurrentStaff();
+  // Bookings live in the client store, so wait for it before deciding "not found".
+  const hydrated = useHydrated();
   if (!hydrated) return null;
 
-  const booking = history.find((b) => b.bookingId === bookingId);
+  // Only the guest who booked (or hotel staff) can open a booking.
+  const booking = (staff ? db.bookings : guestBookings(db, ses, user)).find((b) => b.code === bookingId);
   if (!booking) {
     return (
       <div className="container py-16">
@@ -138,14 +141,15 @@ export default function BookingConfirmation({
             We couldn&rsquo;t find this booking
           </p>
           <p className="text-sm text-neutral-500">
-            Bookings are saved in the browser they were made in. Check your
-            confirmation email for the details.
+            {user
+              ? "It isn't linked to your account. Check your confirmation email for the details."
+              : "Log in with the account you booked with to see it."}
           </p>
           <Link
-            href="/hotel-management/my-bookings"
+            href={user ? "/hotel-management/my-bookings" : `/hotel-management/login?next=${encodeURIComponent(`/hotel-management/booking-success?bookingId=${bookingId}`)}`}
             className="mt-1 text-sm font-semibold text-sky-700 hover:underline"
           >
-            View my bookings
+            {user ? "View my bookings" : "Log in"}
           </Link>
         </div>
       </div>
@@ -153,13 +157,24 @@ export default function BookingConfirmation({
   }
 
   const { guest } = booking;
-  const checkIn = new Date(booking.checkIn);
-  const checkOut = new Date(booking.checkOut);
-  const times = parseCheckTimes(hotel.policies);
-  const freeCancellation = hotel.policies.some((p) =>
-    p.toLowerCase().includes("free cancellation")
-  );
-  const payment = bookingPayment(booking);
+  const hotel = siteHotel(db);
+  const checkIn = dayOf(booking.checkIn);
+  const checkOut = dayOf(booking.checkOut);
+  const times = { checkIn: db.settings.checkInTime, checkOut: db.settings.checkOutTime };
+  const terms = cancellationTerms(db, booking);
+  const freeCancellation = terms.free;
+  const roomImage = db.roomTypes.find((t) => t.id === booking.roomTypeId)?.images[0] ?? hotel.images[0];
+  const firstPayment = booking.payments.find((p) => p.kind !== "refund" && !p.void);
+  const paidStatus = paymentStatus(booking);
+  const payment = {
+    paid: paidOf(booking),
+    balance: dueOf(booking),
+    method: paymentMethodInfo[firstPayment?.method ?? "cash"] ?? paymentMethodInfo.cash,
+    status: paidStatus.label,
+    fullyPaid: isLive(booking) && dueOf(booking) === 0,
+  };
+  const pending = booking.status === "pending";
+  const closed = !isLive(booking);
   const nameParts = guest.name.split(" ");
   const firstName = nameParts.length > 2 ? nameParts[1] : nameParts[0];
   const isInternational = Boolean(
@@ -225,7 +240,7 @@ export default function BookingConfirmation({
 
   const copyBookingId = async () => {
     try {
-      await navigator.clipboard.writeText(booking.bookingId);
+      await navigator.clipboard.writeText(booking.code);
       toast.success("Booking ID copied");
     } catch {
       toast.error("Couldn't copy — please note it down");
@@ -237,7 +252,7 @@ export default function BookingConfirmation({
 
   return (
     <>
-      <PrintableInvoice booking={booking} />
+      <PrintableInvoice booking={booking} db={db} />
       <div className="container py-8 md:py-10 print:hidden">
         <div className="mx-auto max-w-6xl">
           <div>
@@ -245,7 +260,15 @@ export default function BookingConfirmation({
           </div>
 
           {/* Success banner */}
-          <div className="relative mt-6 overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-teal-500 to-sky-600 p-6 text-white shadow-xl shadow-emerald-600/20 md:p-8">
+          <div
+            className={`relative mt-6 overflow-hidden rounded-3xl bg-gradient-to-br p-6 text-white shadow-xl md:p-8 ${
+              closed
+                ? "from-neutral-600 to-neutral-800 shadow-neutral-600/20"
+                : pending
+                  ? "from-amber-500 via-orange-500 to-sky-600 shadow-amber-600/20"
+                  : "from-emerald-500 via-teal-500 to-sky-600 shadow-emerald-600/20"
+            }`}
+          >
             <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full bg-white/10" />
             <div className="pointer-events-none absolute -bottom-24 right-40 size-56 rounded-full bg-white/10" />
 
@@ -257,16 +280,25 @@ export default function BookingConfirmation({
                 </span>
                 <div>
                   <p className="text-sm font-medium text-white/80">
-                    Booking confirmed
+                    {pending ? "Booking received" : statusLabels[booking.status]}
                   </p>
                   <h1 className="mt-0.5 text-2xl font-extrabold md:text-3xl">
-                    You&rsquo;re all set, {firstName}!
+                    {closed
+                      ? `This booking is ${statusLabels[booking.status].toLowerCase()}`
+                      : pending
+                        ? `Thanks, ${firstName} — almost there!`
+                        : booking.status === "checked-out"
+                          ? `Thanks for staying, ${firstName}!`
+                          : `You’re all set, ${firstName}!`}
                   </h1>
                   <p className="mt-1 max-w-xl text-sm text-white/90">
-                    Your {booking.roomName} at {booking.hotelName} is reserved
-                    {daysToGo > 0
-                      ? ` — ${daysToGo} day${daysToGo !== 1 ? "s" : ""} to go.`
-                      : "."}
+                    {closed
+                      ? booking.cancelReason ?? "No rooms are held for these dates."
+                      : pending
+                        ? `Your payment is in. ${hotel.name} will confirm your ${booking.roomName} shortly — you'll get a notification.`
+                        : `Your ${booking.roomName} at ${hotel.name} is reserved${
+                            daysToGo > 0 ? ` — ${daysToGo} day${daysToGo !== 1 ? "s" : ""} to go.` : "."
+                          }`}
                   </p>
                 </div>
               </div>
@@ -277,7 +309,7 @@ export default function BookingConfirmation({
                 </p>
                 <div className="mt-1 flex items-center justify-between gap-3">
                   <p className="font-mono text-xl font-bold tracking-wide">
-                    {booking.bookingId}
+                    {booking.code}
                   </p>
                   <button
                     type="button"
@@ -320,7 +352,7 @@ export default function BookingConfirmation({
                 <div className="grid sm:grid-cols-[220px_1fr]">
                   <div className="relative h-48 sm:h-full">
                     <img
-                      src={booking.hotelImage}
+                      src={roomImage}
                       alt={booking.roomName}
                       className="absolute inset-0 size-full object-cover"
                     />
@@ -334,7 +366,7 @@ export default function BookingConfirmation({
                     </h2>
                     <p className="mt-1 flex items-start gap-1.5 text-sm text-neutral-600">
                       <MapPin className="mt-0.5 size-4 shrink-0 text-sky-600" />
-                      {booking.hotelName} &middot; {hotel.address}
+                      {hotel.name} &middot; {hotel.address}
                     </p>
 
                     <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
@@ -386,15 +418,14 @@ export default function BookingConfirmation({
                       </span>
                     </div>
 
-                    {freeCancellation && (
+                    {freeCancellation && !closed && (
                       <p className="mt-4 flex items-start gap-2 rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-800">
                         <BadgeCheck className="mt-0.5 size-4 shrink-0" />
                         <span>
                           <span className="font-semibold">
                             Free cancellation
                           </span>{" "}
-                          until {format(subDays(checkIn, 1), "EEE, dd MMM")}
-                          {times ? `, ${times.checkIn}` : ""}.
+                          until {format(new Date(terms.freeUntil), "EEE, dd MMM, h:mm a")}. Cancel from My bookings.
                         </span>
                       </p>
                     )}
@@ -451,7 +482,7 @@ export default function BookingConfirmation({
                       </span>
                       <span className="block text-neutral-500">
                         Call us 24/7 on {phoneDisplay} and quote{" "}
-                        {booking.bookingId}.
+                        {booking.code}.
                       </span>
                     </span>
                   </a>
@@ -469,7 +500,7 @@ export default function BookingConfirmation({
                   <div>
                     <p className="font-bold text-neutral-900">Invoice</p>
                     <p className="text-xs text-neutral-500">
-                      #{booking.bookingId}
+                      #{booking.code}
                     </p>
                   </div>
                   <span
@@ -498,28 +529,36 @@ export default function BookingConfirmation({
                     </span>
                   </div>
                   <div className="flex justify-between text-neutral-600">
-                    <span>Service fee (3%)</span>
+                    <span>Service fee ({db.settings.serviceFeeRate}%)</span>
                     <span>BDT {booking.serviceFee.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-neutral-600">
-                    <span>VAT (5%)</span>
+                    <span>VAT ({db.settings.vatRate}%)</span>
                     <span>BDT {booking.tax.toLocaleString()}</span>
                   </div>
+                  {booking.charges.map((c) => (
+                    <div key={c.id} className="flex justify-between gap-3 text-neutral-600">
+                      <span className="truncate">{c.description}</span>
+                      <span className="shrink-0">
+                        {c.amount < 0 ? "− " : ""}BDT {Math.abs(c.amount).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
                   <div className="flex items-end justify-between border-t border-dashed border-neutral-200 pt-3">
                     <span className="font-bold text-neutral-900">Total</span>
                     <span className="text-2xl font-extrabold text-neutral-900">
-                      BDT {booking.total.toLocaleString()}
+                      BDT {folioTotal(booking).toLocaleString()}
                     </span>
                   </div>
                   {payment.paid > 0 && (
                     <div className="flex justify-between font-medium text-emerald-700">
-                      <span>Paid via {payment.method.label}</span>
+                      <span>Paid{booking.payments.filter((p) => !p.void).length > 1 ? " (net)" : ` via ${payment.method.label}`}</span>
                       <span>− BDT {payment.paid.toLocaleString()}</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between rounded-xl bg-sky-50 px-3 py-2.5">
                     <span className="font-bold text-sky-900">
-                      {payment.balance > 0
+                      {payment.balance > 0 && booking.status !== "checked-in"
                         ? "Balance due at check-in"
                         : "Balance due"}
                     </span>
@@ -565,7 +604,7 @@ export default function BookingConfirmation({
                   type="button"
                   onClick={() =>
                     printWithTitle(
-                      `${invoiceNumber(booking.bookingId)} - ${hotel.name}`
+                      `${invoiceNumber(booking.code)} - ${hotel.name}`
                     )
                   }
                   className={actionClass}
@@ -577,6 +616,7 @@ export default function BookingConfirmation({
                   onClick={() =>
                     downloadCalendarFile(
                       booking,
+                      hotel,
                       times?.checkIn,
                       times?.checkOut
                     )

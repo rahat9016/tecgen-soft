@@ -1,8 +1,11 @@
-import { hotel } from "@/src/data/hotels";
+"use client";
+
+import { useHotelSite } from "@/src/lib/hotel-store/store";
 import LocationCard from "@/src/components/hotel/shared/LocationCard";
 import SectionHeading from "./SectionHeading";
 
 export default function LocationSection() {
+  const hotel = useHotelSite();
   return (
     <section id="location" className="container scroll-mt-24 py-10">
       <SectionHeading

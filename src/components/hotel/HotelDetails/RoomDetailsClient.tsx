@@ -18,8 +18,6 @@ import {
 } from "lucide-react";
 import { availableRooms, type Hotel, type RoomType } from "@/src/data/hotels";
 import { parseDayKey, toDayKey } from "@/src/lib/hotelDates";
-import { reservationsFromHistory } from "@/src/lib/hotelBookingHistory";
-import { useBookingHistory } from "@/src/lib/useBookingHistory";
 import { useAppDispatch } from "@/src/lib/redux/hooks";
 import { setSelection } from "@/src/lib/redux/features/hotelBooking/hotelBookingSlice";
 import type { GuestsRoomsValue } from "@/src/components/hotel/shared/GuestsRoomsField";
@@ -79,11 +77,9 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
   const nearest = hotel.nearby[0];
   const otherRooms = hotel.rooms.filter((r) => r.id !== room.id);
 
-  // Free rooms per type for the chosen dates (null until both dates are set), counting this browser's bookings too.
-  const history = useBookingHistory();
+  // Free rooms per type for the chosen dates (null until both dates are set), live from every booking in the store.
   const hasDates = Boolean(checkIn && checkOut && checkOut > checkIn);
-  const availabilityFor = (r: RoomType) =>
-    hasDates ? availableRooms(r, checkIn!, checkOut!, reservationsFromHistory(history, r.id)) : null;
+  const availabilityFor = (r: RoomType) => (hasDates ? availableRooms(r, checkIn!, checkOut!) : null);
   const available = availabilityFor(room);
   const unavailable = available !== null && available < guests.rooms;
 

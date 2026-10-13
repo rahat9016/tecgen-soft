@@ -1,6 +1,7 @@
+"use client";
+
 import { CheckCircle2 } from "lucide-react";
-import { hotel } from "@/src/data/hotels";
-import { facilityDetails } from "@/src/data/hotelHome";
+import { useHotelDB } from "@/src/lib/hotel-store/store";
 import { amenityIcons } from "@/src/components/hotel/HotelDetails/AmenitiesGrid";
 import SectionHeading from "./SectionHeading";
 
@@ -66,6 +67,7 @@ function FacilitiesBackdrop() {
 }
 
 export default function FacilitiesSection() {
+  const { hotel, facilities } = useHotelDB().content;
   return (
     <section id="facilities" className="relative mt-10 scroll-mt-24 overflow-hidden bg-white py-14 md:py-20">
       <FacilitiesBackdrop />
@@ -78,7 +80,7 @@ export default function FacilitiesSection() {
         />
 
         <ul className="mt-8 grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-5">
-          {hotel.amenities.map((amenity) => {
+          {facilities.map(({ name: amenity, detail }) => {
             const Icon = amenityIcons[amenity] ?? CheckCircle2;
             return (
               <li
@@ -89,9 +91,7 @@ export default function FacilitiesSection() {
                   <Icon className="size-5 md:size-6" />
                 </span>
                 <p className="mt-4 text-sm font-semibold text-neutral-900 md:text-base">{amenity}</p>
-                {facilityDetails[amenity] && (
-                  <p className="mt-1 text-xs leading-relaxed text-neutral-600">{facilityDetails[amenity]}</p>
-                )}
+                {detail && <p className="mt-1 text-xs leading-relaxed text-neutral-600">{detail}</p>}
               </li>
             );
           })}

@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -14,7 +16,7 @@ import {
   Youtube,
 } from "lucide-react";
 import { footerLinks, paymentMethods } from "@/src/data/hotelHome";
-import { hotel } from "@/src/data/hotels";
+import { siteHotel, useHotelDB } from "@/src/lib/hotel-store/store";
 import { parseCheckTimes } from "@/src/components/hotel/HotelDetails/PoliciesSection";
 import { ratingLabel } from "@/src/components/hotel/shared/ratingLabel";
 
@@ -38,6 +40,9 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
 }
 
 export default function HotelFooter() {
+  const db = useHotelDB();
+  const hotel = siteHotel(db);
+  const { email } = db.content.hotel;
   const times = parseCheckTimes(hotel.policies);
   const phoneDisplay = hotel.phone.replace(/^\+880(\d{4})(\d+)$/, "+880 $1-$2");
 
@@ -154,8 +159,8 @@ export default function HotelFooter() {
                 </a>
               </li>
               <li>
-                <a href="mailto:info@tripwave.com" className="flex items-start gap-2.5 transition hover:text-white">
-                  <Mail className="mt-0.5 size-4 shrink-0 text-sky-400" /> info@tripwave.com
+                <a href={`mailto:${email}`} className="flex items-start gap-2.5 transition hover:text-white">
+                  <Mail className="mt-0.5 size-4 shrink-0 text-sky-400" /> {email}
                 </a>
               </li>
               <li className="flex items-start gap-2.5">
@@ -178,7 +183,13 @@ export default function HotelFooter() {
 
       <div className="relative border-t border-white/10">
         <div className="container flex flex-col items-center justify-between gap-4 py-5 text-xs text-sky-200/60 md:flex-row">
-          <p>© {new Date().getFullYear()} {hotel.name}. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} {hotel.name}. All rights reserved.
+            <span className="mx-2 text-sky-200/30">·</span>
+            <Link href="/hotel-management/admin" className="transition hover:text-white">
+              Staff login
+            </Link>
+          </p>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <span className="mr-1">We accept</span>
             {paymentMethods.map((method) => (

@@ -1,10 +1,11 @@
+"use client";
+
 import { format } from "date-fns";
 import { CheckCircle2, Quote, Star } from "lucide-react";
-import { whyChoose } from "@/src/data/hotelHome";
-import { hotel } from "@/src/data/hotels";
+import { initials } from "@/src/lib/hotel-store/format";
+import { useHotelDB, useHotelSite } from "@/src/lib/hotel-store/store";
 import SectionHeading from "./SectionHeading";
 
-const latestReviews = [...hotel.reviews].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
 
 function Stars({ rating, className }: { rating: number; className: string }) {
   return (
@@ -22,6 +23,9 @@ function Stars({ rating, className }: { rating: number; className: string }) {
 }
 
 export default function WhyChooseAndReviews() {
+  const hotel = useHotelSite();
+  const { whyChoose } = useHotelDB().content;
+  const latestReviews = [...hotel.reviews].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
   return (
     <section id="reviews" className="container scroll-mt-24 py-10">
       <SectionHeading title="What Our Guests Say" subtitle="Real stories from guests who stayed with us." />
@@ -59,7 +63,7 @@ export default function WhyChooseAndReviews() {
         <div className="grid gap-4 sm:grid-cols-2">
           {latestReviews.map((review) => (
             <article
-              key={review.name}
+              key={`${review.name}-${review.date}`}
               className="flex flex-col rounded-2xl border border-neutral-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
             >
               <div className="flex items-start justify-between">
@@ -72,11 +76,17 @@ export default function WhyChooseAndReviews() {
               </p>
 
               <div className="mt-5 flex items-center gap-3 border-t border-neutral-100 pt-4">
-                <img
-                  src={`https://i.pravatar.cc/80?img=${review.avatar}`}
-                  alt={review.name}
-                  className="size-10 shrink-0 rounded-full object-cover ring-2 ring-white shadow"
-                />
+                {review.avatar ? (
+                  <img
+                    src={`https://i.pravatar.cc/80?img=${review.avatar}`}
+                    alt={review.name}
+                    className="size-10 shrink-0 rounded-full object-cover ring-2 ring-white shadow"
+                  />
+                ) : (
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-700 ring-2 ring-white shadow">
+                    {initials(review.name)}
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-neutral-900">{review.name}</p>
                   <p className="truncate text-xs text-neutral-500">

@@ -2,17 +2,18 @@
 
 import { useState, type FormEvent } from "react";
 import { BadgePercent, BellRing, CheckCircle2, Mail, MapPinned, Send, Sparkles } from "lucide-react";
-import { hotel } from "@/src/data/hotels";
+import { useHotelDB } from "@/src/lib/hotel-store/store";
 
-const perks = [
-  { icon: BadgePercent, text: "Seasonal room deals before anyone else" },
-  { icon: BellRing, text: "Alerts when our suites have open dates" },
-  { icon: MapPinned, text: `Local tips for ${hotel.location}` },
-];
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Newsletter() {
+  const { location } = useHotelDB().content.hotel;
+  const perks = [
+    { icon: BadgePercent, text: "Seasonal room deals before anyone else" },
+    { icon: BellRing, text: "Alerts when our suites have open dates" },
+    { icon: MapPinned, text: `Local tips for ${location}` },
+  ];
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "invalid" | "done">("idle");
 

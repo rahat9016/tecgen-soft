@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { Star } from "lucide-react";
 import type { HotelReview } from "@/src/data/hotels";
 import { ratingLabel } from "@/src/components/hotel/shared/ratingLabel";
+import { initials } from "@/src/lib/hotel-store/format";
 
 function Stars({ rating, size }: { rating: number; size: string }) {
   return (
@@ -45,15 +46,21 @@ export default function ReviewsSection({
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         {reviews.map((review) => (
           <article
-            key={review.name}
+            key={`${review.name}-${review.date}`}
             className="flex flex-col rounded-2xl border border-neutral-200/70 bg-white p-5"
           >
             <div className="flex items-center gap-3">
-              <img
-                src={`https://i.pravatar.cc/80?img=${review.avatar}`}
-                alt={review.name}
-                className="size-10 rounded-full object-cover ring-2 ring-white shadow"
-              />
+              {review.avatar ? (
+                <img
+                  src={`https://i.pravatar.cc/80?img=${review.avatar}`}
+                  alt={review.name}
+                  className="size-10 rounded-full object-cover ring-2 ring-white shadow"
+                />
+              ) : (
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-700 ring-2 ring-white shadow">
+                  {initials(review.name)}
+                </span>
+              )}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-neutral-900">{review.name}</p>
                 <p className="truncate text-xs text-neutral-500">
@@ -65,6 +72,11 @@ export default function ReviewsSection({
               <Stars rating={review.rating} size="size-3.5" />
             </div>
             <p className="mt-2 text-sm leading-relaxed text-neutral-700">&ldquo;{review.comment}&rdquo;</p>
+            {review.reply && (
+              <p className="mt-3 rounded-xl bg-sky-50 p-3 text-xs leading-relaxed text-sky-900">
+                <span className="font-semibold">Reply from the hotel:</span> {review.reply}
+              </p>
+            )}
           </article>
         ))}
       </div>

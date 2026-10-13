@@ -1,14 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { hotel, roomDiscount } from "@/src/data/hotels";
+import { roomDiscount } from "@/src/data/hotels";
+import { useHotelSite } from "@/src/lib/hotel-store/store";
 import SectionHeading from "./SectionHeading";
 
 export default function RoomsSection() {
+  const hotel = useHotelSite();
   return (
     <section id="rooms" className="container scroll-mt-24 pb-4 pt-12">
       <SectionHeading
         title="Our Rooms"
-        subtitle="From great-value twins to top-floor ocean suites — six room types to choose from."
+        subtitle={`From great-value twins to top-floor ocean suites — ${hotel.rooms.length} room types to choose from.`}
         href="/hotel-management/rooms"
         linkLabel="View all rooms"
       />
