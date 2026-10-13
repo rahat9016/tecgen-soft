@@ -4,22 +4,38 @@ import { useState, type FormEvent } from "react";
 import { toast } from "react-toastify";
 import {
   ArrowUpRight,
+  Check,
   Facebook,
+  Hotel,
   Mail,
   MessageCircle,
   Phone,
   Send,
+  Shirt,
+  Smartphone,
+  Trophy,
+  type LucideIcon,
 } from "lucide-react";
 
 import Reveal from "@/src/components/agency/Reveal";
 import { CONTACT } from "@/src/lib/contact";
+import { SOLUTIONS } from "@/src/lib/solutions";
 
-const businessTypes = [
-  "Hotel Booking",
-  "Gadget E-commerce",
-  "Fashion E-commerce",
-  "Turf Booking",
-  "অন্য কিছু",
+const productStyle: Record<string, { icon: LucideIcon; accent: string }> = {
+  "hotel-booking": { icon: Hotel, accent: "from-sky-400 to-blue-600" },
+  "gadget-ecommerce": {
+    icon: Smartphone,
+    accent: "from-indigo-400 to-[#3D2EF9]",
+  },
+  ecommerce: { icon: Shirt, accent: "from-pink-400 to-rose-500" },
+  "turf-booking": { icon: Trophy, accent: "from-emerald-400 to-green-600" },
+};
+const OTHER = "অন্য কিছু";
+
+const promises = [
+  "কোনো upfront বা setup খরচ নেই",
+  "Website live হওয়ার পর payment শুরু",
+  "যেকোনো মাসে cancel",
 ];
 
 const channels = [
@@ -68,6 +84,7 @@ export default function FinalCta() {
 
   const update = (key: keyof typeof form) => (value: string) =>
     setForm((f) => ({ ...f, [key]: value }));
+  const selected = SOLUTIONS.find((s) => s.name === form.business);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -76,10 +93,11 @@ export default function FinalCta() {
       return void toast.error("সঠিক ফোন নম্বর দিন (যেমন 01XXXXXXXXX)।");
 
     const text = [
-      "Hello Tecgen Soft! আমি একটি website নিয়ে কথা বলতে চাই।\n",
+      "Hello Tecgen Soft! আমি subscription নিয়ে কথা বলতে চাই।\n",
       `নাম: ${form.name.trim()}`,
       `ফোন: ${form.phone.trim()}`,
-      form.business && `যে solution দরকার: ${form.business}`,
+      form.business &&
+        `যে product চাই: ${form.business}${selected ? ` (${selected.price}/মাস)` : ""}`,
       form.message.trim() && `বিস্তারিত: ${form.message.trim()}`,
     ]
       .filter(Boolean)
@@ -95,29 +113,48 @@ export default function FinalCta() {
   };
 
   return (
-    <section
-      id="contact"
-      className="relative overflow-x-clip py-16 md:py-24"
-    >
-      <div className="pointer-events-none absolute top-1/4 -left-32 size-[30rem] rounded-full bg-white/[0.08] blur-[120px]" />
+    <section id="contact" className="relative overflow-x-clip py-16 md:py-24">
+      <div className="pointer-events-none absolute top-1/4 -left-32 size-[30rem] rounded-full bg-[#3D2EF9]/15 blur-[120px]" />
       <div className="pointer-events-none absolute top-1/3 -right-24 size-[28rem] rounded-full bg-white/[0.05] blur-[120px]" />
-      <div className="pointer-events-none absolute top-24 right-1/4 size-72 rounded-full bg-white/[0.04] blur-[100px]" />
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:px-8">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1fr_1.1fr] lg:gap-16 lg:px-8">
         <Reveal>
           <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-neutral-200">
-            আজই শুরু করুন
+            <span className="relative flex size-2">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
+            </span>
+            Get Started
           </span>
           <h2 className="mt-5 text-3xl leading-tight font-bold tracking-tight text-white sm:text-4xl md:text-5xl">
-            আপনার ব্যবসাকে অনলাইনে নতুনভাবে উপস্থাপন করুন
+            আপনার website live করুন{" "}
+            <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
+              মাত্র ১–৩ দিনে
+            </span>
           </h2>
           <p className="mt-5 max-w-lg text-base leading-relaxed text-neutral-300">
-            আমাদের সাথে কথা বলুন। আপনার business ও requirements শুনে আমরা
-            suitable solution suggest করব — কোনো চাপ ছাড়াই। ১–৩ দিনে live,
-            মাসিক subscription-এ।
+            Product বেছে নিন, তথ্য দিন — বাকি সব আমরা করব। Setup থেকে hosting,
+            updates ও support পর্যন্ত সবকিছু একটাই মাসিক fee-তে।
           </p>
 
-          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          <ul className="mt-6 space-y-2.5">
+            {promises.map((item) => (
+              <li
+                key={item}
+                className="flex items-center gap-2.5 text-sm text-neutral-200"
+              >
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300">
+                  <Check className="size-3" />
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-9 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+            অথবা সরাসরি কথা বলুন
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {channels.map(({ icon: Icon, label, value, href, accent }) => (
               <a
                 key={label}
@@ -154,7 +191,7 @@ export default function FinalCta() {
           >
             <form onSubmit={handleSubmit} noValidate>
               <h3 className="text-xl font-bold text-white">
-                Free Consultation নিন
+                Subscription শুরু করুন
               </h3>
               <p className="mt-1 text-sm text-neutral-400">
                 তথ্য দিন — WhatsApp-এ সরাসরি আমাদের কাছে পৌঁছাবে।
@@ -191,38 +228,78 @@ export default function FinalCta() {
 
               <fieldset className="mt-5">
                 <legend className="mb-2 text-xs font-semibold text-neutral-200">
-                  কোন solution দরকার?
+                  কোন product চান?
                 </legend>
-                <div className="flex flex-wrap gap-2">
-                  {businessTypes.map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      aria-pressed={form.business === type}
-                      onClick={() =>
-                        update("business")(form.business === type ? "" : type)
-                      }
-                      className={`rounded-full border px-3.5 py-1.5 text-sm transition ${
-                        form.business === type
-                          ? "border-[#3D2EF9] bg-[#3D2EF9] text-white"
-                          : "border-white/15 bg-white/[0.04] text-neutral-300 hover:border-indigo-300/50 hover:text-white"
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  {SOLUTIONS.map(({ slug, name, price }) => {
+                    const { icon: Icon, accent } =
+                      productStyle[slug] ?? productStyle.ecommerce;
+                    const active = form.business === name;
+                    return (
+                      <button
+                        key={slug}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => update("business")(active ? "" : name)}
+                        className={`relative flex items-center gap-3 rounded-xl border p-3 text-left transition ${
+                          active
+                            ? "border-indigo-300/60 bg-indigo-500/15 ring-1 ring-indigo-300/30"
+                            : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.07]"
+                        }`}
+                      >
+                        <span
+                          className={`flex size-9 shrink-0 items-center justify-center rounded-lg bg-linear-to-br ${accent} text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)]`}
+                        >
+                          <Icon className="size-4" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm leading-snug font-semibold text-white">
+                            {name}
+                          </span>
+                          <span className="block text-xs text-neutral-400">
+                            <span className="font-semibold text-indigo-300">
+                              {price}
+                            </span>
+                            /মাস
+                          </span>
+                        </span>
+                        {active && (
+                          <span className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-[#3D2EF9] text-white ring-2 ring-[#0a0a0a]">
+                            <Check className="size-3" />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
+                <button
+                  type="button"
+                  aria-pressed={form.business === OTHER}
+                  onClick={() =>
+                    update("business")(form.business === OTHER ? "" : OTHER)
+                  }
+                  className={`mt-2.5 w-full rounded-xl border border-dashed px-3 py-2 text-sm transition ${
+                    form.business === OTHER
+                      ? "border-indigo-300/60 bg-indigo-500/15 text-white"
+                      : "border-white/15 text-neutral-400 hover:border-white/30 hover:text-white"
+                  }`}
+                >
+                  অন্য কিছু দরকার
+                </button>
               </fieldset>
 
               <label className="mt-5 block">
                 <span className="mb-1.5 block text-xs font-semibold text-neutral-200">
-                  কী ধরনের website চান?
+                  আর কিছু জানাতে চান?{" "}
+                  <span className="font-normal text-neutral-500">
+                    (optional)
+                  </span>
                 </span>
                 <textarea
                   value={form.message}
                   onChange={(e) => update("message")(e.target.value)}
                   rows={3}
-                  placeholder="সংক্ষেপে লিখুন — কী কী feature দরকার, কবের মধ্যে চান..."
+                  placeholder="যেমন: business-এর নাম, domain আছে কি না, বিশেষ কোনো feature..."
                   className={`${inputClass} resize-none`}
                 />
               </label>
