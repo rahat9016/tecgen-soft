@@ -39,10 +39,10 @@ const contacts = [
 
 export default function AboutSection() {
   return (
-    <section id="about" className="py-14 md:py-20">
-      <div className="mx-auto grid max-w-7xl gap-5 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
+    <section id="about" className="py-10 sm:py-14 md:py-20">
+      <div className="mx-auto grid max-w-7xl gap-4 px-4 sm:gap-5 sm:px-6 lg:grid-cols-12 lg:px-8">
         {/* intro + contact — brand card */}
-        <Reveal className="glass relative overflow-hidden rounded-3xl p-7 sm:p-10 lg:col-span-7 lg:row-span-2">
+        <Reveal className="glass relative overflow-hidden rounded-3xl p-5 sm:p-10 lg:col-span-7 lg:row-span-2">
           <div className="pointer-events-none absolute -top-24 -right-24 size-80 rounded-full bg-white/[0.08] blur-[100px]" />
           <div className="pointer-events-none absolute -bottom-32 -left-20 size-72 rounded-full bg-white/[0.04] blur-[90px]" />
           <div
@@ -78,7 +78,7 @@ export default function AboutSection() {
               business.
             </p>
 
-            <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:mt-auto lg:pt-10">
+            <div className="mt-7 grid gap-3 sm:mt-10 sm:grid-cols-2 lg:mt-auto lg:pt-10">
               {contacts.map(({ icon: Icon, label, value, href }) => (
                 <a
                   key={label}
@@ -100,7 +100,7 @@ export default function AboutSection() {
         </Reveal>
 
         {/* who we work with */}
-        <Reveal delay={0.1} className="glass rounded-3xl p-6 sm:p-7 lg:col-span-5">
+        <Reveal delay={0.1} className="glass rounded-3xl p-5 sm:p-7 lg:col-span-5">
           <p className="text-sm font-semibold text-white">আমরা যাদের সাথে কাজ করি</p>
           <ul className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             {audiences.map(({ icon: Icon, label }) => (
@@ -120,7 +120,7 @@ export default function AboutSection() {
         {/* approach */}
         <Reveal
           delay={0.15}
-          className="glass rounded-3xl border-white/15 bg-linear-to-br from-white/[0.09] via-white/[0.03] to-transparent p-6 sm:p-7 lg:col-span-5"
+          className="glass rounded-3xl border-white/15 bg-linear-to-br from-white/[0.09] via-white/[0.03] to-transparent p-5 sm:p-7 lg:col-span-5"
         >
           <p className="text-sm font-semibold text-white">
             আমাদের approach — <span className="text-indigo-300">সহজ</span>

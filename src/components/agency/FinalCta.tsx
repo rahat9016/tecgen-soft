@@ -113,11 +113,11 @@ export default function FinalCta() {
   };
 
   return (
-    <section id="contact" className="relative overflow-x-clip py-16 md:py-24">
+    <section id="contact" className="relative overflow-x-clip py-10 sm:py-16 md:py-24">
       <div className="pointer-events-none absolute top-1/4 -left-32 size-[30rem] rounded-full bg-[#3D2EF9]/15 blur-[120px]" />
       <div className="pointer-events-none absolute top-1/3 -right-24 size-[28rem] rounded-full bg-white/[0.05] blur-[120px]" />
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1fr_1.1fr] lg:gap-16 lg:px-8">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-8 px-4 sm:gap-10 sm:px-6 lg:grid-cols-[1fr_1.1fr] lg:gap-16 lg:px-8">
         <Reveal>
           <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-neutral-200">
             <span className="relative flex size-2">
@@ -151,7 +151,7 @@ export default function FinalCta() {
             ))}
           </ul>
 
-          <p className="mt-9 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+          <p className="mt-7 text-xs font-semibold sm:mt-9 tracking-wide text-neutral-500 uppercase">
             অথবা সরাসরি কথা বলুন
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -187,7 +187,7 @@ export default function FinalCta() {
         <Reveal delay={0.1}>
           <div
             id="contact-form"
-            className="glass-strong rounded-3xl p-6 sm:p-8"
+            className="glass-strong rounded-3xl p-5 sm:p-8"
           >
             <form onSubmit={handleSubmit} noValidate>
               <h3 className="text-xl font-bold text-white">

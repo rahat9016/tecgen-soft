@@ -43,7 +43,7 @@ const facts = [
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 md:py-18 lg:px-8">
+    <section id="how-it-works" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 md:py-18 lg:px-8">
       <Reveal className="mx-auto max-w-2xl text-center">
         <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-indigo-200">
           How It Works
@@ -60,13 +60,13 @@ export default function HowItWorks() {
         </p>
       </Reveal>
 
-      <StaggerGrid className="mt-12 grid gap-5 lg:mt-14 lg:grid-cols-4">
+      <StaggerGrid className="mt-8 grid gap-4 sm:mt-12 sm:gap-5 lg:mt-14 lg:grid-cols-4">
         {steps.map(({ n, icon: Icon, when, title, bn, note }, i) => (
           <StaggerItem key={n} className="relative flex gap-4 lg:flex-col lg:gap-0">
             {/* rail to the next step — vertical on small screens, horizontal from lg */}
             {i < steps.length - 1 && (
               <>
-                <div className="absolute top-12 -bottom-5 left-6 w-px bg-linear-to-b from-indigo-300/60 to-indigo-300/10 lg:hidden" />
+                <div className="absolute top-12 -bottom-4 left-6 sm:-bottom-5 w-px bg-linear-to-b from-indigo-300/60 to-indigo-300/10 lg:hidden" />
                 <div className="absolute top-6 left-[calc(50%+1.5rem)] hidden h-px w-[calc(100%-1.75rem)] bg-linear-to-r from-indigo-300/70 via-indigo-300/30 to-indigo-300/70 lg:block" />
               </>
             )}
@@ -75,7 +75,7 @@ export default function HowItWorks() {
               {n}
             </div>
 
-            <div className="glass flex-1 rounded-2xl p-5 transition hover:border-white/20 hover:bg-white/[0.07] lg:mt-6 lg:p-6">
+            <div className="glass flex-1 rounded-2xl p-4 transition sm:p-5 hover:border-white/20 hover:bg-white/[0.07] lg:mt-6 lg:p-6">
               <div className="flex items-center justify-between gap-3">
                 <span className="flex size-10 items-center justify-center rounded-xl border border-indigo-300/20 bg-indigo-500/15 text-indigo-200">
                   <Icon className="size-5" />
@@ -99,10 +99,10 @@ export default function HowItWorks() {
 
       <Reveal
         delay={0.1}
-        className="glass mt-8 grid divide-y divide-white/10 rounded-2xl sm:grid-cols-3 sm:divide-x sm:divide-y-0"
+        className="glass mt-6 grid divide-y divide-white/10 rounded-2xl sm:mt-8 sm:grid-cols-3 sm:divide-x sm:divide-y-0"
       >
         {facts.map(({ icon: Icon, label, value }) => (
-          <div key={label} className="flex items-center justify-center gap-3 px-5 py-4">
+          <div key={label} className="flex items-center justify-center gap-3 px-5 py-3 sm:py-4">
             <Icon className="size-5 shrink-0 text-indigo-300" />
             <span className="text-sm text-neutral-400">
               {label}: <span className="font-semibold text-white">{value}</span>

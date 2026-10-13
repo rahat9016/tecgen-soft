@@ -51,7 +51,7 @@ export default function PortfolioSection() {
   const products = SOLUTIONS.filter((s) => s.demoHref && showcase[s.slug]);
 
   return (
-    <section id="work" className="relative py-14 md:py-20">
+    <section id="work" className="relative py-10 sm:py-14 md:py-20">
       <div className="pointer-events-none absolute top-1/3 -left-40 size-112 rounded-full bg-white/6 blur-[120px]" />
       <div className="pointer-events-none absolute -right-32 bottom-0 size-96 rounded-full bg-white/4 blur-[120px]" />
 
@@ -66,7 +66,7 @@ export default function PortfolioSection() {
           <p className="mt-3 text-base text-neutral-400">Every project below is real and clickable — not a mockup.</p>
         </Reveal>
 
-        <StaggerGrid className="mt-12 grid grid-cols-2 gap-x-4 gap-y-12 lg:mt-16 lg:grid-cols-4 lg:gap-x-6">
+        <StaggerGrid className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:mt-12 sm:gap-y-12 lg:mt-16 lg:grid-cols-4 lg:gap-x-6">
           {products.map(({ slug, name, demoHref }) => {
             const { icon: Icon, lines, chip, arrow, glow, tilt } = showcase[slug];
             return (

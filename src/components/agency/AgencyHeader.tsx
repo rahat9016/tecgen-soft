@@ -51,18 +51,18 @@ export default function AgencyHeader({ overlay = false }: { overlay?: boolean })
               priority
               className="h-8 w-auto object-contain"
             />
-            <span className="text-lg font-bold">
+            <span className="text-lg font-bold whitespace-nowrap">
               <span className="text-white">Tecgen</span>{" "}
               <span className="text-[#8F87FF]">Soft</span>
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden items-center gap-1 lg:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="rounded-lg px-3.5 py-2 text-sm font-medium text-neutral-300 transition hover:bg-white/[0.08] hover:text-white"
+                className="rounded-lg px-3.5 py-2 text-sm font-medium whitespace-nowrap text-neutral-300 transition hover:bg-white/[0.08] hover:text-white"
               >
                 {link.label}
               </Link>
@@ -72,11 +72,10 @@ export default function AgencyHeader({ overlay = false }: { overlay?: boolean })
           <div className="flex items-center gap-2">
             <Link
               href="/#contact"
-              aria-label="Get a Quote"
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#3D2EF9] px-4 text-sm font-semibold text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_10px_30px_-8px_rgba(61,46,249,0.8)] transition hover:bg-[#4d3ffa] sm:px-5"
+              className="hidden h-10 items-center gap-1.5 rounded-xl bg-[#3D2EF9] px-5 text-sm font-semibold whitespace-nowrap text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_10px_30px_-8px_rgba(61,46,249,0.8)] transition hover:bg-[#4d3ffa] md:inline-flex"
             >
               <MessageCircle className="size-4" />
-              <span className="hidden sm:inline">Get a Quote</span>
+              Get a Quote
             </Link>
 
             <button
@@ -84,7 +83,7 @@ export default function AgencyHeader({ overlay = false }: { overlay?: boolean })
               onClick={() => setOpen((v) => !v)}
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
-              className="inline-flex size-10 items-center justify-center rounded-xl text-neutral-200 transition hover:bg-white/10 md:hidden"
+              className="inline-flex size-10 items-center justify-center rounded-xl text-neutral-200 transition hover:bg-white/10 lg:hidden"
             >
               {open ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>
@@ -92,7 +91,7 @@ export default function AgencyHeader({ overlay = false }: { overlay?: boolean })
         </div>
 
         {open && (
-          <nav className="glass-strong mt-2 rounded-2xl bg-black/75 p-2 md:hidden">
+          <nav className="glass-strong mt-2 rounded-2xl bg-black/75 p-2 lg:hidden">
             <ul className="flex flex-col gap-1">
               {navLinks.map((link) => (
                 <li key={link.label}>

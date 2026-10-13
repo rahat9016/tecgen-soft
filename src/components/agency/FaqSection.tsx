@@ -75,7 +75,7 @@ const faqs = [
 
 export default function FaqSection() {
   return (
-    <section id="faq" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 md:py-18 lg:px-8">
+    <section id="faq" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 md:py-18 lg:px-8">
       <Reveal className="mx-auto max-w-2xl text-center">
         <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
           প্রশ্ন থাকতে পারে?{" "}
@@ -86,17 +86,17 @@ export default function FaqSection() {
         <p className="mt-3 text-base text-neutral-400">Frequently Asked Questions</p>
       </Reveal>
 
-      <div className="mt-10 grid items-start gap-4 lg:grid-cols-2 lg:gap-6">
+      <div className="mt-8 grid items-start gap-4 sm:mt-10 lg:grid-cols-2 lg:gap-6">
         {[faqs.slice(0, Math.ceil(faqs.length / 2)), faqs.slice(Math.ceil(faqs.length / 2))].map((column, col) => (
           <Reveal
             key={col}
             delay={0.1 + col * 0.05}
-            className="glass rounded-2xl px-6 sm:px-7"
+            className="glass rounded-2xl px-5 sm:px-7"
           >
             <Accordion type="single" collapsible>
               {column.map((faq) => (
                 <AccordionItem key={faq.q} value={faq.q} className="border-white/10 last:border-b-0">
-                  <AccordionTrigger className="py-5 text-left text-base font-semibold text-white hover:text-indigo-300 hover:no-underline data-[state=open]:text-indigo-200 [&>svg]:text-neutral-400">
+                  <AccordionTrigger className="py-4 text-left sm:py-5 text-base font-semibold text-white hover:text-indigo-300 hover:no-underline data-[state=open]:text-indigo-200 [&>svg]:text-neutral-400">
                     {faq.q}
                   </AccordionTrigger>
                   <AccordionContent className="text-bn text-sm leading-relaxed text-neutral-300">

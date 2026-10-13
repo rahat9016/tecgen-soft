@@ -17,7 +17,7 @@ export default function RootPage() {
     <div className="relative isolate min-h-screen overflow-x-clip bg-[#0a0a0a]">
       <AuroraBackground />
       <AgencyHeader overlay />
-      {/* <SmoothScroll> */}
+      <SmoothScroll>
         <Hero />
         <PortfolioSection />
         <SolutionsSection />
@@ -28,7 +28,7 @@ export default function RootPage() {
         <FaqSection />
         <FinalCta />
         <AgencyFooter />
-      {/* </SmoothScroll> */}
+      </SmoothScroll>
     </div>
   );
 }

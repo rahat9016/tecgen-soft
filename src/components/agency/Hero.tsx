@@ -33,7 +33,7 @@ export default function Hero() {
   return (
     <section
       ref={sectionRef}
-      className="relative flex h-svh min-h-[640px] flex-col overflow-hidden bg-[#0a0a0a]"
+      className="relative flex flex-col overflow-hidden bg-[#0a0a0a] pb-8 sm:pb-16 md:h-svh md:min-h-[640px] md:pb-0"
     >
       {/* backdrop — spotlight, dot grid and a perspective floor, drawn in CSS so it stays crisp and light */}
       <motion.div
@@ -112,14 +112,14 @@ export default function Hero() {
 
         <motion.p
           variants={item}
-          className="mx-auto mt-6 max-w-3xl text-center text-base leading-7 text-neutral-400 sm:text-lg sm:leading-8"
+          className="mx-auto mt-4 max-w-3xl text-center sm:mt-6 text-base leading-7 text-neutral-400 sm:text-lg sm:leading-8"
         >
           আপনার ব্যবসার জন্য ready-made software,{" "}
           <span className="font-semibold text-neutral-200">সহজ subscription-এ</span>। Hotel booking থেকে শুরু করে
           e-commerce, hotel room booking ও turf reservation—সবকিছু এক জায়গায় explore করুন।
         </motion.p>
 
-        <motion.div variants={item} className="mt-8 flex flex-wrap justify-center gap-3">
+        <motion.div variants={item} className="mt-6 flex flex-wrap justify-center gap-3 sm:mt-8">
           <Link
             href="#solutions"
             className="group inline-flex h-13 items-center gap-2 rounded-xl bg-[#3D2EF9] px-7 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.1)_inset,0_18px_40px_-10px_rgba(61,46,249,0.7)] transition hover:-translate-y-0.5 hover:bg-[#4d3ffa] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.14)_inset,0_24px_48px_-10px_rgba(61,46,249,0.85)]"
@@ -135,8 +135,8 @@ export default function Hero() {
           </Link>
         </motion.div>
 
-        {/* project showcase — fanned browser frames that bleed into the next section */}
-        <motion.div variants={item} className="relative mx-auto mt-10 min-h-0 w-full max-w-6xl flex-1 md:mt-12">
+        {/* project showcase — fanned browser frames that bleed into the next section (desktop/tablet only) */}
+        <motion.div variants={item} className="relative mx-auto mt-12 hidden min-h-0 w-full max-w-6xl flex-1 md:block">
           <div className="agency-blob-pulse pointer-events-none absolute top-1/3 left-1/2 h-72 w-[70%] -translate-x-1/2 rounded-full bg-white/[0.08] blur-[110px]" />
 
           <div className="relative h-full">
@@ -189,7 +189,7 @@ export default function Hero() {
       </motion.div>
 
       {/* fade the showcase out into the section below */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-40 bg-linear-to-t from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 hidden h-40 bg-linear-to-t from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent md:block" />
     </section>
   );
 }

@@ -12,9 +12,9 @@ const wall = [0, 1, 2].flatMap((row) => screens.map((_, i) => screens[(i + row) 
 // this banner points people at the live demos instead; swap in real testimonials once they exist.
 export default function TestimonialsSection() {
   return (
-    <section className="relative py-14 md:py-18">
+    <section className="relative py-10 sm:py-14 md:py-18">
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <Reveal className="glass relative overflow-hidden rounded-3xl px-6 py-14 text-center sm:px-12 sm:py-20">
+        <Reveal className="glass relative overflow-hidden rounded-3xl px-5 py-10 text-center sm:px-12 sm:py-20">
           {/* backdrop: a tilted wall of the real product screens, darkened toward the centre */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0">
             <div className="absolute -inset-x-1/4 -inset-y-full grid -rotate-8 grid-cols-4 content-center gap-4 opacity-45">

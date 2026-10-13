@@ -109,7 +109,7 @@ function DevicePreview({
 
 export default function SolutionsSection() {
   return (
-    <section id="solutions" className="relative py-14 md:py-18">
+    <section id="solutions" className="relative py-10 sm:py-14 md:py-18">
       <div className="pointer-events-none absolute top-1/3 left-1/2 h-80 w-[60%] -translate-x-1/2 rounded-full bg-white/[0.06] blur-[130px]" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -126,7 +126,7 @@ export default function SolutionsSection() {
           </p>
         </Reveal>
 
-        <StaggerGrid className="mt-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <StaggerGrid className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
           {solutions.map(({ icon: Icon, name, bn, price, features, href, preview, accent, popular }) => (
             <StaggerItem
               key={name}

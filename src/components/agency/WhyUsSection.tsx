@@ -11,7 +11,7 @@ const iconTile =
 
 export default function WhyUsSection() {
   return (
-    <section className="relative overflow-x-clip py-16 md:py-24">
+    <section className="relative overflow-x-clip py-10 sm:py-16 md:py-24">
       {/* decorative glow */}
       <div className="pointer-events-none absolute top-0 right-0 size-96 rounded-full bg-white/[0.06] blur-[100px]" />
       <div className="pointer-events-none absolute bottom-0 left-0 size-72 rounded-full bg-white/[0.04] blur-[100px]" />
@@ -33,9 +33,9 @@ export default function WhyUsSection() {
           </p>
         </Reveal>
 
-        <StaggerGrid className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <StaggerGrid className="mt-8 grid gap-4 sm:mt-12 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
           {/* all-in-one plan */}
-          <StaggerItem className="glass relative overflow-hidden rounded-3xl p-6 sm:p-8 md:col-span-2">
+          <StaggerItem className="glass relative overflow-hidden rounded-3xl p-5 sm:p-8 md:col-span-2">
             <div className="pointer-events-none absolute -top-20 -right-16 size-64 rounded-full bg-[#3D2EF9]/25 blur-[90px]" />
             <div className="relative flex h-full flex-col">
               <div className="flex items-start justify-between gap-4">
@@ -66,7 +66,7 @@ export default function WhyUsSection() {
           </StaggerItem>
 
           {/* speed */}
-          <StaggerItem className="glass flex flex-col rounded-3xl p-6 sm:p-8">
+          <StaggerItem className="glass flex flex-col rounded-3xl p-5 sm:p-8">
             <span className={iconTile}>
               <Zap className="size-5" />
             </span>
@@ -80,7 +80,7 @@ export default function WhyUsSection() {
           </StaggerItem>
 
           {/* real demos */}
-          <StaggerItem className="glass flex flex-col rounded-3xl p-6 sm:p-8">
+          <StaggerItem className="glass flex flex-col rounded-3xl p-5 sm:p-8">
             <span className={iconTile}>
               <MonitorPlay className="size-5" />
             </span>
@@ -98,7 +98,7 @@ export default function WhyUsSection() {
           </StaggerItem>
 
           {/* self-service */}
-          <StaggerItem className="glass flex flex-col rounded-3xl p-6 sm:p-8">
+          <StaggerItem className="glass flex flex-col rounded-3xl p-5 sm:p-8">
             <span className={iconTile}>
               <LayoutDashboard className="size-5" />
             </span>
@@ -109,7 +109,7 @@ export default function WhyUsSection() {
           </StaggerItem>
 
           {/* no risk */}
-          <StaggerItem className="glass flex flex-col rounded-3xl p-6 sm:p-8">
+          <StaggerItem className="glass flex flex-col rounded-3xl p-5 sm:p-8">
             <span className={iconTile}>
               <ShieldCheck className="size-5" />
             </span>

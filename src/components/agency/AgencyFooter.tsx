@@ -30,8 +30,8 @@ export default function AgencyFooter() {
       <div className="pointer-events-none absolute -top-32 left-1/4 size-96 rounded-full bg-[#3D2EF9]/15 blur-[120px]" />
       <div className="pointer-events-none absolute -right-24 -bottom-32 size-80 rounded-full bg-white/[0.04] blur-[110px]" />
 
-      <div className="relative mx-auto max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
-        <div className="glass grid gap-10 rounded-3xl p-7 sm:grid-cols-2 sm:p-10 lg:grid-cols-[1.3fr_1.45fr_0.7fr_1.15fr]">
+      <div className="relative mx-auto max-w-7xl px-4 pt-10 sm:px-6 sm:pt-12 lg:px-8">
+        <div className="glass grid gap-8 rounded-3xl p-6 sm:grid-cols-2 sm:gap-10 sm:p-10 lg:grid-cols-[1.3fr_1.45fr_0.7fr_1.15fr]">
           {/* brand */}
           <div>
             <Link href="/" className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export default function AgencyFooter() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col items-center justify-between gap-3 px-2 sm:flex-row">
+        <div className="mt-6 flex flex-col items-center justify-between gap-3 px-2 sm:mt-8 sm:flex-row">
           <p className="text-xs text-neutral-500">© {new Date().getFullYear()} Tecgen Soft. All rights reserved.</p>
           <a
             href="#"
