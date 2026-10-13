@@ -75,7 +75,7 @@ const faqs = [
 
 export default function FaqSection() {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 md:py-18 lg:px-8">
+    <section id="faq" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 md:py-18 lg:px-8">
       <Reveal className="mx-auto max-w-2xl text-center">
         <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
           প্রশ্ন থাকতে পারে?{" "}
