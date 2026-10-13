@@ -8,10 +8,14 @@ import {
   ArrowRight,
   CalendarDays,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   CreditCard,
+  Flame,
   Hourglass,
   LayoutGrid,
   Lock,
+  MapPin,
   Rows3,
   ShieldCheck,
   Sun,
@@ -19,7 +23,7 @@ import {
   Sunset,
   MoonStar,
 } from "lucide-react";
-import { addDays, dateLabel, formatDuration, hourLabel, hourShort, payLabels, rangeLabel, sportLabels, taka, todayYmd } from "@/src/lib/turf-store/format";
+import { addDays, dateLabel, formatDuration, hourLabel, hourShort, payLabels, rangeLabel, slotTime, sportLabels, taka, todayYmd } from "@/src/lib/turf-store/format";
 import {
   createOnlineBooking,
   findConflict,
@@ -35,9 +39,9 @@ import {
   useTurfDB,
   type SlotInfo,
 } from "@/src/lib/turf-store/store";
-import type { Court, PayMethod, Sport } from "@/src/lib/turf-store/types";
+import type { Court, PayMethod } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
-import { Chip, inputClass, labelClass, LiveBadge, Loader, SportIcon, tbtn } from "./ui";
+import { inputClass, labelClass, LiveBadge, Loader, SportIcon, tbtn } from "./ui";
 
 const PHONE_KEY = "turfhub:phone";
 
@@ -76,21 +80,26 @@ export default function SlotBooking() {
   const [clientId] = useState(getClientId);
 
   const courts = db.courts.filter((c) => c.active);
-  const sports = [...new Set(courts.map((c) => c.sport))];
 
   const [courtId, setCourtId] = useState(params.get("court") ?? "");
-  const [sport, setSport] = useState<Sport | "all">("all");
   const [date, setDate] = useState(params.get("date") ?? "");
   const [start, setStart] = useState<number | null>(params.get("start") ? Number(params.get("start")) : null);
   const [duration, setDuration] = useState(Number(params.get("duration")) || 1);
   const [view, setView] = useState<"court" | "all">("court");
   const [paying, setPaying] = useState(false);
+  // Week of the date strip on show; until the visitor pages, it follows the selected date.
+  const [weekPick, setWeekPick] = useState<number | null>(null);
 
   const today = hydrated ? todayYmd() : "";
   const day = date || today;
   const days = hydrated ? Array.from({ length: db.settings.bookingWindowDays }, (_, i) => addDays(today, i)) : [];
   const court = courts.find((c) => c.id === courtId) ?? courts[0];
   const hours = hoursOf(db.settings);
+  // Hours that have started can never be booked again, so today's grid only lists what is still ahead.
+  const upcoming = hours.filter((h) => slotTime(day, h) > now);
+  const weeks = Math.ceil(days.length / 7);
+  const week = weekPick ?? Math.max(0, Math.floor(days.indexOf(day) / 7));
+  const weekDays = days.slice(week * 7, week * 7 + 7);
 
   const myHold = db.holds.find((h) => h.clientId === clientId && h.expiresAt > now);
 
@@ -116,6 +125,9 @@ export default function SlotBooking() {
   const selection = court && start !== null ? { courtId: court.id, date: day, startHour: start, duration } : null;
   const conflict = selection && hydrated ? findConflict(db, selection, { clientId, now }) : null;
   const price = selection && court ? quote(court, selection.startHour, selection.duration, db.settings) : null;
+  const peakHours = selection
+    ? Array.from({ length: selection.duration }, (_, i) => selection.startHour + i).filter((h) => h >= db.settings.peakStartHour).length
+    : 0;
 
   const pickCell = (c: Court, h: number) => {
     const info = slotInfo(db, c, day, h, now, clientId);
@@ -194,11 +206,24 @@ export default function SlotBooking() {
             <>
               {/* Date strip */}
               <div>
-                <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-neutral-900">
-                  <CalendarDays className="size-4 text-emerald-700" /> Date
-                </p>
-                <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
-                  {days.map((d, i) => {
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="flex items-center gap-1.5 text-sm font-medium text-neutral-900">
+                    <CalendarDays className="size-4 text-emerald-700" /> Date
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="mr-1 text-xs text-neutral-500">
+                      {dateLabel(weekDays[0], { day: "numeric", month: "short" })} – {dateLabel(weekDays[weekDays.length - 1], { day: "numeric", month: "short" })}
+                    </span>
+                    <button onClick={() => setWeekPick(week - 1)} disabled={week === 0} aria-label="Previous week" className={cn(tbtn.icon, "size-8")}>
+                      <ChevronLeft className="size-4" />
+                    </button>
+                    <button onClick={() => setWeekPick(week + 1)} disabled={week >= weeks - 1} aria-label="Next week" className={cn(tbtn.icon, "size-8")}>
+                      <ChevronRight className="size-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+                  {weekDays.map((d) => {
                     const dt = new Date(`${d}T00:00`);
                     const active = d === day;
                     return (
@@ -208,16 +233,17 @@ export default function SlotBooking() {
                           setDate(d);
                           setStart(null);
                         }}
+                        aria-pressed={active}
                         className={cn(
-                          "flex w-16 shrink-0 flex-col items-center rounded-2xl py-2.5 ring-1 transition",
+                          "flex min-w-0 flex-col items-center rounded-2xl py-2.5 ring-1 transition",
                           active ? "bg-emerald-800 text-white ring-emerald-800" : "bg-white text-neutral-700 ring-neutral-200 hover:ring-emerald-500"
                         )}
                       >
-                        <span className={cn("text-[11px]", active ? "text-lime-300" : "text-neutral-500")}>
-                          {i === 0 ? "Today" : dt.toLocaleDateString("en-GB", { weekday: "short" })}
+                        <span className={cn("text-xs", active ? "text-lime-300" : "text-neutral-500")}>
+                          {d === today ? "Today" : dt.toLocaleDateString("en-GB", { weekday: "short" })}
                         </span>
                         <span className="text-lg font-semibold">{dt.getDate()}</span>
-                        <span className={cn("text-[11px]", active ? "text-white/70" : "text-neutral-400")}>{dt.toLocaleDateString("en-GB", { month: "short" })}</span>
+                        <span className={cn("text-xs", active ? "text-white/70" : "text-neutral-400")}>{dt.toLocaleDateString("en-GB", { month: "short" })}</span>
                       </button>
                     );
                   })}
@@ -227,48 +253,38 @@ export default function SlotBooking() {
               {view === "court" ? (
                 <>
                   <div>
-                    <div className="mb-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-                      <Chip active={sport === "all"} onClick={() => setSport("all")}>
-                        All sports
-                      </Chip>
-                      {sports.map((s) => (
-                        <Chip key={s} active={sport === s} onClick={() => setSport(s)}>
-                          <SportIcon sport={s} className="size-3.5" /> {sportLabels[s]}
-                        </Chip>
-                      ))}
-                    </div>
-                    <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:thin]">
-                      {courts
-                        .filter((c) => sport === "all" || c.sport === sport)
-                        .map((c) => {
-                          const free = freeSlots(db, c, day, now);
-                          const active = c.id === court.id;
-                          return (
-                            <button
-                              key={c.id}
-                              onClick={() => {
-                                setCourtId(c.id);
-                                setStart(null);
-                              }}
-                              className={cn(
-                                "flex w-60 shrink-0 items-center gap-3 rounded-2xl p-2 text-left ring-1 transition",
-                                active ? "bg-emerald-950 text-white ring-emerald-950" : "bg-white ring-neutral-200 hover:ring-emerald-500"
-                              )}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={c.image} alt="" className="size-14 rounded-xl object-cover" />
-                              <span className="min-w-0">
-                                <span className={cn("flex items-center gap-1 text-[11px]", active ? "text-lime-300" : "text-neutral-500")}>
-                                  <SportIcon sport={c.sport} className="size-3" /> {sportLabels[c.sport]}
-                                </span>
-                                <span className="block truncate text-sm font-semibold">{c.name}</span>
-                                <span className={cn("text-[11px]", free === 0 ? "text-rose-400" : active ? "text-white/70" : "text-emerald-700")}>
-                                  {free === 0 ? "Fully booked" : `${free} slots free`}
-                                </span>
+                    <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-neutral-900">
+                      <MapPin className="size-4 text-emerald-700" /> Ground
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {courts.map((c) => {
+                        const free = freeSlots(db, c, day, now);
+                        const active = c.id === court.id;
+                        return (
+                          <button
+                            key={c.id}
+                            onClick={() => {
+                              setCourtId(c.id);
+                              setStart(null);
+                            }}
+                            aria-pressed={active}
+                            className={cn(
+                              "flex min-w-0 items-center gap-2.5 rounded-2xl px-3 py-2.5 text-left ring-1 transition sm:p-2",
+                              active ? "bg-emerald-950 text-white ring-emerald-950" : "bg-white ring-neutral-200 hover:ring-emerald-500"
+                            )}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={c.image} alt="" className="hidden size-11 shrink-0 rounded-xl object-cover sm:block" />
+                            <span className="min-w-0">
+                              <span className="line-clamp-2 text-sm font-semibold leading-snug">{c.name}</span>
+                              <span className={cn("flex items-center gap-1 text-xs", free === 0 ? "text-rose-500" : active ? "text-lime-300" : "text-emerald-700")}>
+                                <SportIcon sport={c.sport} className="size-3 shrink-0" />
+                                <span className="truncate">{free === 0 ? "Fully booked" : `${free} slot${free === 1 ? "" : "s"} free`}</span>
                               </span>
-                            </button>
-                          );
-                        })}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -283,8 +299,24 @@ export default function SlotBooking() {
                       <Legend />
                     </div>
                     <div className="mt-5 space-y-5">
+                      {upcoming.length === 0 && (
+                        <div className="rounded-2xl bg-neutral-50 px-4 py-6 text-center text-sm text-neutral-600">
+                          No more slots today.{" "}
+                          {days[1] && (
+                            <button
+                              onClick={() => {
+                                setDate(days[1]);
+                                setStart(null);
+                              }}
+                              className="font-semibold text-emerald-800 underline"
+                            >
+                              See tomorrow
+                            </button>
+                          )}
+                        </div>
+                      )}
                       {periods.map((p) => {
-                        const hs = hours.filter((h) => h >= p.from && h < p.to);
+                        const hs = upcoming.filter((h) => h >= p.from && h < p.to);
                         if (!hs.length) return null;
                         return (
                           <div key={p.label}>
@@ -296,6 +328,7 @@ export default function SlotBooking() {
                                 const info = slotInfo(db, court, day, h, now, clientId);
                                 const selected = start !== null && h >= start && h < start + duration;
                                 const clickable = info.kind === "free" || (info.kind === "held" && info.mine);
+                                const peak = info.kind === "free" && h >= db.settings.peakStartHour;
                                 return (
                                   <button
                                     key={h}
@@ -304,7 +337,10 @@ export default function SlotBooking() {
                                     className={cn("rounded-xl px-2 py-2.5 text-center ring-1 transition disabled:cursor-not-allowed", cellTone(info, selected))}
                                   >
                                     <span className="block text-sm font-semibold">{hourLabel(h)}</span>
-                                    <span className={cn("block text-[11px]", selected ? "text-lime-300" : "opacity-80")}>{selected ? "Selected" : cellNote(info)}</span>
+                                    <span className={cn("flex items-center justify-center gap-0.5 text-xs", selected ? "text-lime-300" : "opacity-80")}>
+                                      {peak && !selected && <Flame className="size-3 text-orange-500" />}
+                                      {selected ? "Selected" : cellNote(info)}
+                                    </span>
                                   </button>
                                 );
                               })}
@@ -361,9 +397,15 @@ export default function SlotBooking() {
                     })}
                   </div>
                 </div>
-                {price && (
+                {price && selection && (
                   <dl className="space-y-2 border-t border-white/10 pt-4 text-sm">
                     <Row k="Court fee" v={taka(price.total)} />
+                    {peakHours > 0 && (
+                      <div className="flex items-center gap-1.5 text-xs text-orange-300">
+                        <Flame className="size-3.5" /> {peakHours === selection.duration ? "Peak" : `${peakHours} hr at peak`} rate ({taka(court.peakPrice)}/hr from{" "}
+                        {hourLabel(db.settings.peakStartHour)})
+                      </div>
+                    )}
                     <Row k={`Advance (${db.settings.advancePercent}%)`} v={taka(price.advance)} strong />
                     <Row k="Pay at venue" v={taka(price.total - price.advance)} />
                   </dl>
@@ -414,14 +456,18 @@ function Legend() {
     { c: "bg-emerald-800 ring-emerald-800", l: "Selected" },
     { c: "bg-amber-100 ring-amber-300", l: "On hold" },
     { c: "bg-neutral-200 ring-neutral-200", l: "Booked" },
+    { c: "bg-[repeating-linear-gradient(45deg,#f5f5f5,#f5f5f5_3px,#e5e5e5_3px,#e5e5e5_6px)] ring-neutral-200", l: "Closed" },
   ];
   return (
-    <div className="flex flex-wrap gap-3 text-[11px] text-neutral-500">
+    <div className="flex flex-wrap gap-3 text-xs text-neutral-500">
       {items.map((i) => (
         <span key={i.l} className="flex items-center gap-1.5">
           <span className={cn("size-3 rounded ring-1", i.c)} /> {i.l}
         </span>
       ))}
+      <span className="flex items-center gap-1">
+        <Flame className="size-3.5 text-orange-500" /> Peak rate
+      </span>
     </div>
   );
 }
@@ -453,9 +499,9 @@ function Matrix({
         <table className="w-full border-separate border-spacing-1">
           <thead>
             <tr>
-              <th className="sticky left-0 z-10 min-w-36 bg-white" />
+              <th className="sticky left-0 z-10 min-w-32 bg-white" />
               {hours.map((h) => (
-                <th key={h} className="min-w-11 text-[10px] font-medium text-neutral-500">
+                <th key={h} className={cn("min-w-8 text-[10px] font-medium", h >= db.settings.peakStartHour ? "text-orange-600" : "text-neutral-500")}>
                   {hourShort(h)}
                 </th>
               ))}

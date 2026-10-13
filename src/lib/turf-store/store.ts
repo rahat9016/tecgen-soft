@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { slotTime, todayYmd } from "./format";
+import { addDays, slotTime, todayYmd } from "./format";
 import { createSeed, DB_VERSION, staticState } from "./seed";
 import type { Block, Booking, BookingStatus, Court, Hold, PayMethod, Payment, Settings, TurfDB } from "./types";
 
@@ -229,6 +229,17 @@ export function hoursOf(settings: Settings) {
 /** Free one-hour slots left on a court for a date (ignoring the past). */
 export function freeSlots(db: TurfDB, court: Court, date: string, now: number) {
   return hoursOf(db.settings).filter((h) => slotInfo(db, court, date, h, now, "").kind === "free").length;
+}
+
+/** First day in the booking window with a free slot on a court, and that day's free start hours. */
+export function nextFreeDay(db: TurfDB, court: Court, now: number) {
+  const today = todayYmd();
+  for (let i = 0; i < db.settings.bookingWindowDays; i++) {
+    const date = addDays(today, i);
+    const hours = hoursOf(db.settings).filter((h) => slotInfo(db, court, date, h, now, "").kind === "free");
+    if (hours.length) return { date, hours };
+  }
+  return null;
 }
 
 /** The booking being played on a court right now, if any, and the next one today. */

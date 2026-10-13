@@ -8,6 +8,7 @@ import {
   ArrowUpRight,
   CalendarCheck,
   Dumbbell,
+  Flame,
   Lock,
   MapPin,
   PartyPopper,
@@ -16,8 +17,8 @@ import {
   Trophy,
   Wallet,
 } from "lucide-react";
-import { formatDuration, hourLabel, sportLabels, taka, todayYmd } from "@/src/lib/turf-store/format";
-import { courtLive, endMs, freeSlots, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
+import { formatDuration, hourLabel, relativeDay, sportLabels, taka, todayYmd } from "@/src/lib/turf-store/format";
+import { courtLive, endMs, freeSlots, nextFreeDay, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Sport } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
 import QuickBook from "./QuickBook";
@@ -115,7 +116,7 @@ export function LiveNow() {
   const courts = db.courts.filter((c) => c.active);
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pt-14 md:px-8">
+    <section className="mx-auto max-w-7xl px-4 py-14 md:px-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <LiveBadge now={now} />
@@ -297,9 +298,9 @@ export function FeaturedCourts() {
         </div>
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {courts.map((c) => {
-            const free = hydrated ? freeSlots(db, c, todayYmd(), now) : null;
+            const next = hydrated ? nextFreeDay(db, c, now) : null;
             return (
-              <article key={c.id} className="overflow-hidden rounded-3xl bg-white p-2.5 ring-1 ring-neutral-200">
+              <article key={c.id} className="flex flex-col overflow-hidden rounded-3xl bg-white p-2.5 ring-1 ring-neutral-200">
                 <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={c.image} alt={c.name} className="size-full object-cover transition duration-500 hover:scale-105" />
@@ -310,21 +311,60 @@ export function FeaturedCourts() {
                     {c.indoor ? "Indoor" : "Outdoor"}
                   </span>
                 </div>
-                <div className="p-3">
+                <div className="flex flex-1 flex-col p-3">
                   <div className="flex items-center gap-1.5 text-xs text-neutral-500">
                     <SportIcon sport={c.sport} className="size-3.5" /> {sportLabels[c.sport]} · {c.size}
                   </div>
                   <h3 className="mt-1 text-lg font-semibold text-neutral-900">{c.name}</h3>
                   <p className="mt-1 line-clamp-2 text-sm text-neutral-500">{c.description}</p>
-                  <div className="mt-4 flex items-end justify-between gap-3">
+                  {/* One row only: tags that would wrap are clipped so every card lines up. */}
+                  <div className="mt-3 flex h-6 flex-wrap gap-1.5 overflow-hidden">
+                    {c.features.map((f) => (
+                      <span key={f} className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-600">
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 border-t border-neutral-100 pt-4">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="font-medium text-neutral-800">
+                        {!hydrated ? "Checking slots…" : next ? `Next free · ${relativeDay(next.date)}` : `Fully booked for ${db.settings.bookingWindowDays} days`}
+                      </span>
+                      {next && (
+                        <span className="text-emerald-700">
+                          {next.hours.length} slot{next.hours.length === 1 ? "" : "s"} left
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {hydrated
+                        ? next?.hours.slice(0, 3).map((h) => (
+                            <Link
+                              key={h}
+                              href={`/turf/book?court=${c.id}&date=${next.date}&start=${h}`}
+                              aria-label={`Book ${c.name}, ${relativeDay(next.date)} at ${hourLabel(h)}`}
+                              className="inline-flex h-9 items-center justify-center gap-1 rounded-full text-xs font-semibold text-emerald-900 ring-1 ring-neutral-200 transition hover:bg-emerald-50 hover:ring-emerald-500"
+                            >
+                              {hourLabel(h)}
+                              {h >= db.settings.peakStartHour && <Flame className="size-3.5 text-orange-500" />}
+                            </Link>
+                          ))
+                        : Array.from({ length: 3 }, (_, i) => <span key={i} className="h-9 animate-pulse rounded-full bg-neutral-100" />)}
+                    </div>
+                  </div>
+
+                  <div className="mt-auto flex items-end justify-between gap-3 pt-4">
                     <div>
                       <p className="text-lg font-semibold text-neutral-900">
                         {taka(c.price)}
                         <span className="text-xs font-normal text-neutral-500"> /hr</span>
                       </p>
-                      <p className={cn("text-xs", free === 0 ? "text-rose-600" : "text-emerald-700")}>
-                        {free === null ? " " : free === 0 ? "Fully booked today" : `${free} free slots today`}
-                      </p>
+                      {c.peakPrice !== c.price && (
+                        <p className="flex items-center gap-1 text-xs text-neutral-500">
+                          <Flame className="size-3.5 text-orange-500" /> {taka(c.peakPrice)} from {hourLabel(db.settings.peakStartHour)}
+                        </p>
+                      )}
                     </div>
                     <Link href={`/turf/book?court=${c.id}`} className={tbtn.green}>
                       Book <ArrowRight className="size-4" />
@@ -365,7 +405,15 @@ export function HowItWorks() {
           </div>
         ))}
       </div>
-      <div className="relative mt-12 overflow-hidden rounded-3xl bg-emerald-900 px-6 py-12 md:px-12">
+    </section>
+  );
+}
+
+export function PrimeTimeCta() {
+  const { settings } = useTurfDB();
+  return (
+    <section className="mx-auto max-w-7xl px-4 pb-20 md:px-8">
+      <div className="relative overflow-hidden rounded-3xl bg-emerald-900 px-6 py-12 md:px-12">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/turf/night.webp" alt="" className="absolute inset-0 size-full object-cover opacity-25" />
         <div className="relative flex flex-wrap items-center justify-between gap-6">
