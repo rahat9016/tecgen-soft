@@ -112,11 +112,10 @@ export default function Hero() {
 
         <motion.p
           variants={item}
-          className="mx-auto mt-4 max-w-3xl text-center sm:mt-6 text-base leading-7 text-neutral-400 sm:text-lg sm:leading-8"
+          className="mx-auto mt-4 max-w-3xl text-center text-base text-balance leading-7 text-neutral-400 sm:mt-6 sm:text-lg sm:leading-8"
         >
-          আপনার ব্যবসার জন্য ready-made software,{" "}
-          <span className="font-semibold text-neutral-200">সহজ subscription-এ</span>। Hotel booking থেকে শুরু করে
-          e-commerce, hotel room booking ও turf reservation—সবকিছু এক জায়গায় explore করুন।
+          Website বানানোর ঝামেলা নেই — ready software নিন,{" "}
+          <span className="font-semibold text-neutral-200">১–৩ দিনেই চালু করুন</span>, মাসে মাসে pay করুন।
         </motion.p>
 
         <motion.div variants={item} className="mt-6 flex flex-wrap justify-center gap-3 sm:mt-8">
