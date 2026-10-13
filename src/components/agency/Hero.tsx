@@ -146,8 +146,8 @@ export default function Hero() {
                 transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
               >
                 <BrowserFrame
-                  title="tripwave.com — Hotel & Resort Booking"
-                  src="/hotel-management.webp"
+                  title="GadgetHub — Gadget E-commerce"
+                  src="/solutions/gadget-ecommerce-desktop.webp"
                   className="border-white/10 shadow-2xl shadow-black/50"
                 />
               </motion.div>
@@ -158,8 +158,8 @@ export default function Hero() {
                 transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1.2 }}
               >
                 <BrowserFrame
-                  title="fitstorebd.com — Product Page"
-                  src="/ecommerce-product.webp"
+                  title="TurfHub — Turf Booking"
+                  src="/solutions/turf-booking-desktop.webp"
                   className="border-white/10 shadow-2xl shadow-black/50"
                 />
               </motion.div>
@@ -171,8 +171,8 @@ export default function Hero() {
               className="absolute top-0 left-1/2 z-10 w-full -translate-x-1/2 md:w-[60%]"
             >
               <BrowserFrame
-                title="fitstorebd.com — Online Shop"
-                src="/ecommerce.webp"
+                title="TripWave — Hotel Booking Management"
+                src="/solutions/hotel-booking-desktop.webp"
                 className="border-white/10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.7)] ring-1 ring-white/20"
               />
 

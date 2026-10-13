@@ -1,85 +1,59 @@
-"use client";
-
-import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-import { ArrowUpRight, Hotel, MousePointer2, Play, ShoppingBag } from "lucide-react";
+import { CalendarCheck, Hotel, Shirt, Smartphone, type LucideIcon } from "lucide-react";
 
 import Reveal from "@/src/components/agency/Reveal";
-import { PROJECTS, type Project } from "@/src/lib/projects";
+import { StaggerGrid, StaggerItem } from "@/src/components/agency/StaggerGrid";
+import { SOLUTIONS } from "@/src/lib/solutions";
 
-const categoryIcon: Record<string, typeof ShoppingBag> = {
-  "E-commerce": ShoppingBag,
-  "Hotel Booking": Hotel,
+const HOVER_FLAT = "lg:group-hover:[transform:perspective(1400px)_rotateY(0deg)_translateY(-10px)]";
+
+// per-product look — frames lean in toward the centre of the row on large screens
+const showcase: Record<
+  string,
+  { icon: LucideIcon; lines: [string, string]; chip: string; arrow: string; glow: string; tilt: string }
+> = {
+  "hotel-booking": {
+    icon: Hotel,
+    lines: ["Hotel Booking", "Management"],
+    chip: "bg-indigo-500",
+    arrow: "text-indigo-400",
+    glow: "bg-indigo-500/80",
+    tilt: "lg:[transform:perspective(1400px)_rotateY(16deg)]",
+  },
+  "gadget-ecommerce": {
+    icon: Smartphone,
+    lines: ["Gadget", "E-commerce"],
+    chip: "bg-teal-500",
+    arrow: "text-teal-400",
+    glow: "bg-teal-400/70",
+    tilt: "lg:[transform:perspective(1400px)_rotateY(7deg)]",
+  },
+  ecommerce: {
+    icon: Shirt,
+    lines: ["Fashion", "E-commerce"],
+    chip: "bg-fuchsia-600",
+    arrow: "text-fuchsia-400",
+    glow: "bg-fuchsia-500/75",
+    tilt: "lg:[transform:perspective(1400px)_rotateY(-7deg)]",
+  },
+  "turf-booking": {
+    icon: CalendarCheck,
+    lines: ["Turf", "Booking"],
+    chip: "bg-emerald-500",
+    arrow: "text-emerald-400",
+    glow: "bg-emerald-400/70",
+    tilt: "lg:[transform:perspective(1400px)_rotateY(-16deg)]",
+  },
 };
 
-function FrameBar({ title }: { title: string }) {
-  return (
-    <div className="flex items-center gap-3 border-b border-white/10 bg-white/[0.06] px-4 py-2.5">
-      <div className="flex shrink-0 gap-1.5">
-        <span className="size-2.5 rounded-full bg-white/30" />
-        <span className="size-2.5 rounded-full bg-white/30" />
-        <span className="size-2.5 rounded-full bg-white/30" />
-      </div>
-      <div className="min-w-0 flex-1 truncate rounded-full border border-white/10 bg-white/[0.06] px-3 py-0.5 text-center text-[10px] text-white/60">
-        {title}
-      </div>
-    </div>
-  );
-}
-
-/** Full-page screenshot that scrolls to the bottom while hovered (or tapped) — lets visitors "browse" the site. */
-function ScrollPreview({ project }: { project: Project }) {
-  const page = project.gallery[0];
-  const [scrolling, setScrolling] = useState(false);
-  const transition = "top 7s ease-in-out, transform 7s ease-in-out";
-
-  return (
-    <div
-      onMouseEnter={() => setScrolling(true)}
-      onMouseLeave={() => setScrolling(false)}
-      onClick={() => setScrolling((v) => !v)}
-      className="cursor-ns-resize overflow-hidden rounded-xl border border-white/15 bg-white/[0.06] shadow-2xl shadow-black/40 backdrop-blur-xl"
-    >
-      <FrameBar title={project.name} />
-      <div className="relative aspect-16/10 overflow-hidden">
-        <Image
-          src={page.image}
-          alt={`${project.name} — ${page.label}`}
-          width={page.width}
-          height={page.height}
-          sizes="(min-width: 1024px) 45vw, 90vw"
-          className="absolute inset-x-0 h-auto w-full"
-          style={{
-            top: scrolling ? "100%" : "0%",
-            transform: scrolling ? "translateY(-100%)" : "translateY(0)",
-            transition,
-          }}
-        />
-        <span
-          className={`pointer-events-none absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full border border-white/15 bg-neutral-900/55 px-3 py-1.5 text-[11px] font-medium text-white backdrop-blur-md transition-opacity ${
-            scrolling ? "opacity-0" : "opacity-100"
-          }`}
-        >
-          <MousePointer2 className="size-3" />
-          <span className="hidden lg:inline">Hover to scroll</span>
-          <span className="lg:hidden">Tap to scroll</span>
-        </span>
-      </div>
-    </div>
-  );
-}
-
 export default function PortfolioSection() {
-  const [active, setActive] = useState(0);
-  const project = PROJECTS[active];
-  const secondary = project.gallery[1];
+  const products = SOLUTIONS.filter((s) => s.demoHref && showcase[s.slug]);
 
   return (
     <section id="work" className="relative py-14 md:py-20">
-      <div className="pointer-events-none absolute top-1/4 -left-40 size-[28rem] rounded-full bg-white/[0.06] blur-[120px]" />
-      <div className="pointer-events-none absolute -right-32 bottom-0 size-96 rounded-full bg-white/[0.04] blur-[120px]" />
+      <div className="pointer-events-none absolute top-1/3 -left-40 size-112 rounded-full bg-white/6 blur-[120px]" />
+      <div className="pointer-events-none absolute -right-32 bottom-0 size-96 rounded-full bg-white/4 blur-[120px]" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
@@ -89,139 +63,72 @@ export default function PortfolioSection() {
               Live Work
             </span>
           </h2>
-          <p className="mt-3 text-base text-neutral-400">
-            Every project below is real and clickable — not a mockup.
-          </p>
+          <p className="mt-3 text-base text-neutral-400">Every project below is real and clickable — not a mockup.</p>
         </Reveal>
 
-        {/* project switcher */}
-        <Reveal delay={0.05} className="mt-10 flex justify-center">
-          <div role="tablist" className="glass inline-flex gap-1 rounded-2xl p-1.5">
-            {PROJECTS.map((p, i) => {
-              const Icon = categoryIcon[p.category] ?? ShoppingBag;
-              const selected = i === active;
-              return (
-                <button
-                  key={p.slug}
-                  role="tab"
-                  aria-selected={selected}
-                  onClick={() => setActive(i)}
-                  className={`relative flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition sm:px-5 ${
-                    selected ? "text-white" : "text-neutral-300 hover:text-white"
-                  }`}
-                >
-                  {selected && (
-                    <motion.span
-                      layoutId="work-tab"
-                      className="absolute inset-0 rounded-xl bg-[#3D2EF9] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_8px_24px_-6px_rgba(61,46,249,0.8)]"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
-                    />
-                  )}
-                  <Icon className="relative size-4" />
-                  <span className="relative">{p.name}</span>
-                </button>
-              );
-            })}
-          </div>
-        </Reveal>
-
-        <Reveal delay={0.1} className="glass mt-8 overflow-hidden rounded-3xl">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={project.slug}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-              className="grid lg:grid-cols-[1.35fr_1fr]"
-            >
-              {/* stage */}
-              <div className="relative overflow-hidden border-b border-white/10 bg-black/40 px-5 pt-8 pb-14 sm:px-10 sm:pt-12 sm:pb-20 lg:border-r lg:border-b-0">
-                <div className="pointer-events-none absolute -top-20 left-1/3 size-96 rounded-full bg-white/[0.08] blur-[110px]" />
-                <div
-                  className="pointer-events-none absolute inset-0 opacity-[0.06]"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
-                    backgroundSize: "40px 40px",
-                  }}
-                />
-
-                <div className="relative">
-                  <ScrollPreview project={project} />
-
-                  {secondary && (
-                    <Link
-                      href={secondary.href}
-                      className="group/sec absolute -right-2 -bottom-10 hidden w-[42%] overflow-hidden rounded-lg border border-white/20 bg-black/50 shadow-2xl shadow-black/50 backdrop-blur-xl transition hover:-translate-y-1 sm:block sm:-right-4 sm:-bottom-14"
+        <StaggerGrid className="mt-12 grid grid-cols-2 gap-x-4 gap-y-12 lg:mt-16 lg:grid-cols-4 lg:gap-x-6">
+          {products.map(({ slug, name, demoHref }) => {
+            const { icon: Icon, lines, chip, arrow, glow, tilt } = showcase[slug];
+            return (
+              <StaggerItem key={slug} className="group">
+                <Link href={demoHref!} target="_blank" rel="noopener noreferrer" className="block">
+                  <div className="flex items-center justify-center gap-3">
+                    <span
+                      className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${chip} text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3),0_10px_24px_-8px_rgba(0,0,0,0.7)]`}
                     >
-                      <FrameBar title={secondary.label} />
-                      <div className="relative aspect-16/10">
+                      <Icon className="size-5" />
+                    </span>
+                    <span className="text-sm leading-snug font-medium text-white sm:text-base">
+                      {lines[0]}
+                      <br />
+                      {lines[1]}
+                    </span>
+                  </div>
+
+                  <svg
+                    className={`mx-auto mt-2 h-7 w-4 ${arrow}`}
+                    viewBox="0 0 16 28"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M8 2c5 5-5 10 0 15v8" />
+                    <path d="m4.5 21.5 3.5 3.5 3.5-3.5" />
+                  </svg>
+
+                  <div className="relative mt-3">
+                    {/* coloured floor glow under the screen */}
+                    <div className={`pointer-events-none absolute inset-x-2 -bottom-10 h-24 rounded-full ${glow} blur-3xl`} />
+                    <div className={`pointer-events-none absolute inset-x-10 -bottom-3 h-6 rounded-full ${glow} blur-lg`} />
+
+                    <div
+                      className={`relative overflow-hidden rounded-xl border border-white/15 bg-neutral-900 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.85)] transition-transform duration-500 ${tilt} ${HOVER_FLAT}`}
+                    >
+                      <div className="flex items-center gap-1.5 border-b border-white/10 bg-neutral-800/90 px-3 py-2">
+                        <span className="size-2 rounded-full bg-red-400" />
+                        <span className="size-2 rounded-full bg-amber-400" />
+                        <span className="size-2 rounded-full bg-emerald-400" />
+                      </div>
+                      {/* full-page capture — hovering scrolls through the site */}
+                      <div className="relative aspect-3/4">
                         <Image
-                          src={secondary.image}
-                          alt={`${project.name} — ${secondary.label}`}
+                          src={`/solutions/${slug}-page.webp`}
+                          alt={`${name} — live demo`}
                           fill
-                          sizes="20vw"
-                          className="object-cover object-top"
+                          sizes="(min-width: 1024px) 290px, 45vw"
+                          className="object-cover object-top transition-[object-position] duration-4000 ease-in-out group-hover:object-bottom"
                         />
                       </div>
-                    </Link>
-                  )}
-                </div>
-              </div>
-
-              {/* details */}
-              <div className="flex flex-col p-7 sm:p-10">
-                <span className="inline-flex w-fit items-center rounded-full border border-indigo-300/20 bg-indigo-400/10 px-3 py-1 text-xs font-semibold tracking-wide text-indigo-200 uppercase">
-                  {project.category}
-                </span>
-                <h3 className="mt-3 text-2xl font-bold text-white sm:text-3xl">{project.name}</h3>
-                <p className="mt-3 text-base leading-relaxed text-neutral-400">{project.description}</p>
-
-                {project.journey && (
-                  <div className="mt-7">
-                    <p className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">User Journey</p>
-                    <ol className="mt-3 space-y-2">
-                      {project.journey.map((step, i) => (
-                        <motion.li
-                          key={step}
-                          initial={{ opacity: 0, x: 12 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.15 + i * 0.07 }}
-                          className="flex items-center gap-3 text-sm text-neutral-200"
-                        >
-                          <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-indigo-300/25 bg-indigo-400/15 text-[11px] font-bold text-indigo-200">
-                            {i + 1}
-                          </span>
-                          {step}
-                        </motion.li>
-                      ))}
-                    </ol>
+                    </div>
                   </div>
-                )}
-
-                <div className="mt-8 flex flex-wrap gap-2.5 lg:mt-auto lg:pt-8">
-                  <Link
-                    href={project.liveHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group inline-flex items-center gap-2 rounded-xl bg-[#3D2EF9] px-5 py-3 text-sm font-semibold text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_12px_30px_-8px_rgba(61,46,249,0.75)] transition hover:-translate-y-0.5 hover:bg-[#4d3ffa]"
-                  >
-                    <Play className="size-3.5 fill-current" />
-                    Live Preview দেখুন
-                  </Link>
-                  <Link
-                    href={`/work/${project.slug}`}
-                    className="group inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.05] px-5 py-3 text-sm font-semibold text-neutral-200 transition hover:border-white/25 hover:bg-white/10 hover:text-white"
-                  >
-                    Case Study
-                    <ArrowUpRight className="size-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </Reveal>
+                </Link>
+              </StaggerItem>
+            );
+          })}
+        </StaggerGrid>
       </div>
     </section>
   );
