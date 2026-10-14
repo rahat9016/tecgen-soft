@@ -61,8 +61,8 @@ export default function FeatureShowcase({
       </ol>
 
       <div className="order-1 lg:order-2">
-        <div className="overflow-hidden rounded-2xl border border-white/15 bg-white/6 shadow-xl shadow-black/40 backdrop-blur-xl lg:sticky lg:top-28">
-          <div className="relative flex items-center gap-3 border-b border-white/10 bg-white/6 px-4 py-3">
+        <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-white/6 shadow-xl shadow-black/40 backdrop-blur-xl">
+          <div className="relative flex shrink-0 items-center gap-3 border-b border-white/10 bg-white/6 px-4 py-3">
             <div className="flex shrink-0 items-center gap-1.5">
               <span className="size-2.5 rounded-full bg-white/30" />
               <span className="size-2.5 rounded-full bg-white/30" />
@@ -77,7 +77,8 @@ export default function FeatureShowcase({
               className="absolute inset-x-0 bottom-0 h-px origin-left bg-linear-to-r from-indigo-400/0 via-indigo-300/70 to-indigo-300/0"
             />
           </div>
-          <div className="relative aspect-16/10 w-full overflow-hidden">
+          {/* desktop: stretch to the feature list beside it; never shorter than the min height */}
+          <div className="relative aspect-16/10 min-h-60 w-full overflow-hidden lg:aspect-auto lg:min-h-105 lg:flex-1">
             <motion.div style={{ top, y }} className="absolute inset-x-0">
               <Image
                 src={pageSrc}
