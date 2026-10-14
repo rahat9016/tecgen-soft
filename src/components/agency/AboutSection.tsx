@@ -71,11 +71,7 @@ export default function AboutSection() {
             </h2>
 
             <p className="mt-5 max-w-xl text-base leading-relaxed text-neutral-300 sm:text-lg">
-              <span className="font-semibold text-white">Tecgen Soft</span> is a technology agency dedicated to
-              engineering <span className="font-semibold text-white">reliable, cost-effective digital solutions</span>{" "}
-              for growing businesses. We design and build high-performance e-commerce platforms, booking systems, and
-              custom web applications—eliminating technical complexity so you can focus entirely on scaling your core
-              business.
+              আমরা ব্যবসা সহজ করার আধুনিক টেকনোলজি বানাই, যেন আপনি নিশ্চিন্তে বিজনেস চালিয়ে যেতে পারেন।
             </p>
 
             <div className="mt-7 grid gap-3 sm:mt-10 sm:grid-cols-2 lg:mt-auto lg:pt-10">

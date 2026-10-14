@@ -113,8 +113,7 @@ export default function Hero() {
           variants={item}
           className="mx-auto mt-5 max-w-3xl text-center text-sm font-medium text-balance leading-6 text-neutral-400 sm:mt-8"
         >
-          Website বানানোর ঝামেলা নেই — ready software নিন,{" "}
-          <span className="font-semibold text-neutral-200">১–৩ দিনেই চালু করুন</span>, মাসে মাসে pay করুন।
+          আপনার ব্যবসাকে দ্রুত বড় করতে এবং সঠিক উপায়ে পরিচালনা করতে নিয়ে নিন আমাদের আধুনিক সফটওয়্যার।
         </motion.p>
 
         <motion.div variants={item} className="mt-8 flex flex-wrap justify-center gap-3 sm:mt-10">

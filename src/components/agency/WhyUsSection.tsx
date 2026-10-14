@@ -22,14 +22,13 @@ export default function WhyUsSection() {
             Why Tecgen Soft
           </span>
           <h2 className="mt-5 text-3xl leading-[1.15] font-semibold tracking-tight text-white sm:text-4xl">
-            Technical ঝামেলা আমাদের,{" "}
+            বিজনেসের জন্য প্রয়োজনীয়{" "}
             <span className="bg-linear-to-r from-indigo-400 via-[#6C63FF] to-indigo-300 bg-clip-text text-transparent">
-              ব্যবসা আপনার।
+              সবকিছু এক জায়গায়
             </span>
           </h2>
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
-            Ready software, একটাই মাসিক fee, আর সবসময় পাশে থাকা support — যাতে আপনি শুধু ব্যবসা বাড়ানোয় মন
-            দিতে পারেন।
+            আপনার ব্যবসার কাজগুলোকে সহজ, দ্রুত এবং আধুনিক করতে দরকারি সব টুলস পাবেন এক সফটওয়্যারেই।
           </p>
         </Reveal>
 
@@ -71,9 +70,9 @@ export default function WhyUsSection() {
               <Zap className="size-5" />
             </span>
             <p className="mt-6 bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-6xl leading-none font-bold text-transparent">
-              ১–৩
+              ১ <span className="text-3xl">দিনে</span>
             </p>
-            <h3 className="mt-2 text-lg font-semibold text-white">দিনে website live</h3>
+            <h3 className="mt-2 text-lg font-semibold text-white">website চালু</h3>
             <p className="mt-2 text-sm leading-relaxed text-neutral-400">
               Product আগে থেকেই তৈরি — শুরু থেকে বানাতে হয় না, তাই অপেক্ষাও নেই।
             </p>

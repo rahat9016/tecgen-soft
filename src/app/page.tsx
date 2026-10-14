@@ -21,7 +21,17 @@ export default function RootPage() {
       <PortfolioSection />
       <WhyUsSection />
       <SolutionsSection />
-      <PaymentGateways />
+      <PaymentGateways
+        title={
+          <>
+            সহজ ও নিরাপদ{" "}
+            <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
+              পেমেন্ট সুবিধা
+            </span>
+          </>
+        }
+        desc="কাস্টমারের কাছ থেকে সহজেই পেমেন্ট সংগ্রহ করতে যোগ করুন দেশের জনপ্রিয় সব পেমেন্ট গেটওয়ে।"
+      />
       <HowItWorks />
       <AboutSection />
       <TestimonialsSection />

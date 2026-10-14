@@ -1,5 +1,6 @@
 import { Info, ShieldCheck, Wallet } from "lucide-react";
 import Image from "next/image";
+import type { ReactNode } from "react";
 
 import Reveal from "@/src/components/agency/Reveal";
 import { StaggerGrid, StaggerItem } from "@/src/components/agency/StaggerGrid";
@@ -11,21 +12,31 @@ const gateways = [
   { name: "Mastercard", type: "Debit / credit card", logo: "/payments/mastercard.svg", width: 1000, height: 618 },
 ];
 
+const defaultTitle = (
+  <>
+    <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
+      পেমেন্ট গেটওয়ে
+    </span>{" "}
+    যুক্ত করুন
+  </>
+);
+
 /** Payment methods a client's site can take money through — shared by the home page and package pages. */
-export default function PaymentGateways({ className = "py-10 sm:py-14 md:py-18" }: { className?: string }) {
+export default function PaymentGateways({
+  className = "py-10 sm:py-14 md:py-18",
+  title = defaultTitle,
+  desc = "নিরাপদ ও সহজ লেনদেনের জন্য দেশের জনপ্রিয় সব পেমেন্ট সিস্টেম যুক্ত করার সুযোগ।",
+}: {
+  className?: string;
+  title?: ReactNode;
+  desc?: string;
+}) {
   return (
     <section id="payments" className={className}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-semibold tracking-tight text-balance text-white sm:text-4xl">
-            <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
-              পেমেন্ট গেটওয়ে
-            </span>{" "}
-            যুক্ত করুন
-          </h2>
-          <p className="text-bn mx-auto mt-3 max-w-xl text-[15px] text-neutral-400 sm:text-base">
-            নিরাপদ ও সহজ লেনদেনের জন্য দেশের জনপ্রিয় সব পেমেন্ট সিস্টেম যুক্ত করার সুযোগ।
-          </p>
+          <h2 className="text-3xl font-semibold tracking-tight text-balance text-white sm:text-4xl">{title}</h2>
+          <p className="text-bn mx-auto mt-3 max-w-xl text-[15px] text-neutral-400 sm:text-base">{desc}</p>
         </Reveal>
 
         <StaggerGrid className="mt-10 grid grid-cols-2 gap-3 sm:mt-12 sm:gap-5 lg:grid-cols-4">

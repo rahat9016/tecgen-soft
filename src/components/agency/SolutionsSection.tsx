@@ -130,14 +130,13 @@ export default function SolutionsSection() {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            আপনার ব্যবসার জন্য কোন{" "}
+            আপনার বিজনেসের জন্য তৈরি{" "}
             <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
-              Solution
-            </span>{" "}
-            দরকার?
+              বিশেষ প্যাকেজ
+            </span>
           </h2>
           <p className="mt-3 text-base text-neutral-400">
-            Monthly subscription — hosting, SSL, updates ও support সহ। শুরুতে কোনো টাকা লাগবে না।
+            ই-কমার্স, হোটেল কিংবা টার্ফ—যেকোনো ব্যবসার জন্যই রয়েছে আমাদের রেডি সলিউশন।
           </p>
         </Reveal>
 
@@ -167,7 +166,7 @@ export default function SolutionsSection() {
                   <span className="text-2xl font-bold">{price}</span>
                   <span className="text-sm font-medium text-neutral-400">/মাস</span>
                 </p>
-                <p className="text-xs text-neutral-500">১–৩ দিনে live · যেকোনো মাসে cancel</p>
+                <p className="text-xs text-neutral-500">১ দিনে live · যেকোনো মাসে cancel</p>
               </div>
 
               <ul className="mt-3 flex-1 space-y-1.5">

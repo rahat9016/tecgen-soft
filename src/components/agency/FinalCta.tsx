@@ -127,14 +127,13 @@ export default function FinalCta() {
             Get Started
           </span>
           <h2 className="mt-5 text-3xl leading-tight font-semibold tracking-tight text-white sm:text-4xl md:text-5xl">
-            আপনার website live করুন{" "}
             <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
-              মাত্র ১–৩ দিনে
-            </span>
+              মাত্র ১ দিনে
+            </span>{" "}
+            আপনার ওয়েবসাইট চালু করুন
           </h2>
           <p className="mt-5 max-w-lg text-base leading-relaxed text-neutral-300">
-            Product বেছে নিন, তথ্য দিন — বাকি সব আমরা করব। Setup থেকে hosting,
-            updates ও support পর্যন্ত সবকিছু একটাই মাসিক fee-তে।
+            দেরি না করে এখনই আপনার তথ্য দিন এবং ১ কার্যদিবসের মধ্যে আপনার বিজনেস ওয়েবসাইট চালু করুন।
           </p>
 
           <ul className="mt-6 space-y-2.5">

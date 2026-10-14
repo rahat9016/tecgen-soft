@@ -21,7 +21,7 @@ const steps = [
   {
     n: "03",
     icon: Rocket,
-    when: "Day 1–3",
+    when: "একই দিনে",
     title: "Review ও Launch",
     bn: "আপনি review করে feedback দেন — সব ঠিক থাকলে website live।",
     note: "এখান থেকে মাসিক payment শুরু",
@@ -36,7 +36,7 @@ const steps = [
 ];
 
 const facts = [
-  { icon: Clock3, label: "মোট সময়", value: "১–৩ দিন" },
+  { icon: Clock3, label: "মোট সময়", value: "১ দিন" },
   { icon: Wallet, label: "Payment", value: "Live হওয়ার পর" },
   { icon: RefreshCcw, label: "Cancel", value: "যেকোনো মাসে" },
 ];
@@ -56,7 +56,7 @@ export default function HowItWorks() {
           ?
         </h2>
         <p className="mt-3 text-base text-neutral-400">
-          No technical jargon — live in 1–3 days. Monthly payment starts only after your website goes live.
+          No technical jargon — live in 1 day. Monthly payment starts only after your website goes live.
         </p>
       </Reveal>
 

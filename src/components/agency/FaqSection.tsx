@@ -9,7 +9,7 @@ import Reveal from "@/src/components/agency/Reveal";
 const faqs = [
   {
     q: "Website live হতে কতদিন লাগে?",
-    a: "Order confirm করার পর সাধারণত ১–৩ দিনের মধ্যে আপনার website live হয়ে যায়।",
+    a: "Order confirm করার পর সাধারণত ১ দিনের মধ্যে আপনার website live হয়ে যায়।",
   },
   {
     q: "মাসিক কত টাকা দিতে হবে?",
@@ -78,12 +78,14 @@ export default function FaqSection() {
     <section id="faq" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 md:py-18 lg:px-8">
       <Reveal className="mx-auto max-w-2xl text-center">
         <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-          প্রশ্ন থাকতে পারে?{" "}
+          আপনার মনে থাকা{" "}
           <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
-            উত্তর এখানে।
+            সাধারণ প্রশ্ন ও উত্তর
           </span>
         </h2>
-        <p className="mt-3 text-base text-neutral-400">Frequently Asked Questions</p>
+        <p className="mt-3 text-base text-neutral-400">
+          সফটওয়্যার কেনা, সেটআপ এবং সাপোর্ট সম্পর্কিত আপনার যেকোনো প্রশ্নের উত্তর এখানে পাবেন।
+        </p>
       </Reveal>
 
       <div className="mt-8 grid items-start gap-4 sm:mt-10 lg:grid-cols-2 lg:gap-6">

@@ -43,14 +43,14 @@ export default function TestimonialsSection() {
               ৪টি product · live demo
             </span>
             <h2 className="mt-5 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              Try It Before You{" "}
+              আজই{" "}
               <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
-                Subscribe
-              </span>
+                ফ্রিতে
+              </span>{" "}
+              ব্যবহার করে দেখুন
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-neutral-300">
-              Review পড়ার চেয়ে নিজে ব্যবহার করে দেখা ভালো — hotel, gadget, fashion ও turf, চারটি product-এরই live
-              demo খোলা আছে। চালিয়ে দেখুন, তারপর সিদ্ধান্ত নিন।
+              আপনার বিজনেসের জন্য কোনটা সবচেয়ে সেরা হবে, তা নিজেই পরখ করে নিন কোনো ঝামেলা ছাড়াই।
             </p>
 
             <div className="mt-8 flex flex-wrap justify-center gap-3">

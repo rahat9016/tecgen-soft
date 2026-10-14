@@ -58,12 +58,15 @@ export default function PortfolioSection() {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            Explore Our{" "}
+            আপনার ব্যবসার জন্য{" "}
             <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
-              Live Work
-            </span>
+              সেরা ওয়েবসাইট
+            </span>{" "}
+            বেছে নিন
           </h2>
-          <p className="mt-3 text-base text-neutral-400">Every project below is real and clickable — not a mockup.</p>
+          <p className="mt-3 text-base text-neutral-400">
+            যেকোনো ধরনের বিজনেসের জন্য আমাদের কাছে রয়েছে আকর্ষণীয় ও রেডিমেড ওয়েবসাইট সমাধান।
+          </p>
         </Reveal>
 
         <StaggerGrid className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:mt-12 sm:gap-y-12 lg:mt-16 lg:grid-cols-4 lg:gap-x-6">
