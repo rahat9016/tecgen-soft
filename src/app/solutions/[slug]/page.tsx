@@ -187,9 +187,6 @@ export default async function SolutionDetailPage({
 
             {/* landing page */}
             <div className="absolute top-0 right-0 w-[80%]">
-              <span className="glass-strong absolute -top-3.5 right-5 z-10 hidden rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white sm:inline-flex">
-                Landing page
-              </span>
               <div className="overflow-hidden rounded-2xl border border-white/15 bg-white/6 shadow-[0_40px_80px_-24px_rgba(0,0,0,0.75)] backdrop-blur-xl">
                 <div className="flex items-center gap-3 border-b border-white/10 bg-white/6 px-3 py-2 sm:px-4 sm:py-2.5">
                   <div className="flex shrink-0 items-center gap-1.5">
@@ -217,9 +214,6 @@ export default async function SolutionDetailPage({
             {/* dashboard */}
             {dashScreen && (
               <div className="absolute bottom-[4%] left-0 z-10 w-[60%]">
-                <span className="glass-strong absolute -top-3.5 left-4 z-10 hidden items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white sm:inline-flex">
-                  {dashScreen.group === "admin" ? "Admin dashboard" : dashScreen.title}
-                </span>
                 <div className="overflow-hidden rounded-xl border border-white/15 bg-neutral-900 shadow-[0_30px_60px_-16px_rgba(0,0,0,0.85)] ring-1 ring-white/10">
                   <div className="flex h-5 items-center gap-1 border-b border-white/10 bg-white/8 px-2 sm:h-6">
                     <span className="size-1.5 rounded-full bg-white/30" />
