@@ -8,29 +8,26 @@ import Hero from "@/src/components/agency/Hero";
 import HowItWorks from "@/src/components/agency/HowItWorks";
 import PaymentGateways from "@/src/components/agency/PaymentGateways";
 import PortfolioSection from "@/src/components/agency/PortfolioSection";
-import SmoothScroll from "@/src/components/agency/SmoothScroll";
 import SolutionsSection from "@/src/components/agency/SolutionsSection";
 import TestimonialsSection from "@/src/components/agency/TestimonialsSection";
 import WhyUsSection from "@/src/components/agency/WhyUsSection";
 
 export default function RootPage() {
   return (
-    <div className="relative isolate min-h-screen overflow-x-clip bg-[#0a0a0a]">
+    <div className="relative isolate min-h-screen overflow-x-clip bg-[#0a0a0a] [&_section[id]]:scroll-mt-20">
       <AuroraBackground />
       <AgencyHeader overlay />
-      <SmoothScroll>
-        <Hero />
-        <PortfolioSection />
-        <WhyUsSection />
-        <SolutionsSection />
-        <PaymentGateways />
-        <HowItWorks />
-        <AboutSection />
-        <TestimonialsSection />
-        <FaqSection />
-        <FinalCta />
-        <AgencyFooter />
-      </SmoothScroll>
+      <Hero />
+      <PortfolioSection />
+      <WhyUsSection />
+      <SolutionsSection />
+      <PaymentGateways />
+      <HowItWorks />
+      <AboutSection />
+      <TestimonialsSection />
+      <FaqSection />
+      <FinalCta />
+      <AgencyFooter />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 /**
  * Fixed ambient glow behind the whole page — gives the glass surfaces soft light to frost.
- * The layer is opaque: with ScrollSmoother on, page content lives in a fixed wrapper and the
- * root div collapses to one screen, so this is what keeps the white body from showing through.
+ * The layer is opaque, so the white body never shows through behind the dark agency pages.
  */
 export default function AuroraBackground() {
   return (
