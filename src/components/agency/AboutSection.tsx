@@ -62,7 +62,7 @@ export default function AboutSection() {
               About Us · Dhaka, Bangladesh
             </span>
 
-            <h2 className="mt-5 text-3xl font-bold tracking-tight text-white sm:text-5xl">
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-white sm:text-5xl">
               Who is{" "}
               <span className="bg-linear-to-r from-indigo-300 via-[#7C74FF] to-indigo-400 bg-clip-text text-transparent">
                 Tecgen Soft
@@ -85,7 +85,7 @@ export default function AboutSection() {
                   href={href}
                   className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5 transition hover:border-white/25 hover:bg-white/[0.08]"
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#3D2EF9] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_8px_20px_-6px_rgba(61,46,249,0.8)]">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#3D2EF9]/30 bg-[#3D2EF9]/20 text-indigo-200 transition group-hover:bg-[#3D2EF9]/30 group-hover:text-white">
                     <Icon className="size-4.5" />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -128,7 +128,7 @@ export default function AboutSection() {
           <ol className="relative mt-5 space-y-5 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-px before:bg-indigo-300/25">
             {approach.map((step, i) => (
               <li key={step.title} className="relative flex gap-4">
-                <span className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#3D2EF9] text-xs font-bold text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3),0_0_0_4px_rgba(61,46,249,0.18)]">
+                <span className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border border-[#3D2EF9]/40 bg-[#211e50] text-xs font-bold text-indigo-200 shadow-[0_0_0_4px_rgba(61,46,249,0.1)]">
                   {i + 1}
                 </span>
                 <div className="pt-0.5">

@@ -72,7 +72,7 @@ export default function AgencyHeader({ overlay = false }: { overlay?: boolean })
           <div className="flex items-center gap-2">
             <Link
               href="/#contact"
-              className="hidden h-10 items-center gap-1.5 rounded-xl bg-[#3D2EF9] px-5 text-sm font-semibold whitespace-nowrap text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_10px_30px_-8px_rgba(61,46,249,0.8)] transition hover:bg-[#4d3ffa] md:inline-flex"
+              className="hidden h-10 items-center gap-1.5 rounded-xl bg-white px-5 text-sm font-medium whitespace-nowrap text-[#0a0a0a] shadow-[0_10px_30px_-10px_rgba(255,255,255,0.45)] transition hover:bg-neutral-200 md:inline-flex"
             >
               <MessageCircle className="size-4" />
               Get a Quote

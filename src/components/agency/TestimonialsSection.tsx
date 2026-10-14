@@ -42,7 +42,7 @@ export default function TestimonialsSection() {
               </span>
               ৪টি product · live demo
             </span>
-            <h2 className="mt-5 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               Try It Before You{" "}
               <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
                 Subscribe
@@ -56,14 +56,14 @@ export default function TestimonialsSection() {
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link
                 href="#work"
-                className="group inline-flex h-12 items-center gap-2 rounded-xl bg-[#3D2EF9] px-6 text-sm font-semibold text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_14px_32px_-10px_rgba(61,46,249,0.8)] transition hover:-translate-y-0.5 hover:bg-[#4d3ffa]"
+                className="group inline-flex h-12 items-center gap-2 rounded-xl bg-[#3D2EF9] px-6 text-sm font-medium text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_14px_32px_-10px_rgba(61,46,249,0.8)] transition hover:-translate-y-0.5 hover:bg-[#4d3ffa]"
               >
                 Live Demos দেখুন
                 <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
               </Link>
               <Link
                 href="#contact"
-                className="glass inline-flex h-12 items-center gap-2 rounded-xl px-6 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/10"
+                className="glass inline-flex h-12 items-center gap-2 rounded-xl px-6 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/10"
               >
                 <MessageCircle className="size-4" />
                 Get a Quote

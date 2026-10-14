@@ -20,9 +20,9 @@ export default function RootPage() {
       <SmoothScroll>
         <Hero />
         <PortfolioSection />
+        <WhyUsSection />
         <SolutionsSection />
         <HowItWorks />
-        <WhyUsSection />
         <AboutSection />
         <TestimonialsSection />
         <FaqSection />

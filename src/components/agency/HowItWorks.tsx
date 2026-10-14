@@ -48,7 +48,7 @@ export default function HowItWorks() {
         <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-indigo-200">
           How It Works
         </span>
-        <h2 className="mt-5 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+        <h2 className="mt-5 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
           অর্ডার করার পর{" "}
           <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
             কী হবে

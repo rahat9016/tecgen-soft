@@ -129,7 +129,7 @@ export default function SolutionsSection() {
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             আপনার ব্যবসার জন্য কোন{" "}
             <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
               Solution
@@ -181,7 +181,7 @@ export default function SolutionsSection() {
 
               <Link
                 href={href}
-                className={`mt-5 inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
+                className={`mt-5 inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
                   popular
                     ? "bg-[#3D2EF9] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_10px_24px_-8px_rgba(61,46,249,0.8)] hover:bg-[#4d3ffa]"
                     : "border border-white/15 bg-white/[0.06] text-white hover:border-white/25 hover:bg-white/[0.12]"

@@ -22,13 +22,13 @@ import { CONTACT } from "@/src/lib/contact";
 import { SOLUTIONS } from "@/src/lib/solutions";
 
 const productStyle: Record<string, { icon: LucideIcon; accent: string }> = {
-  "hotel-booking": { icon: Hotel, accent: "from-sky-400 to-blue-600" },
+  "hotel-booking": { icon: Hotel, accent: "from-sky-400/20 to-blue-600/20 text-sky-200" },
   "gadget-ecommerce": {
     icon: Smartphone,
-    accent: "from-indigo-400 to-[#3D2EF9]",
+    accent: "from-indigo-400/20 to-[#3D2EF9]/20 text-indigo-200",
   },
-  ecommerce: { icon: Shirt, accent: "from-pink-400 to-rose-500" },
-  "turf-booking": { icon: Trophy, accent: "from-emerald-400 to-green-600" },
+  ecommerce: { icon: Shirt, accent: "from-pink-400/20 to-rose-500/20 text-pink-200" },
+  "turf-booking": { icon: Trophy, accent: "from-emerald-400/20 to-green-600/20 text-emerald-200" },
 };
 const OTHER = "অন্য কিছু";
 
@@ -126,7 +126,7 @@ export default function FinalCta() {
             </span>
             Get Started
           </span>
-          <h2 className="mt-5 text-3xl leading-tight font-bold tracking-tight text-white sm:text-4xl md:text-5xl">
+          <h2 className="mt-5 text-3xl leading-tight font-semibold tracking-tight text-white sm:text-4xl md:text-5xl">
             আপনার website live করুন{" "}
             <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
               মাত্র ১–৩ দিনে
@@ -248,7 +248,7 @@ export default function FinalCta() {
                         }`}
                       >
                         <span
-                          className={`flex size-9 shrink-0 items-center justify-center rounded-lg bg-linear-to-br ${accent} text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)]`}
+                          className={`flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-linear-to-br ${accent}`}
                         >
                           <Icon className="size-4" />
                         </span>
@@ -306,7 +306,7 @@ export default function FinalCta() {
 
               <button
                 type="submit"
-                className="group mt-6 inline-flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 text-base font-semibold text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3),0_14px_32px_-10px_rgba(16,185,129,0.7)] transition hover:-translate-y-0.5 hover:bg-emerald-600"
+                className="group mt-6 inline-flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 text-sm font-medium text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3),0_14px_32px_-10px_rgba(16,185,129,0.7)] transition hover:-translate-y-0.5 hover:bg-emerald-600"
               >
                 <Send className="size-4 transition group-hover:translate-x-0.5" />
                 WhatsApp-এ পাঠান

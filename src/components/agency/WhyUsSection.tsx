@@ -21,7 +21,7 @@ export default function WhyUsSection() {
           <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-indigo-200">
             Why Tecgen Soft
           </span>
-          <h2 className="mt-5 text-3xl leading-[1.15] font-bold tracking-tight text-white sm:text-4xl">
+          <h2 className="mt-5 text-3xl leading-[1.15] font-semibold tracking-tight text-white sm:text-4xl">
             Technical ঝামেলা আমাদের,{" "}
             <span className="bg-linear-to-r from-indigo-400 via-[#6C63FF] to-indigo-300 bg-clip-text text-transparent">
               ব্যবসা আপনার।

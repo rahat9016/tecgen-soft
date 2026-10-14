@@ -33,7 +33,7 @@ export default function Hero() {
   return (
     <section
       ref={sectionRef}
-      className="relative flex flex-col overflow-hidden bg-[#0a0a0a] pb-8 sm:pb-16 md:h-svh md:min-h-[640px] md:pb-0"
+      className="relative flex min-h-svh flex-col overflow-hidden bg-[#0a0a0a] pb-8 sm:pb-16 md:h-[128svh] md:min-h-[900px] md:pb-0"
     >
       {/* backdrop — spotlight, dot grid and a perspective floor, drawn in CSS so it stays crisp and light */}
       <motion.div
@@ -41,13 +41,13 @@ export default function Hero() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 h-[calc(100%+120px)] w-full"
       >
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_55%_at_50%_-8%,rgba(61,46,249,0.38),transparent_70%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_35%_30%_at_50%_0%,rgba(255,255,255,0.12),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_55%_at_50%_-8%,rgba(61,46,249,0.2),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_35%_30%_at_50%_0%,rgba(255,255,255,0.06),transparent_70%)]" />
 
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: "radial-gradient(rgba(255,255,255,0.22) 1px, transparent 1px)",
+            backgroundImage: "radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px)",
             backgroundSize: "26px 26px",
             maskImage: "radial-gradient(ellipse 65% 55% at 50% 25%, #000 25%, transparent 80%)",
             WebkitMaskImage: "radial-gradient(ellipse 65% 55% at 50% 25%, #000 25%, transparent 80%)",
@@ -67,8 +67,7 @@ export default function Hero() {
           />
         </div>
 
-        {/* horizon glow where the floor meets the spotlight */}
-        <div className="absolute inset-x-0 top-[48%] mx-auto h-px w-3/4 bg-linear-to-r from-transparent via-indigo-300/40 to-transparent" />
+        {/* soft glow where the floor meets the spotlight */}
         <div className="absolute inset-x-0 top-[48%] mx-auto h-24 w-2/3 -translate-y-1/2 rounded-full bg-[#3D2EF9]/15 blur-3xl" />
       </motion.div>
 
@@ -85,11 +84,11 @@ export default function Hero() {
         initial="hidden"
         animate="show"
         style={{ y: contentY, opacity: heroOpacity }}
-        className="relative mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pt-[calc(4rem+6vh)] sm:px-6 lg:px-8"
+        className="relative mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col justify-center px-4 pt-[calc(4rem+6vh)] sm:px-6 md:justify-start md:pt-[calc(6rem+16vh)] lg:px-8"
       >
         <motion.h1
           variants={item}
-          className="mx-auto max-w-5xl text-center text-[2rem] leading-[1.2] font-bold tracking-tight text-balance text-white sm:text-5xl lg:text-[3.25rem] xl:text-[3.5rem]"
+          className="mx-auto max-w-5xl text-center text-4xl leading-[1.15] font-semibold tracking-tight text-balance text-white sm:text-[3.5rem] lg:text-[4rem] xl:text-[4.5rem]"
         >
           <span className="block">The Right Software to</span>
           <span className="mt-2 block">
@@ -112,30 +111,30 @@ export default function Hero() {
 
         <motion.p
           variants={item}
-          className="mx-auto mt-4 max-w-3xl text-center text-base text-balance leading-7 text-neutral-400 sm:mt-6 sm:text-lg sm:leading-8"
+          className="mx-auto mt-5 max-w-3xl text-center text-sm font-medium text-balance leading-6 text-neutral-400 sm:mt-8"
         >
           Website বানানোর ঝামেলা নেই — ready software নিন,{" "}
           <span className="font-semibold text-neutral-200">১–৩ দিনেই চালু করুন</span>, মাসে মাসে pay করুন।
         </motion.p>
 
-        <motion.div variants={item} className="mt-6 flex flex-wrap justify-center gap-3 sm:mt-8">
+        <motion.div variants={item} className="mt-8 flex flex-wrap justify-center gap-3 sm:mt-10">
           <Link
             href="#solutions"
-            className="group inline-flex h-13 items-center gap-2 rounded-xl bg-[#3D2EF9] px-7 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.1)_inset,0_18px_40px_-10px_rgba(61,46,249,0.7)] transition hover:-translate-y-0.5 hover:bg-[#4d3ffa] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.14)_inset,0_24px_48px_-10px_rgba(61,46,249,0.85)]"
+            className="group inline-flex h-13 items-center gap-2 rounded-xl bg-[#3D2EF9] px-7 text-sm font-medium text-white shadow-[0_0_0_1px_rgba(255,255,255,0.1)_inset,0_18px_40px_-10px_rgba(61,46,249,0.7)] transition hover:-translate-y-0.5 hover:bg-[#4d3ffa] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.14)_inset,0_24px_48px_-10px_rgba(61,46,249,0.85)]"
           >
             Explore Products
             <ArrowUpRight className="size-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </Link>
           <Link
             href="#work"
-            className="glass inline-flex h-13 items-center gap-2 rounded-xl px-7 text-base font-semibold text-white transition hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/10"
+            className="glass inline-flex h-13 items-center gap-2 rounded-xl px-7 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/10"
           >
             View Live Demos
           </Link>
         </motion.div>
 
         {/* project showcase — fanned browser frames that bleed into the next section (desktop/tablet only) */}
-        <motion.div variants={item} className="relative mx-auto mt-12 hidden min-h-0 w-full max-w-6xl flex-1 md:block">
+        <motion.div variants={item} className="relative mx-auto mt-20 hidden min-h-0 w-full max-w-6xl flex-1 md:block lg:mt-24">
           <div className="agency-blob-pulse pointer-events-none absolute top-1/3 left-1/2 h-72 w-[70%] -translate-x-1/2 rounded-full bg-white/[0.08] blur-[110px]" />
 
           <div className="relative h-full">
@@ -174,14 +173,6 @@ export default function Hero() {
                 src="/solutions/hotel-booking-desktop.webp"
                 className="border-white/10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.7)] ring-1 ring-white/20"
               />
-
-              <span className="glass-strong absolute -top-4 left-4 flex items-center gap-2 rounded-full bg-black/40 px-3.5 py-1.5 text-xs font-semibold text-white sm:-left-6">
-                <span className="relative flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
-                </span>
-                Real Client Projects
-              </span>
             </motion.div>
           </div>
         </motion.div>
