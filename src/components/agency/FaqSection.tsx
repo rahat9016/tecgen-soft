@@ -13,7 +13,7 @@ const faqs = [
   },
   {
     q: "মাসিক কত টাকা দিতে হবে?",
-    a: "Product অনুযায়ী ৳৮৯৯ থেকে ৳১,২৯৯ পর্যন্ত মাসিক fee — hosting, SSL, updates ও support সহ। কোনো upfront বা setup খরচ নেই।",
+    a: "Product অনুযায়ী ৳৮৯৯ থেকে ৳১,২৯৯ পর্যন্ত মাসিক fee — hosting, SSL, updates ও support সহ। শুরুতে বা setup-এর জন্য কোনো টাকা লাগবে না।",
   },
   {
     q: "Payment কখন করতে হবে?",

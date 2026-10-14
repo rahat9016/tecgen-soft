@@ -6,6 +6,7 @@ import FaqSection from "@/src/components/agency/FaqSection";
 import FinalCta from "@/src/components/agency/FinalCta";
 import Hero from "@/src/components/agency/Hero";
 import HowItWorks from "@/src/components/agency/HowItWorks";
+import PaymentGateways from "@/src/components/agency/PaymentGateways";
 import PortfolioSection from "@/src/components/agency/PortfolioSection";
 import SmoothScroll from "@/src/components/agency/SmoothScroll";
 import SolutionsSection from "@/src/components/agency/SolutionsSection";
@@ -22,6 +23,7 @@ export default function RootPage() {
         <PortfolioSection />
         <WhyUsSection />
         <SolutionsSection />
+        <PaymentGateways />
         <HowItWorks />
         <AboutSection />
         <TestimonialsSection />

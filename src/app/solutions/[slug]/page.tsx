@@ -9,13 +9,15 @@ import {
   CalendarX,
   Check,
   Globe,
-  MessageCircle,
   Minus,
   PackagePlus,
   RefreshCw,
   Rocket,
   ShieldCheck,
+  SlidersHorizontal,
+  Smartphone,
   UserRound,
+  Wallet,
   Wrench,
 } from "lucide-react";
 
@@ -23,6 +25,7 @@ import AgencyFooter from "@/src/components/agency/AgencyFooter";
 import AgencyHeader from "@/src/components/agency/AgencyHeader";
 import AuroraBackground from "@/src/components/agency/AuroraBackground";
 import FeatureShowcase from "@/src/components/agency/FeatureShowcase";
+import PaymentGateways from "@/src/components/agency/PaymentGateways";
 import Reveal from "@/src/components/agency/Reveal";
 import ScreenGallery from "@/src/components/agency/ScreenGallery";
 import { StaggerGrid, StaggerItem } from "@/src/components/agency/StaggerGrid";
@@ -39,6 +42,15 @@ const productGlow: Record<string, string> = {
 };
 
 const toBnDigits = (n: number) => String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[Number(d)]);
+
+/** status colours for the tracking flow — the last step is always the green "done" one */
+const statusTones = [
+  { dot: "border-amber-300/40 text-amber-200", pill: "bg-amber-400/10 text-amber-200" },
+  { dot: "border-sky-300/40 text-sky-200", pill: "bg-sky-400/10 text-sky-200" },
+  { dot: "border-indigo-300/40 text-indigo-200", pill: "bg-indigo-400/10 text-indigo-200" },
+  { dot: "border-violet-300/40 text-violet-200", pill: "bg-violet-400/10 text-violet-200" },
+];
+const doneTone = { dot: "border-emerald-300/40 text-emerald-200", pill: "bg-emerald-400/10 text-emerald-200" };
 
 export function generateStaticParams() {
   return SOLUTIONS.map((s) => ({ slug: s.slug }));
@@ -57,7 +69,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 function SectionHeading({ title, desc }: { title: ReactNode; desc?: string }) {
   return (
     <Reveal className="mx-auto max-w-2xl text-center">
-      <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl lg:text-4xl">{title}</h2>
+      <h2 className="text-2xl font-semibold tracking-tight text-balance text-white sm:text-3xl lg:text-4xl">{title}</h2>
       {desc && <p className="text-bn mx-auto mt-3 max-w-xl text-[15px] text-neutral-400 sm:text-base">{desc}</p>}
     </Reveal>
   );
@@ -85,6 +97,15 @@ export default async function SolutionDetailPage({
   // dashboard slot in the hero — the admin panel when the demo has one, else another storefront page
   const dashScreen =
     solution.screens.find((s) => s.group === "admin") ?? solution.screens.find((s) => !s.src.endsWith("/home.webp"));
+
+  const benefits = [
+    { icon: Wallet, title: "শুরুতে কোনো টাকা লাগবে না", desc: "মাসে মাসে অল্প টাকা দিন — একসাথে বড় টাকা লাগবে না।" },
+    { icon: Rocket, title: `${solution.setup}ের মধ্যে চালু`, desc: "Developer খোঁজা বা মাসের পর মাস অপেক্ষা করতে হবে না।" },
+    { icon: SlidersHorizontal, title: "পুরো control আপনার হাতে", desc: "দাম, ছবি, অর্ডার বা বুকিং — নিজেই বদলান, developer লাগবে না।" },
+    { icon: Smartphone, title: "Mobile-এ perfect", desc: "বেশিরভাগ কাস্টমার phone থেকে আসে — তাদের জন্য সহজ ও দ্রুত।" },
+    { icon: ShieldCheck, title: "Technical ঝামেলা নেই", desc: "Hosting, security ও update — সব আমরা দেখি।" },
+    { icon: CalendarX, title: "যেকোনো মাসে cancel", desc: "লম্বা চুক্তির বাধ্যবাধকতা নেই — domain ও data আপনার কাছেই থাকবে।" },
+  ];
 
   const terms = [
     { icon: Globe, title: "Domain", desc: "আপনার নামে registered থাকবে — কেনা ও setup-এ আমরা সাহায্য করি।" },
@@ -125,8 +146,8 @@ export default async function SolutionDetailPage({
                 {nameTail}
               </span>
             </h1>
-            <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-neutral-400 sm:text-lg lg:mx-0">
-              {solution.outcome}
+            <p className="text-bn mx-auto mt-5 max-w-md text-base text-neutral-400 sm:text-lg lg:mx-0">
+              {solution.tagline}
             </p>
 
             <p className="mt-6 text-[15px] text-neutral-400">
@@ -137,26 +158,26 @@ export default async function SolutionDetailPage({
             </p>
 
             <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
+              <Link
+                href={CONTACT.whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex h-12 items-center gap-2 rounded-xl bg-white px-6 text-sm font-medium text-[#0a0a0a] shadow-[0_10px_30px_-12px_rgba(255,255,255,0.4)] transition hover:-translate-y-0.5 hover:bg-neutral-200"
+              >
+                Get Started
+                <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
+              </Link>
               {solution.demoHref && (
                 <Link
                   href={solution.demoHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group inline-flex h-12 items-center gap-2 rounded-xl bg-white px-6 text-sm font-medium text-[#0a0a0a] shadow-[0_10px_30px_-12px_rgba(255,255,255,0.4)] transition hover:-translate-y-0.5 hover:bg-neutral-200"
+                  className="group inline-flex h-12 items-center gap-2 rounded-xl border border-white/15 bg-white/6 px-6 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/10"
                 >
-                  Live Demo দেখুন
+                  Live Demo
                   <ArrowUpRight className="size-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </Link>
               )}
-              <Link
-                href={CONTACT.whatsappHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/15 bg-white/6 px-6 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/10"
-              >
-                <MessageCircle className="size-4" />
-                কথা বলুন
-              </Link>
             </div>
           </Reveal>
 
@@ -247,14 +268,14 @@ export default async function SolutionDetailPage({
             <SectionHeading
               title={
                 <>
-                  Product-এর{" "}
+                  প্রোডাক্টের{" "}
                   <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
-                    প্রতিটি page
+                    প্রতিটি পেইজ
                   </span>{" "}
                   দেখুন
                 </>
               }
-              desc="আপনার customer যা দেখবে আর আপনি admin panel থেকে যা manage করবেন — সব আসল demo-র screenshot।"
+              desc="আপনার ব্যবসার সবকিছু এক নজরে দেখে নিন, যেন পুরো কন্ট্রোল থাকে আপনার হাতেই।"
             />
             <Reveal className="mt-10 sm:mt-12">
               <ScreenGallery screens={solution.screens} name={solution.name} />
@@ -269,17 +290,104 @@ export default async function SolutionDetailPage({
           <SectionHeading
             title={
               <>
-                Exactly{" "}
+                আপনি{" "}
                 <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
-                  what you get
+                  যা যা পাচ্ছেন
                 </span>
               </>
             }
-            desc="নিচের প্রতিটি feature আসল demo-তে চালু আছে — scroll করলে screen-এ পুরো website দেখতে পাবেন।"
+            desc="আপনার বিজনেস সহজ ও সুন্দরভাবে চালানোর জন্য দরকারি সব ফিচার একসাথে সাজানো রয়েছে।"
           />
           <div className="mt-10 sm:mt-14">
             <FeatureShowcase features={solution.features} pageSrc={`${preview}-page.webp`} title={solution.name} />
           </div>
+        </div>
+      </section>
+
+      {/* order / booking tracking — the status flow the admin panel moves through */}
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionHeading title={solution.tracking.title} desc={solution.tracking.desc} />
+
+          <div
+            className={`mt-10 grid items-center gap-6 sm:mt-12 lg:gap-10 ${
+              solution.tracking.screen ? "lg:grid-cols-[0.85fr_1.15fr]" : "mx-auto max-w-2xl"
+            }`}
+          >
+            <Reveal className="glass rounded-3xl p-6 sm:p-8">
+              <ol className="relative space-y-6 before:absolute before:top-4 before:bottom-4 before:left-4.5 before:w-px before:bg-white/10">
+                {solution.tracking.steps.map((step, i) => {
+                  const last = i === solution.tracking.steps.length - 1;
+                  const tone = last ? doneTone : statusTones[i % statusTones.length];
+                  return (
+                    <li key={step.label} className="relative flex gap-4">
+                      <span
+                        className={`relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full border bg-neutral-900 text-xs font-semibold ${tone.dot}`}
+                      >
+                        {last ? <Check className="size-4" /> : toBnDigits(i + 1)}
+                      </span>
+                      <div className="min-w-0 pt-1">
+                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${tone.pill}`}>
+                          {step.label}
+                        </span>
+                        <p className="text-bn mt-1 text-[15px] text-neutral-300">{step.desc}</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </Reveal>
+
+            {solution.tracking.screen && (
+              <Reveal delay={0.08}>
+                <div className="overflow-hidden rounded-2xl border border-white/15 bg-white/6 shadow-[0_40px_80px_-24px_rgba(0,0,0,0.75)] backdrop-blur-xl">
+                  <div className="flex items-center gap-3 border-b border-white/10 bg-white/6 px-4 py-3">
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <span className="size-2.5 rounded-full bg-white/30" />
+                      <span className="size-2.5 rounded-full bg-white/30" />
+                      <span className="size-2.5 rounded-full bg-white/30" />
+                    </div>
+                    <div className="min-w-0 flex-1 truncate rounded-full border border-white/10 bg-white/6 px-3 py-1 text-center text-[11px] text-white/60">
+                      {solution.name} · Admin panel
+                    </div>
+                  </div>
+                  <div className="relative aspect-16/10">
+                    <Image
+                      src={solution.tracking.screen}
+                      alt={`${solution.name} — ${solution.tracking.title}`}
+                      fill
+                      sizes="(min-width: 1024px) 680px, 100vw"
+                      className="object-cover object-top brightness-95"
+                    />
+                  </div>
+                </div>
+              </Reveal>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* benefits — why an owner picks this over building their own site */}
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionHeading
+            title="আমাদের সফটওয়্যার থেকে আপনি কী কী সুবিধা পাবেন"
+            desc="আপনার ব্যবসাকে দ্রুত বড় করতে ও সামনের দিকে এগিয়ে নিতে আমাদের কাছে রয়েছে সেরা সব সুবিধা।"
+          />
+
+          <StaggerGrid className="mt-10 grid gap-4 sm:mt-12 sm:grid-cols-2 sm:gap-5">
+            {benefits.map(({ icon: Icon, title, desc }) => (
+              <StaggerItem key={title} className="glass flex gap-4 rounded-2xl p-5 sm:p-6">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[#3D2EF9]/30 bg-[#3D2EF9]/15 text-indigo-200">
+                  <Icon className="size-5" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold text-white">{title}</h3>
+                  <p className="text-bn mt-1 text-[15px] text-neutral-400">{desc}</p>
+                </div>
+              </StaggerItem>
+            ))}
+          </StaggerGrid>
         </div>
       </section>
 
@@ -460,7 +568,7 @@ export default async function SolutionDetailPage({
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
             title="Payment কীভাবে কাজ করে"
-            desc="কোনো upfront বা setup খরচ নেই — website live হওয়ার পর থেকে মাসিক payment শুরু।"
+            desc="শুরুতে বা setup-এর জন্য কোনো টাকা লাগবে না — website চালু হওয়ার পর থেকে মাসিক payment শুরু।"
           />
 
           <StaggerGrid className="relative mt-10 grid gap-3 sm:mt-12 sm:gap-4 md:grid-cols-3">
@@ -508,10 +616,12 @@ export default async function SolutionDetailPage({
         </div>
       </section>
 
+      <PaymentGateways className="py-12 sm:py-16" />
+
       {/* other packages */}
       <section className="py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionHeading title="অন্য packages-ও দেখুন" />
+          <SectionHeading title="অন্যান্য প্যাকেজগুলোও দেখুন" desc="আপনার দরকার ও বাজেট অনুযায়ী পছন্দের প্যাকেজটি বেছে নিন।" />
 
           <StaggerGrid className="mt-10 grid gap-4 sm:mt-12 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {others.map((s) => (

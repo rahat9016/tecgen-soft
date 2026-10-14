@@ -6,10 +6,21 @@ export type Screen = {
   src: string;
 };
 
+export type Tracking = {
+  title: string;
+  desc: string;
+  /** status flow an order/booking moves through in the admin panel */
+  steps: { label: string; desc: string }[];
+  /** admin screenshot showing those statuses */
+  screen?: string;
+};
+
 export type Solution = {
   slug: string;
   name: string;
   outcome: string;
+  /** Bengali one-liner under the name on the details page */
+  tagline: string;
   forWho: string[];
   /** monthly subscription fee */
   price: string;
@@ -23,6 +34,7 @@ export type Solution = {
   features: { title: string; desc: string }[];
   /** real screenshots of every page in the demo */
   screens: Screen[];
+  tracking: Tracking;
   included: string[];
   notIncluded: string[];
   customerProvides: string[];
@@ -41,9 +53,10 @@ export const SOLUTIONS: Solution[] = [
     slug: "hotel-booking",
     name: "Hotel Booking Management",
     outcome: "Take room bookings online without a front-desk phone call.",
+    tagline: "একটি সেরা হোটেল বুকিং প্ল্যাটফর্ম, যা দিয়ে অনলাইনে রুম বুকিং নেওয়া ও হোটেল চালানো হবে আরও সহজ ও লাভজনক।",
     forWho: ["Hotels", "Resorts", "Guest houses"],
     price: "৳১,২৯৯",
-    priceNote: "/মাস · কোনো upfront খরচ নেই",
+    priceNote: "/মাস · শুরুতে কোনো টাকা লাগবে না",
     setup: "১–৩ দিন",
     support: "Subscription চলাকালীন",
     image: "/hotel-management.webp",
@@ -67,6 +80,17 @@ export const SOLUTIONS: Solution[] = [
       ["admin", "admin-payments", "Payments", "Payment, refund ও due-এর পুরো হিসাব।"],
       ["admin", "admin-content", "Website content", "Hotel তথ্য, facilities ও rules — developer ছাড়াই edit।"],
     ]),
+    tracking: {
+      title: "বুকিংয়ের সব তথ্য এক জায়গায়",
+      desc: "Guest-এর বুকিং নেওয়া থেকে শুরু করে check-out পর্যন্ত প্রতিটি ধাপ সহজে ট্র্যাক করুন।",
+      steps: [
+        { label: "Booking request", desc: "Guest অনলাইনে room বুক করেছে।" },
+        { label: "Confirmed", desc: "আপনি বুকিং নিশ্চিত করেছেন, guest confirmation পেয়েছে।" },
+        { label: "Checked in", desc: "Guest hotel-এ উঠেছে।" },
+        { label: "Checked out", desc: "থাকা শেষ, payment-এর হিসাব পরিষ্কার।" },
+      ],
+      screen: "/solutions/screens/hotel-booking/admin-bookings.webp",
+    },
     included: ["Mobile responsive website", "Admin dashboard", "Room management", "Booking ও availability system", ...SUBSCRIPTION_INCLUDED],
     notIncluded: [
       "Domain কেনা ও renewal (domain আপনার নামে)",
@@ -82,9 +106,10 @@ export const SOLUTIONS: Solution[] = [
     slug: "gadget-ecommerce",
     name: "Gadget E-commerce",
     outcome: "Run your phone & gadget shop online — with pre-orders, EMI and order tracking.",
+    tagline: "একটি সেরা ই-কমার্স প্ল্যাটফর্ম, যা দিয়ে আপনার গ্যাজেট বিজনেস চালানো হবে আরও সহজ ও লাভজনক।",
     forWho: ["Mobile shops", "Gadget stores", "Accessories sellers"],
     price: "৳১,০৯০",
-    priceNote: "/মাস · কোনো upfront খরচ নেই",
+    priceNote: "/মাস · শুরুতে কোনো টাকা লাগবে না",
     setup: "১–৩ দিন",
     support: "Subscription চলাকালীন",
     image: "/solutions/gadget-ecommerce-desktop.webp",
@@ -112,6 +137,18 @@ export const SOLUTIONS: Solution[] = [
       ["admin", "admin-chat", "Customer chat", "Website থেকে আসা message-এর উত্তর এখান থেকেই।"],
       ["admin", "admin-accounts", "Accounts", "Profit & loss, expense ও cash flow।"],
     ]),
+    tracking: {
+      title: "অর্ডারের সব তথ্য এক জায়গায়",
+      desc: "কাস্টমারের অর্ডার নেওয়া থেকে শুরু করে ডেলিভারি হওয়া পর্যন্ত প্রতিটি ধাপ সহজে ট্র্যাক করুন।",
+      steps: [
+        { label: "Pending", desc: "নতুন অর্ডার এসেছে।" },
+        { label: "Confirmed", desc: "কাস্টমারের সাথে কথা বলে অর্ডার নিশ্চিত।" },
+        { label: "Processing", desc: "প্রোডাক্ট প্যাক করা হচ্ছে।" },
+        { label: "Shipped", desc: "Courier-এ পাঠানো হয়েছে।" },
+        { label: "Delivered", desc: "কাস্টমার হাতে পেয়েছে।" },
+      ],
+      screen: "/solutions/screens/gadget-ecommerce/admin-orders.webp",
+    },
     included: ["Mobile responsive website", "Admin dashboard", "Pre-order ও order tracking", "Cash memo ও sales report", ...SUBSCRIPTION_INCLUDED],
     notIncluded: [
       "Domain কেনা ও renewal (domain আপনার নামে)",
@@ -127,9 +164,10 @@ export const SOLUTIONS: Solution[] = [
     slug: "ecommerce",
     name: "Fashion E-commerce",
     outcome: "Start selling your clothing and cosmetics online professionally.",
+    tagline: "একটি সেরা ফ্যাশন ই-কমার্স প্ল্যাটফর্ম, যা দিয়ে আপনার কাপড় ও কসমেটিকস বিজনেস চালানো হবে আরও সহজ ও লাভজনক।",
     forWho: ["Clothing", "Saree", "Three-piece", "Cosmetics", "Online shops"],
     price: "৳৯৯৯",
-    priceNote: "/মাস · কোনো upfront খরচ নেই",
+    priceNote: "/মাস · শুরুতে কোনো টাকা লাগবে না",
     setup: "১–৩ দিন",
     support: "Subscription চলাকালীন",
     image: "/ecommerce.webp",
@@ -147,6 +185,17 @@ export const SOLUTIONS: Solution[] = [
       ["customer", "cart", "Shopping cart", "Cart-এর item, quantity ও total।"],
       ["customer", "checkout", "Checkout", "Delivery তথ্য দিয়ে Cash on Delivery, card বা mobile banking।"],
     ]),
+    tracking: {
+      title: "অর্ডারের সব তথ্য এক জায়গায়",
+      desc: "কাস্টমারের অর্ডার নেওয়া থেকে শুরু করে ডেলিভারি হওয়া পর্যন্ত প্রতিটি ধাপ সহজে ট্র্যাক করুন।",
+      steps: [
+        { label: "Pending", desc: "নতুন অর্ডার এসেছে।" },
+        { label: "Confirmed", desc: "কাস্টমারের সাথে কথা বলে অর্ডার নিশ্চিত।" },
+        { label: "Processing", desc: "প্রোডাক্ট প্যাক করা হচ্ছে।" },
+        { label: "Shipped", desc: "Courier-এ পাঠানো হয়েছে।" },
+        { label: "Delivered", desc: "কাস্টমার হাতে পেয়েছে।" },
+      ],
+    },
     included: ["Mobile responsive website", "Admin dashboard", "Product ও category management", "Order management", ...SUBSCRIPTION_INCLUDED],
     notIncluded: [
       "Domain কেনা ও renewal (domain আপনার নামে)",
@@ -162,9 +211,10 @@ export const SOLUTIONS: Solution[] = [
     slug: "turf-booking",
     name: "Turf Booking",
     outcome: "Let players book your turf slots online and pay the advance themselves.",
+    tagline: "একটি সেরা টার্ফ বুকিং প্ল্যাটফর্ম, যা দিয়ে স্লট বুকিং ও অ্যাডভান্স পেমেন্ট নেওয়া হবে আরও সহজ ও লাভজনক।",
     forWho: ["Football turfs", "Cricket nets", "Indoor courts"],
     price: "৳৮৯৯",
-    priceNote: "/মাস · কোনো upfront খরচ নেই",
+    priceNote: "/মাস · শুরুতে কোনো টাকা লাগবে না",
     setup: "১–৩ দিন",
     support: "Subscription চলাকালীন",
     image: "/solutions/turf-booking-desktop.webp",
@@ -183,6 +233,17 @@ export const SOLUTIONS: Solution[] = [
       ["admin", "admin-bookings", "Bookings", "সব booking, due ও status এক table-এ।"],
       ["admin", "admin-schedule", "Schedule board", "Court-wise দিনের schedule, walk-in ও slot block।"],
     ]),
+    tracking: {
+      title: "বুকিংয়ের সব তথ্য এক জায়গায়",
+      desc: "Slot বুকিং থেকে শুরু করে খেলা শেষ হওয়া পর্যন্ত প্রতিটি ধাপ সহজে ট্র্যাক করুন।",
+      steps: [
+        { label: "Slot on hold", desc: "Player slot বেছে নিয়েছে, অন্য কেউ নিতে পারবে না।" },
+        { label: "Advance paid", desc: "bKash/Nagad-এ advance দিয়েছে।" },
+        { label: "Confirmed", desc: "আপনি payment verify করে বুকিং নিশ্চিত করেছেন।" },
+        { label: "Completed", desc: "খেলা শেষ, বাকি টাকার হিসাব পরিষ্কার।" },
+      ],
+      screen: "/solutions/screens/turf-booking/admin-bookings.webp",
+    },
     included: ["Mobile responsive website", "Admin dashboard", "Live slot booking", "Advance payment flow", ...SUBSCRIPTION_INCLUDED],
     notIncluded: [
       "Domain কেনা ও renewal (domain আপনার নামে)",

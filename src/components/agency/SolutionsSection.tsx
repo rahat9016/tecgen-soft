@@ -137,7 +137,7 @@ export default function SolutionsSection() {
             দরকার?
           </h2>
           <p className="mt-3 text-base text-neutral-400">
-            Monthly subscription — hosting, SSL, updates ও support সহ। কোনো upfront খরচ নেই।
+            Monthly subscription — hosting, SSL, updates ও support সহ। শুরুতে কোনো টাকা লাগবে না।
           </p>
         </Reveal>
 

@@ -33,7 +33,7 @@ const productStyle: Record<string, { icon: LucideIcon; accent: string }> = {
 const OTHER = "অন্য কিছু";
 
 const promises = [
-  "কোনো upfront বা setup খরচ নেই",
+  "শুরুতে বা setup-এর জন্য কোনো টাকা লাগবে না",
   "Website live হওয়ার পর payment শুরু",
   "যেকোনো মাসে cancel",
 ];
