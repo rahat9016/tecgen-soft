@@ -81,7 +81,7 @@ function GuestDrawer({ user, onClose }: { user: User; onClose: () => void }) {
           ["Bookings", stats.bookings.length],
           ["Paid", taka(stats.spent)],
         ].map(([label, value]) => (
-          <div key={label} className="rounded-xl bg-neutral-50 p-3">
+          <div key={label} className="rounded-md bg-neutral-50 p-3">
             <p className="text-lg font-bold text-neutral-900">{value}</p>
             <p className="text-xs text-neutral-500">{label}</p>
           </div>
@@ -161,7 +161,7 @@ function StaffModal({ user, onClose }: { user: User | "new"; onClose: () => void
         <Field label="Role">
           <div className="grid grid-cols-3 gap-2">
             {staffRoles.map((r) => (
-              <button key={r} type="button" onClick={() => setForm({ ...form, role: r })} className={cn("rounded-lg border px-2 py-2 text-xs font-medium", form.role === r ? "border-sky-500 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-600")}>
+              <button key={r} type="button" onClick={() => setForm({ ...form, role: r })} className={cn("rounded-md border px-2 py-2 text-xs font-medium", form.role === r ? "border-sky-500 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-600")}>
                 {roleLabels[r]}
               </button>
             ))}
@@ -304,10 +304,10 @@ export default function UsersManager() {
                           <p className="text-xs text-neutral-500">{u.email}</p>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", u.status === "blocked" ? "bg-rose-50 text-rose-600" : u.passwordHash ? "bg-sky-50 text-sky-700" : "bg-neutral-100 text-neutral-600")}>
+                          <span className={cn("rounded-md px-2 py-0.5 text-xs font-medium", u.status === "blocked" ? "bg-rose-50 text-rose-600" : u.passwordHash ? "bg-sky-50 text-sky-700" : "bg-neutral-100 text-neutral-600")}>
                             {u.status === "blocked" ? "Blocked" : u.passwordHash ? "Registered" : "Profile"}
                           </span>
-                          {s.inHouse && <span className="ml-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">In house</span>}
+                          {s.inHouse && <span className="ml-1.5 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">In house</span>}
                         </td>
                         <td className="px-4 py-3 text-right tabular-nums">{s.stays}</td>
                         <td className="px-4 py-3 text-right tabular-nums">{taka(s.spent)}</td>
@@ -346,9 +346,9 @@ export default function UsersManager() {
                       {u.email} · {u.phone}
                     </p>
                   </div>
-                  <span className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-800">{roleLabels[u.role]}</span>
+                  <span className="rounded-md bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-800">{roleLabels[u.role]}</span>
                   <span className="w-36 text-xs text-neutral-500">{u.lastLoginAt ? `Last login ${format(new Date(u.lastLoginAt), "dd MMM, h:mm a")}` : "Never signed in"}</span>
-                  <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", u.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-600")}>
+                  <span className={cn("rounded-md px-2 py-0.5 text-xs font-medium", u.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-600")}>
                     {u.status === "active" ? "Active" : "Suspended"}
                   </span>
                   {canStaff && (

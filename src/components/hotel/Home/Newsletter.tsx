@@ -25,7 +25,7 @@ export default function Newsletter() {
 
   return (
     <section className="container py-12">
-      <div className="relative isolate overflow-hidden rounded-[2rem] bg-sky-950 shadow-2xl shadow-sky-950/20">
+      <div className="relative isolate overflow-hidden rounded-md bg-sky-950 shadow-2xl shadow-sky-950/20">
         <img
           src="https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=1800&q=80&auto=format&fit=crop"
           alt=""
@@ -47,7 +47,7 @@ export default function Newsletter() {
 
         <div className="grid items-center gap-10 px-6 py-10 sm:px-10 md:py-14 lg:grid-cols-[1.1fr_0.9fr] lg:px-14">
           <div className="text-white">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-amber-300 backdrop-blur-md">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-amber-300 backdrop-blur-md">
               <Sparkles className="size-3.5" /> TripWave insiders
             </span>
             <h2 className="mt-4 text-3xl font-extrabold leading-tight md:text-4xl">
@@ -63,7 +63,7 @@ export default function Newsletter() {
             <ul className="mt-6 space-y-3">
               {perks.map(({ icon: Icon, text }) => (
                 <li key={text} className="flex items-center gap-3 text-sm text-sky-50">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-white/10 text-amber-300 ring-1 ring-white/15">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-white/10 text-amber-300 ring-1 ring-white/15">
                     <Icon className="size-4" />
                   </span>
                   {text}
@@ -72,10 +72,10 @@ export default function Newsletter() {
             </ul>
           </div>
 
-          <div className="rounded-3xl border border-white/25 bg-white/10 p-5 shadow-2xl shadow-sky-950/30 backdrop-blur-xl sm:p-6">
+          <div className="rounded-md border border-white/25 bg-white/10 p-5 shadow-2xl shadow-sky-950/30 backdrop-blur-xl sm:p-6">
             {status === "done" ? (
               <div className="flex flex-col items-center py-4 text-center text-white" role="status">
-                <span className="flex size-14 items-center justify-center rounded-2xl bg-emerald-400/20 text-emerald-300 ring-1 ring-emerald-300/30">
+                <span className="flex size-14 items-center justify-center rounded-md bg-emerald-400/20 text-emerald-300 ring-1 ring-emerald-300/30">
                   <CheckCircle2 className="size-7" />
                 </span>
                 <p className="mt-4 text-lg font-bold">You&rsquo;re on the list!</p>
@@ -99,7 +99,7 @@ export default function Newsletter() {
                   Your email address
                 </label>
                 <div
-                  className={`mt-2 flex items-center gap-2 rounded-2xl bg-white p-1.5 pl-4 shadow-lg ring-2 transition focus-within:ring-amber-300 ${
+                  className={`mt-2 flex items-center gap-2 rounded-md bg-white p-1.5 pl-4 shadow-lg ring-2 transition focus-within:ring-amber-300 ${
                     status === "invalid" ? "ring-rose-400" : "ring-transparent"
                   }`}
                 >
@@ -120,7 +120,7 @@ export default function Newsletter() {
                   />
                   <button
                     type="submit"
-                    className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 px-4 text-sm font-bold text-neutral-900 shadow-md shadow-orange-500/20 transition hover:from-amber-300 hover:to-orange-300 sm:px-5"
+                    className="flex h-11 shrink-0 items-center gap-1.5 rounded-md bg-gradient-to-r from-amber-400 to-orange-400 px-4 text-sm font-bold text-neutral-900 shadow-md shadow-orange-500/20 transition hover:from-amber-300 hover:to-orange-300 sm:px-5"
                   >
                     <span className="hidden sm:inline">Subscribe</span>
                     <Send className="size-4" />

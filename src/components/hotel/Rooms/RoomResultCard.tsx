@@ -52,9 +52,9 @@ export default function RoomResultCard({
   return (
     <Link
       href={`/hotel-management/rooms/${room.id}${query ? `?${query}` : ""}`}
-      className="group relative flex w-full flex-col gap-4 rounded-3xl border border-neutral-200/80 bg-white p-3 text-left shadow-sm transition hover:border-sky-200 hover:shadow-xl sm:flex-row"
+      className="group relative flex w-full flex-col gap-4 rounded-md border border-neutral-200/80 bg-white p-3 text-left shadow-sm transition hover:border-sky-200 hover:shadow-xl sm:flex-row"
     >
-      <div className="relative h-56 shrink-0 overflow-hidden rounded-2xl sm:h-auto sm:min-h-80 sm:w-72">
+      <div className="relative h-56 shrink-0 overflow-hidden rounded-md sm:h-auto sm:min-h-80 sm:w-72">
         <img
           src={room.images[0]}
           alt={room.name}
@@ -66,21 +66,21 @@ export default function RoomResultCard({
 
         <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
           {discount > 0 && isAvailable && (
-            <span className="rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white shadow-md">
+            <span className="rounded-md bg-rose-600 px-2.5 py-1 text-xs font-bold text-white shadow-md">
               -{discount}% OFF
             </span>
           )}
           {isAvailable && available !== null && available <= 2 && (
-            <span className="flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-rose-600 shadow-sm">
+            <span className="flex items-center gap-1 rounded-md bg-white/95 px-2.5 py-1 text-[11px] font-bold text-rose-600 shadow-sm">
               <Flame className="size-3" /> Only {available} left
             </span>
           )}
         </div>
 
-        <span className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
+        <span className="absolute bottom-3 left-3 flex items-center gap-1 rounded-md bg-white/20 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
           <Sparkles className="size-3.5 text-amber-300" /> {room.highlight}
         </span>
-        <span className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+        <span className="absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-black/50 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
           <Images className="size-3.5" /> {room.images.length}
         </span>
 
@@ -118,7 +118,7 @@ export default function RoomResultCard({
               <p className="text-sm font-bold text-neutral-900">{ratingLabel(room.rating)}</p>
               <p className="text-xs text-neutral-500">{room.reviewsCount} reviews</p>
             </div>
-            <span className="flex size-10 items-center justify-center rounded-xl rounded-bl-none bg-sky-700 text-sm font-bold text-white">
+            <span className="flex size-10 items-center justify-center rounded-md rounded-bl-none bg-sky-700 text-sm font-bold text-white">
               {room.rating.toFixed(1)}
             </span>
           </div>
@@ -134,7 +134,7 @@ export default function RoomResultCard({
               return (
                 <li
                   key={amenity}
-                  className="flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-medium text-neutral-700"
+                  className="flex items-center gap-1 rounded-md bg-neutral-100 px-2.5 py-1 text-[11px] font-medium text-neutral-700"
                 >
                   <Icon className="size-3.5 text-sky-600" />
                   {amenity}
@@ -144,7 +144,7 @@ export default function RoomResultCard({
         </ul>
 
         {review && (
-          <figure className="mt-4 flex gap-3 rounded-2xl bg-sky-50/70 p-3">
+          <figure className="mt-4 flex gap-3 rounded-md bg-sky-50/70 p-3">
             <img
               src={`https://i.pravatar.cc/80?img=${review.avatar}`}
               alt={review.name}
@@ -203,7 +203,7 @@ export default function RoomResultCard({
             </div>
 
             <span
-              className={`flex w-full items-center justify-center gap-1 rounded-2xl px-6 py-3 text-sm font-semibold transition sm:w-auto ${
+              className={`flex w-full items-center justify-center gap-1 rounded-md px-6 py-3 text-sm font-semibold transition sm:w-auto ${
                 isAvailable
                   ? "bg-sky-600 text-white shadow-lg shadow-sky-600/25 group-hover:bg-sky-700"
                   : "bg-neutral-100 text-neutral-500"

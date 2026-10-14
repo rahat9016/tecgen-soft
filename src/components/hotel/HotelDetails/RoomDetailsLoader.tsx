@@ -16,13 +16,13 @@ export default function RoomDetailsLoader({ roomId }: { roomId: string }) {
     if (!hydrated) return null;
     return (
       <div className="container py-16">
-        <div className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-3xl border border-dashed border-neutral-200 bg-white p-10 text-center">
-          <span className="flex size-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+        <div className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-md border border-dashed border-neutral-200 bg-white p-10 text-center">
+          <span className="flex size-12 items-center justify-center rounded-md bg-sky-50 text-sky-600">
             <BedDouble className="size-6" />
           </span>
           <p className="font-semibold text-neutral-900">This room isn&rsquo;t available</p>
           <p className="text-sm text-neutral-500">It may have been renamed or taken off the website.</p>
-          <Link href="/hotel-management/rooms" className="mt-1 rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">
+          <Link href="/hotel-management/rooms" className="mt-1 rounded-md bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">
             Browse rooms
           </Link>
         </div>

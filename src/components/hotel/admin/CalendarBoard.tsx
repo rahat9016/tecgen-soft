@@ -41,8 +41,8 @@ export default function CalendarBoard() {
       className={cn(
         "z-10 mx-0.5 my-1 flex min-w-0 items-center overflow-hidden whitespace-nowrap px-2 text-[11px] font-semibold ring-1 ring-inset transition hover:brightness-95",
         statusBar[b.status],
-        p.clippedLeft ? "rounded-l-none" : "rounded-l-lg",
-        p.clippedRight ? "rounded-r-none" : "rounded-r-lg"
+        p.clippedLeft ? "rounded-l-none" : "rounded-l-md",
+        p.clippedRight ? "rounded-r-none" : "rounded-r-md"
       )}
     >
       <span className="truncate">
@@ -59,9 +59,9 @@ export default function CalendarBoard() {
         subtitle="Every room, every night. Click a bar to open the booking, or an empty night to book it."
         actions={
           <>
-            <div className="flex rounded-xl border border-neutral-200 bg-white p-0.5">
+            <div className="flex rounded-md border border-neutral-200 bg-white p-0.5">
               {spans.map((s) => (
-                <button key={s} onClick={() => setDays(s)} className={cn("rounded-lg px-3 py-1.5 text-xs font-medium", days === s ? "bg-sky-600 text-white" : "text-neutral-600")}>
+                <button key={s} onClick={() => setDays(s)} className={cn("rounded-md px-3 py-1.5 text-xs font-medium", days === s ? "bg-sky-600 text-white" : "text-neutral-600")}>
                   {s} days
                 </button>
               ))}
@@ -75,7 +75,7 @@ export default function CalendarBoard() {
             <button onClick={() => setStart(shiftDay(start, Math.min(7, days)))} aria-label="Later" className={hbtn.outline}>
               <ChevronRight className="size-4" />
             </button>
-            <input type="date" value={start} onChange={(e) => e.target.value && setStart(e.target.value)} aria-label="Start date" className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-sm" />
+            <input type="date" value={start} onChange={(e) => e.target.value && setStart(e.target.value)} aria-label="Start date" className="h-10 rounded-md border border-neutral-200 bg-white px-3 text-sm" />
           </>
         }
       />
@@ -91,7 +91,7 @@ export default function CalendarBoard() {
         </span>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+      <div className="overflow-x-auto rounded-md border border-neutral-200 bg-white">
         <div className="grid min-w-max" style={{ gridTemplateColumns: cols }}>
           {/* Header */}
           <div className="sticky left-0 z-20 border-b border-r border-neutral-200 bg-neutral-50 px-3 py-2 text-xs font-semibold text-neutral-500">Room</div>

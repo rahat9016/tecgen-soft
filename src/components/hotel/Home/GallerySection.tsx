@@ -47,7 +47,7 @@ export default function GallerySection() {
                 setCategory(c);
                 setIndex(null);
               }}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition ${
+              className={`shrink-0 rounded-md px-4 py-1.5 text-sm font-medium transition ${
                 category === c ? "bg-sky-600 text-white shadow-sm" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
               }`}
             >
@@ -66,7 +66,7 @@ export default function GallerySection() {
               type="button"
               onClick={() => setIndex(i)}
               aria-label={`Open photo of ${photo.title}`}
-              className={`group relative overflow-hidden rounded-2xl bg-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${tileSpans[i]}`}
+              className={`group relative overflow-hidden rounded-md bg-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${tileSpans[i]}`}
             >
               <img
                 src={sizedPhoto(photo.src, i === 0 ? 1200 : 800)}

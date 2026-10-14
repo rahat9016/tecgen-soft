@@ -23,7 +23,7 @@ export default function OtherRooms({
           <Link
             key={room.id}
             href={`/hotel-management/rooms/${room.id}${query ? `?${query}` : ""}`}
-            className="group flex overflow-hidden rounded-2xl border border-neutral-200/70 bg-white transition hover:border-sky-200 hover:shadow-lg"
+            className="group flex overflow-hidden rounded-md border border-neutral-200/70 bg-white transition hover:border-sky-200 hover:shadow-lg"
           >
             <div className="relative w-32 shrink-0 overflow-hidden sm:w-36">
               <img

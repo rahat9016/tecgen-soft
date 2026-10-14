@@ -141,10 +141,10 @@ export default function RoomTypeForm({ id }: { id?: string }) {
             <p className="text-xs text-neutral-500">The first photo is the cover. Uploads are resized to keep the demo fast.</p>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {form.images.map((src, i) => (
-                <div key={`${i}-${src.slice(-24)}`} className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-100">
+                <div key={`${i}-${src.slice(-24)}`} className="group relative aspect-[4/3] overflow-hidden rounded-md bg-neutral-100">
                   {/* eslint-disable-next-line @next/next/no-img-element -- admin preview */}
                   <img src={src} alt="" className="size-full object-cover" />
-                  {i === 0 && <span className="absolute left-2 top-2 rounded-full bg-sky-600 px-2 py-0.5 text-[10px] font-semibold text-white">Cover</span>}
+                  {i === 0 && <span className="absolute left-2 top-2 rounded-md bg-sky-600 px-2 py-0.5 text-[10px] font-semibold text-white">Cover</span>}
                   <div className="absolute inset-x-0 bottom-0 flex justify-between bg-gradient-to-t from-black/60 p-1.5 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
                     <button onClick={() => moveImage(i, -1)} disabled={i === 0} aria-label="Move earlier" className="rounded-md bg-white/90 p-1 text-neutral-700 disabled:opacity-40">
                       <ArrowLeftRight className="size-3.5" />
@@ -165,7 +165,7 @@ export default function RoomTypeForm({ id }: { id?: string }) {
             <h2 className="font-semibold text-neutral-900">In the room</h2>
             <div className="mt-3 flex flex-wrap gap-2">
               {form.amenities.map((a) => (
-                <span key={a} className="flex items-center gap-1 rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-800">
+                <span key={a} className="flex items-center gap-1 rounded-md bg-sky-50 px-3 py-1 text-xs font-medium text-sky-800">
                   {a}
                   <button onClick={() => set("amenities", form.amenities.filter((x) => x !== a))} aria-label={`Remove ${a}`}>
                     <X className="size-3" />
@@ -195,7 +195,7 @@ export default function RoomTypeForm({ id }: { id?: string }) {
                 .filter((a) => !form.amenities.includes(a))
                 .slice(0, 16)
                 .map((a) => (
-                  <button key={a} onClick={() => addAmenity(a)} className="rounded-full border border-dashed border-neutral-300 px-2.5 py-0.5 text-xs text-neutral-500 hover:border-sky-400 hover:text-sky-700">
+                  <button key={a} onClick={() => addAmenity(a)} className="rounded-md border border-dashed border-neutral-300 px-2.5 py-0.5 text-xs text-neutral-500 hover:border-sky-400 hover:text-sky-700">
                     + {a}
                   </button>
                 ))}
@@ -214,7 +214,7 @@ export default function RoomTypeForm({ id }: { id?: string }) {
                 <input type="number" min={0} value={form.originalPrice || ""} onChange={(e) => set("originalPrice", Number(e.target.value))} className={inputClass} />
               </Field>
               {roomDiscount(form) > 0 && (
-                <p className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600">
+                <p className="rounded-md bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600">
                   Website shows −{roomDiscount(form)}% · saves {taka(form.originalPrice - form.price)}
                 </p>
               )}

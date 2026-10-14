@@ -88,8 +88,8 @@ export default function StaffLogin() {
               <span className={labelClass}>Password</span>
               <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete="current-password" className={inputClass} />
             </label>
-            {error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
-            <button disabled={busy} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sky-600 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60">
+            {error && <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
+            <button disabled={busy} className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-sky-600 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60">
               {busy && <Loader2 className="size-4 animate-spin" />} Sign in
             </button>
           </form>
@@ -105,7 +105,7 @@ export default function StaffLogin() {
                       setEmail(d.email);
                       setPassword(d.password);
                     }}
-                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-left text-xs transition hover:border-sky-300"
+                    className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-left text-xs transition hover:border-sky-300"
                   >
                     <span className="flex justify-between font-semibold text-neutral-800">
                       {roleLabels[d.role]} <span className="font-mono font-normal text-neutral-500">{d.password}</span>

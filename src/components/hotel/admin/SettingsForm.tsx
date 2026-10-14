@@ -70,7 +70,7 @@ export default function SettingsForm() {
               <input type="number" min={0} max={30} value={s.vatRate} onChange={num("vatRate", 0, 30)} className={inputClass} />
             </Field>
           </div>
-          <p className="mt-4 rounded-xl bg-neutral-50 p-3 text-xs text-neutral-600">
+          <p className="mt-4 rounded-md bg-neutral-50 p-3 text-xs text-neutral-600">
             Example — 2 nights at {taka(3200)}: room {taka(example.subtotal)} + service {taka(example.serviceFee)} + VAT {taka(example.tax)} = <b>{taka(example.total)}</b>. Existing bookings keep their price.
           </p>
         </Card>
@@ -85,7 +85,7 @@ export default function SettingsForm() {
           <p className="mt-4 text-xs font-medium text-neutral-600">Methods offered at checkout</p>
           <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {online.map((m) => (
-              <label key={m} className="flex cursor-pointer items-center gap-2 rounded-xl border border-neutral-200 px-3 py-2 text-sm has-[:checked]:border-sky-400 has-[:checked]:bg-sky-50">
+              <label key={m} className="flex cursor-pointer items-center gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm has-[:checked]:border-sky-400 has-[:checked]:bg-sky-50">
                 <input type="checkbox" checked={s.onlineMethods[m]} onChange={() => set("onlineMethods", { ...s.onlineMethods, [m]: !s.onlineMethods[m] })} className="size-4 accent-sky-600" />
                 {paymentMethodInfo[m].label}
               </label>

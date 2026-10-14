@@ -17,7 +17,7 @@ function EditModal({ image, onClose }: { image: GalleryImage; onClose: () => voi
   return (
     <Modal open onClose={onClose} title="Edit photo">
       {/* eslint-disable-next-line @next/next/no-img-element -- admin preview */}
-      <img src={form.src} alt="" className="aspect-video w-full rounded-xl object-cover" />
+      <img src={form.src} alt="" className="aspect-video w-full rounded-md object-cover" />
       <div className="mt-4 space-y-3">
         <Field label="Title">
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} />
@@ -106,12 +106,12 @@ export default function GalleryManager() {
           {list.map((g) => {
             const index = gallery.findIndex((x) => x.id === g.id);
             return (
-              <article key={g.id} className={cn("overflow-hidden rounded-2xl border bg-white", g.visible ? "border-neutral-200" : "border-dashed border-neutral-300 opacity-60")}>
+              <article key={g.id} className={cn("overflow-hidden rounded-md border bg-white", g.visible ? "border-neutral-200" : "border-dashed border-neutral-300 opacity-60")}>
                 <div className="relative aspect-[4/3] bg-neutral-100">
                   {/* eslint-disable-next-line @next/next/no-img-element -- admin preview */}
                   <img src={g.src} alt={g.title} className="size-full object-cover" loading="lazy" />
-                  <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-neutral-700">#{index + 1}</span>
-                  <span className="absolute right-2 top-2 rounded-full bg-sky-950/80 px-2 py-0.5 text-[10px] font-semibold text-white">{galleryCategoryLabels[g.category]}</span>
+                  <span className="absolute left-2 top-2 rounded-md bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-neutral-700">#{index + 1}</span>
+                  <span className="absolute right-2 top-2 rounded-md bg-sky-950/80 px-2 py-0.5 text-[10px] font-semibold text-white">{galleryCategoryLabels[g.category]}</span>
                 </div>
                 <div className="p-3">
                   <p className="truncate text-sm font-semibold text-neutral-900">{g.title}</p>

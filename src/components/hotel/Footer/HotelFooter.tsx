@@ -74,8 +74,8 @@ export default function HotelFooter() {
             beach, with breakfast, pool and 24/7 room service.
           </p>
 
-          <div className="mt-5 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 py-2 pl-2 pr-4 backdrop-blur-sm">
-            <span className="flex size-10 items-center justify-center rounded-xl rounded-bl-none bg-sky-500 text-sm font-bold text-white">
+          <div className="mt-5 inline-flex items-center gap-3 rounded-md border border-white/10 bg-white/5 py-2 pl-2 pr-4 backdrop-blur-sm">
+            <span className="flex size-10 items-center justify-center rounded-md rounded-bl-none bg-sky-500 text-sm font-bold text-white">
               {hotel.rating.toFixed(1)}
             </span>
             <span className="text-sm">
@@ -90,13 +90,13 @@ export default function HotelFooter() {
           <div className="mt-6 flex flex-wrap gap-2">
             <Link
               href="/hotel-management/rooms"
-              className="flex items-center gap-1.5 rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400"
+              className="flex items-center gap-1.5 rounded-md bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400"
             >
               <CalendarCheck className="size-4" /> Book a room
             </Link>
             <a
               href={`tel:${hotel.phone}`}
-              className="flex items-center gap-1.5 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="flex items-center gap-1.5 rounded-md border border-white/15 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
             >
               <Phone className="size-4" /> Call us
             </a>
@@ -196,7 +196,7 @@ export default function HotelFooter() {
               <span
                 key={method.name}
                 title={method.name}
-                className="flex h-10 w-16 items-center justify-center rounded-lg bg-white px-1.5 shadow-sm"
+                className="flex h-10 w-16 items-center justify-center rounded-md bg-white px-1.5 shadow-sm"
               >
                 <Image
                   src={method.logo}

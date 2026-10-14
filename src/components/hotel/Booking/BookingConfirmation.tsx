@@ -103,9 +103,9 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
+    <section className="rounded-md border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
       <h2 className="flex items-center gap-2 font-bold text-neutral-900">
-        <span className="flex size-8 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+        <span className="flex size-8 items-center justify-center rounded-md bg-sky-50 text-sky-600">
           <Icon className="size-4" />
         </span>
         {title}
@@ -133,8 +133,8 @@ export default function BookingConfirmation({
   if (!booking) {
     return (
       <div className="container py-16">
-        <div className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-3xl border border-dashed border-neutral-200 bg-white p-10 text-center">
-          <span className="flex size-12 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-500">
+        <div className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-md border border-dashed border-neutral-200 bg-white p-10 text-center">
+          <span className="flex size-12 items-center justify-center rounded-md bg-neutral-100 text-neutral-500">
             <SearchX className="size-6" />
           </span>
           <p className="font-semibold text-neutral-900">
@@ -248,7 +248,7 @@ export default function BookingConfirmation({
   };
 
   const actionClass =
-    "flex flex-col items-center gap-1.5 rounded-2xl border border-neutral-200 bg-white px-2 py-3 text-xs font-semibold text-neutral-700 transition hover:border-sky-200 hover:text-sky-700";
+    "flex flex-col items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-3 text-xs font-semibold text-neutral-700 transition hover:border-sky-200 hover:text-sky-700";
 
   return (
     <>
@@ -261,7 +261,7 @@ export default function BookingConfirmation({
 
           {/* Success banner */}
           <div
-            className={`relative mt-6 overflow-hidden rounded-3xl bg-gradient-to-br p-6 text-white shadow-xl md:p-8 ${
+            className={`relative mt-6 overflow-hidden rounded-md bg-gradient-to-br p-6 text-white shadow-xl md:p-8 ${
               closed
                 ? "from-neutral-600 to-neutral-800 shadow-neutral-600/20"
                 : pending
@@ -274,8 +274,8 @@ export default function BookingConfirmation({
 
             <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div className="flex items-start gap-4">
-                <span className="relative flex size-14 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-lg">
-                  <span className="absolute inset-0 animate-ping rounded-2xl bg-white/40 [animation-iteration-count:2]" />
+                <span className="relative flex size-14 shrink-0 items-center justify-center rounded-md bg-white text-emerald-600 shadow-lg">
+                  <span className="absolute inset-0 animate-ping rounded-md bg-white/40 [animation-iteration-count:2]" />
                   <Check className="relative size-7" strokeWidth={3} />
                 </span>
                 <div>
@@ -303,7 +303,7 @@ export default function BookingConfirmation({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-white/25 bg-white/15 p-4 backdrop-blur-md md:min-w-64">
+              <div className="rounded-md border border-white/25 bg-white/15 p-4 backdrop-blur-md md:min-w-64">
                 <p className="text-xs font-medium uppercase tracking-wider text-white/75">
                   Booking ID
                 </p>
@@ -315,7 +315,7 @@ export default function BookingConfirmation({
                     type="button"
                     onClick={copyBookingId}
                     aria-label="Copy booking ID"
-                    className="flex size-9 items-center justify-center rounded-xl bg-white/20 transition hover:bg-white/30"
+                    className="flex size-9 items-center justify-center rounded-md bg-white/20 transition hover:bg-white/30"
                   >
                     <Copy className="size-4" />
                   </button>
@@ -328,15 +328,15 @@ export default function BookingConfirmation({
             </div>
 
             <div className="relative mt-5 flex flex-wrap gap-2 text-xs font-medium">
-              <span className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 backdrop-blur-sm">
+              <span className="flex items-center gap-1.5 rounded-md bg-white/15 px-3 py-1.5 backdrop-blur-sm">
                 <Mail className="size-3.5" /> Confirmation sent to {guest.email}
               </span>
-              <span className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 backdrop-blur-sm">
+              <span className="flex items-center gap-1.5 rounded-md bg-white/15 px-3 py-1.5 backdrop-blur-sm">
                 <MessageSquareText className="size-3.5" /> SMS sent to{" "}
                 {guest.phone}
               </span>
               {payment.paid > 0 && (
-                <span className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 backdrop-blur-sm">
+                <span className="flex items-center gap-1.5 rounded-md bg-white/15 px-3 py-1.5 backdrop-blur-sm">
                   <BadgeCheck className="size-3.5" /> BDT{" "}
                   {payment.paid.toLocaleString()} paid via{" "}
                   {payment.method.label}
@@ -348,7 +348,7 @@ export default function BookingConfirmation({
           <div className="mt-6 grid items-start gap-5 lg:grid-cols-[1fr_380px] lg:gap-6">
             <div className="contents lg:block lg:space-y-5">
               {/* Stay */}
-              <section className="order-1 overflow-hidden rounded-3xl border border-neutral-200/80 bg-white shadow-sm">
+              <section className="order-1 overflow-hidden rounded-md border border-neutral-200/80 bg-white shadow-sm">
                 <div className="grid sm:grid-cols-[220px_1fr]">
                   <div className="relative h-48 sm:h-full">
                     <img
@@ -370,7 +370,7 @@ export default function BookingConfirmation({
                     </p>
 
                     <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
-                      <div className="rounded-2xl bg-neutral-50 p-3">
+                      <div className="rounded-md bg-neutral-50 p-3">
                         <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
                           <LogIn className="size-3.5" /> Check-in
                         </p>
@@ -384,11 +384,11 @@ export default function BookingConfirmation({
                         )}
                       </div>
                       <span className="flex items-center">
-                        <span className="flex items-center gap-1 rounded-full bg-sky-600 px-2.5 py-1 text-xs font-bold text-white">
+                        <span className="flex items-center gap-1 rounded-md bg-sky-600 px-2.5 py-1 text-xs font-bold text-white">
                           <Moon className="size-3" /> {booking.nights}
                         </span>
                       </span>
-                      <div className="rounded-2xl bg-neutral-50 p-3">
+                      <div className="rounded-md bg-neutral-50 p-3">
                         <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
                           <LogOut className="size-3.5" /> Check-out
                         </p>
@@ -419,7 +419,7 @@ export default function BookingConfirmation({
                     </div>
 
                     {freeCancellation && !closed && (
-                      <p className="mt-4 flex items-start gap-2 rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-800">
+                      <p className="mt-4 flex items-start gap-2 rounded-md bg-emerald-50 p-3 text-sm text-emerald-800">
                         <BadgeCheck className="mt-0.5 size-4 shrink-0" />
                         <span>
                           <span className="font-semibold">
@@ -456,7 +456,7 @@ export default function BookingConfirmation({
                   <ol className="space-y-4">
                     {nextSteps.map(({ icon: Icon, title, text }, i) => (
                       <li key={title} className="flex gap-3">
-                        <span className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-neutral-50 text-sky-600 ring-1 ring-neutral-200">
+                        <span className="relative flex size-9 shrink-0 items-center justify-center rounded-md bg-neutral-50 text-sky-600 ring-1 ring-neutral-200">
                           <Icon className="size-4" />
                           <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-sky-600 text-[10px] font-bold text-white">
                             {i + 1}
@@ -473,7 +473,7 @@ export default function BookingConfirmation({
                   </ol>
                   <a
                     href={`tel:${hotel.phone}`}
-                    className="mt-5 flex items-center gap-3 rounded-2xl border border-neutral-200 p-3 text-sm transition hover:border-sky-200 hover:bg-sky-50/50"
+                    className="mt-5 flex items-center gap-3 rounded-md border border-neutral-200 p-3 text-sm transition hover:border-sky-200 hover:bg-sky-50/50"
                   >
                     <Headphones className="size-5 shrink-0 text-sky-600" />
                     <span>
@@ -494,7 +494,7 @@ export default function BookingConfirmation({
             <aside className="order-2 space-y-4 lg:sticky lg:top-24 lg:order-none">
               <section
                 id="invoice"
-                className="rounded-3xl border border-neutral-200/80 bg-white p-5 shadow-xl shadow-neutral-900/5 md:p-6"
+                className="rounded-md border border-neutral-200/80 bg-white p-5 shadow-xl shadow-neutral-900/5 md:p-6"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -504,7 +504,7 @@ export default function BookingConfirmation({
                     </p>
                   </div>
                   <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    className={`rounded-md px-2.5 py-1 text-xs font-semibold ${
                       payment.fullyPaid
                         ? "bg-emerald-600 text-white"
                         : payment.paid > 0
@@ -556,7 +556,7 @@ export default function BookingConfirmation({
                       <span>− BDT {payment.paid.toLocaleString()}</span>
                     </div>
                   )}
-                  <div className="flex items-center justify-between rounded-xl bg-sky-50 px-3 py-2.5">
+                  <div className="flex items-center justify-between rounded-md bg-sky-50 px-3 py-2.5">
                     <span className="font-bold text-sky-900">
                       {payment.balance > 0 && booking.status !== "checked-in"
                         ? "Balance due at check-in"
@@ -568,8 +568,8 @@ export default function BookingConfirmation({
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center gap-3 rounded-2xl bg-neutral-50 p-3 text-sm">
-                  <span className="flex h-9 min-w-12 shrink-0 items-center justify-center gap-1 rounded-xl bg-white px-1.5 shadow-sm">
+                <div className="mt-4 flex items-center gap-3 rounded-md bg-neutral-50 p-3 text-sm">
+                  <span className="flex h-9 min-w-12 shrink-0 items-center justify-center gap-1 rounded-md bg-white px-1.5 shadow-sm">
                     {payment.method.logos.length > 0 ? (
                       payment.method.logos.map((logo) => (
                         // eslint-disable-next-line @next/next/no-img-element -- small local logos
@@ -638,13 +638,13 @@ export default function BookingConfirmation({
               <div className="flex flex-col gap-2">
                 <Link
                   href="/hotel-management/my-bookings"
-                  className="flex h-12 items-center justify-center rounded-2xl bg-sky-600 text-sm font-semibold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700"
+                  className="flex h-12 items-center justify-center rounded-md bg-sky-600 text-sm font-semibold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700"
                 >
                   View my bookings
                 </Link>
                 <Link
                   href="/hotel-management"
-                  className="flex h-11 items-center justify-center rounded-2xl text-sm font-semibold text-neutral-600 transition hover:bg-neutral-100"
+                  className="flex h-11 items-center justify-center rounded-md text-sm font-semibold text-neutral-600 transition hover:bg-neutral-100"
                 >
                   Back to home
                 </Link>

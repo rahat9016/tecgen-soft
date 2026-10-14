@@ -74,7 +74,7 @@ export default function BookingSidebar({
   return (
     <div
       id="booking"
-      className="scroll-mt-36 rounded-2xl border border-neutral-200/70 bg-white p-5 shadow-xl shadow-neutral-900/5 lg:sticky lg:top-36"
+      className="scroll-mt-36 rounded-md border border-neutral-200/70 bg-white p-5 shadow-xl shadow-neutral-900/5 lg:sticky lg:top-36"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -91,13 +91,13 @@ export default function BookingSidebar({
           </p>
         </div>
         {discount > 0 && (
-          <span className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-600">
+          <span className="rounded-md bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-600">
             -{discount}%
           </span>
         )}
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-neutral-200">
+      <div className="mt-4 overflow-hidden rounded-md border border-neutral-200">
         <div className="p-1">
           <DateRangeField
             compact
@@ -121,7 +121,7 @@ export default function BookingSidebar({
       </div>
 
       {unavailable ? (
-        <div className="mt-3 flex gap-2 rounded-xl bg-rose-50 p-3 text-xs text-rose-700">
+        <div className="mt-3 flex gap-2 rounded-md bg-rose-50 p-3 text-xs text-rose-700">
           <CalendarX2 className="size-4 shrink-0" />
           <p>
             {available === 0
@@ -149,7 +149,7 @@ export default function BookingSidebar({
       )}
 
       {overCapacity && (
-        <p className="mt-3 flex gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+        <p className="mt-3 flex gap-2 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
           <AlertTriangle className="size-4 shrink-0" />
           This room fits up to {room.capacity} guests. Add another room or
           choose a larger room.
@@ -184,7 +184,7 @@ export default function BookingSidebar({
       <Button
         onClick={action.onClick}
         disabled={!action.onClick}
-        className="mt-4 h-12 w-full rounded-xl bg-sky-600 text-base font-semibold shadow-lg shadow-sky-600/25 hover:bg-sky-700"
+        className="mt-4 h-12 w-full rounded-md bg-sky-600 text-base font-semibold shadow-lg shadow-sky-600/25 hover:bg-sky-700"
       >
         {action.label}
       </Button>

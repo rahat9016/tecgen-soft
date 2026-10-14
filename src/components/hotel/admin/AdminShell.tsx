@@ -172,7 +172,7 @@ function NotificationBell() {
           </span>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8} className="w-[min(24rem,calc(100vw-2rem))] rounded-2xl p-0">
+      <DropdownMenuContent align="end" sideOffset={8} className="w-[min(24rem,calc(100vw-2rem))] rounded-md p-0">
         <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
           <DropdownMenuLabel className="p-0 text-sm font-semibold">Notifications</DropdownMenuLabel>
           {unread > 0 && (
@@ -192,7 +192,7 @@ function NotificationBell() {
                 else if (n.kind === "review") router.push(`${ADMIN}/reviews`);
                 else router.push(`${ADMIN}/notifications`);
               }}
-              className="mx-1 flex cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5"
+              className="mx-1 flex cursor-pointer items-start gap-3 rounded-md px-3 py-2.5"
             >
               <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", n.read ? "bg-neutral-200" : "bg-sky-500")} />
               <span className="min-w-0 flex-1">
@@ -272,7 +272,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                         onClick={() => setOpen(false)}
                         aria-current={active ? "page" : undefined}
                         className={cn(
-                          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition",
+                          "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition",
                           active ? "bg-white font-semibold text-sky-950 shadow-sm" : "text-sky-100/80 hover:bg-white/5 hover:text-white"
                         )}
                       >
@@ -281,7 +281,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                         {count > 0 && (
                           <span
                             className={cn(
-                              "ml-auto rounded-full px-1.5 text-[10px] font-bold tabular-nums",
+                              "ml-auto rounded-md px-1.5 text-[10px] font-bold tabular-nums",
                               item.badge === "notices" ? "bg-rose-500 text-white" : active ? "bg-sky-600 text-white" : "bg-amber-400 text-sky-950"
                             )}
                           >
@@ -298,7 +298,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         })}
       </div>
       <div className="space-y-0.5 border-t border-white/10 p-3">
-        <Link href="/hotel-management" target="_blank" className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-sky-100/80 hover:bg-white/5 hover:text-white">
+        <Link href="/hotel-management" target="_blank" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sky-100/80 hover:bg-white/5 hover:text-white">
           <ExternalLink className="size-4" /> View website
         </Link>
         {can(staff.role, "settings.manage") && (
@@ -309,7 +309,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 toast.success("Demo data reset");
               }
             }}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-sky-100/80 hover:bg-white/5 hover:text-white"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-sky-100/80 hover:bg-white/5 hover:text-white"
           >
             <RotateCcw className="size-4" /> Reset demo data
           </button>
@@ -344,7 +344,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             {can(staff.role, "bookings.manage") && (
               <Link
                 href={`${ADMIN}/bookings/new`}
-                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-sky-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                className="inline-flex h-10 items-center gap-1.5 rounded-md bg-sky-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
               >
                 <Plus className="size-4" /> <span className="hidden sm:inline">New booking</span>
               </Link>
@@ -358,7 +358,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 </span>
                 <span className="flex size-10 items-center justify-center rounded-full bg-sky-900 text-sm font-bold text-white">{initials(staff.name)}</span>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={8} className="w-56 rounded-xl">
+              <DropdownMenuContent align="end" sideOffset={8} className="w-56 rounded-md">
                 <DropdownMenuLabel>
                   <span className="block text-sm">{staff.name}</span>
                   <span className="block text-xs font-normal text-neutral-500">{staff.email}</span>

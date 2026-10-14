@@ -102,18 +102,18 @@ export default function RoomsBoard() {
                   const type = db.roomTypes.find((t) => t.id === u.typeId);
                   const due = b ? dueOf(b) : 0;
                   return (
-                    <article key={u.id} className={cn("flex flex-col rounded-2xl border p-4 transition", st.card)}>
+                    <article key={u.id} className={cn("flex flex-col rounded-md border p-4 transition", st.card)}>
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <p className="text-2xl font-bold leading-none text-neutral-900">{u.number}</p>
                           <p className="mt-1 truncate text-xs text-neutral-500">{type?.name ?? "Unknown type"}</p>
                         </div>
-                        <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide", st.chip)}>{st.label}</span>
+                        <span className={cn("rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide", st.chip)}>{st.label}</span>
                       </div>
 
                       <div className="mt-3 min-h-14 flex-1">
                         {b ? (
-                          <Link href={`${ADMIN}/bookings/${b.id}`} className="block rounded-xl bg-white/80 p-2.5 ring-1 ring-black/5 transition hover:ring-sky-300">
+                          <Link href={`${ADMIN}/bookings/${b.id}`} className="block rounded-md bg-white/80 p-2.5 ring-1 ring-black/5 transition hover:ring-sky-300">
                             <p className="truncate text-sm font-semibold text-neutral-900">{b.guest.name}</p>
                             <p className="text-xs text-neutral-500">
                               {b.code} · {dateLabel(b.checkIn, "dd MMM")} → {dateLabel(b.checkOut, "dd MMM")} · {b.adults + b.children} guest{b.adults + b.children > 1 ? "s" : ""}
@@ -139,11 +139,11 @@ export default function RoomsBoard() {
 
                       <div className="mt-3 flex items-center justify-between gap-2">
                         <DropdownMenu modal={false}>
-                          <DropdownMenuTrigger className={cn("flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium outline-none", hkTone[u.housekeeping])}>
+                          <DropdownMenuTrigger className={cn("flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium outline-none", hkTone[u.housekeeping])}>
                             {u.housekeeping === "dirty" ? <Brush className="size-3" /> : <Sparkles className="size-3" />}
                             {housekeepingLabels[u.housekeeping]}
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="rounded-xl">
+                          <DropdownMenuContent align="start" className="rounded-md">
                             <DropdownMenuLabel className="text-xs">Housekeeping</DropdownMenuLabel>
                             {(Object.keys(housekeepingLabels) as Housekeeping[]).map((hk) => (
                               <DropdownMenuItem key={hk} onSelect={() => setHousekeeping(u.id, hk)} className="cursor-pointer">

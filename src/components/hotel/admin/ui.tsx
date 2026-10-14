@@ -12,24 +12,24 @@ export const ADMIN = "/hotel-management/admin";
 
 export const hbtn = {
   primary:
-    "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50",
-  dark: "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sky-950 px-4 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sky-600 px-4 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50",
+  dark: "inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sky-950 px-4 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-not-allowed disabled:opacity-50",
   success:
-    "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex h-10 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50",
   outline:
-    "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 text-sm font-medium text-neutral-700 transition hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex h-10 items-center justify-center gap-2 rounded-md border border-neutral-200 bg-white px-4 text-sm font-medium text-neutral-700 transition hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50",
   danger:
-    "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex h-10 items-center justify-center gap-2 rounded-md border border-rose-200 bg-white px-4 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50",
   small:
-    "inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 text-xs font-medium text-neutral-700 transition hover:border-sky-400 hover:text-sky-700 disabled:opacity-50",
-  icon: "inline-flex size-8 items-center justify-center rounded-lg text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-800",
-  iconDanger: "inline-flex size-8 items-center justify-center rounded-lg text-neutral-400 transition hover:bg-rose-50 hover:text-rose-600",
+    "inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 text-xs font-medium text-neutral-700 transition hover:border-sky-400 hover:text-sky-700 disabled:opacity-50",
+  icon: "inline-flex size-8 items-center justify-center rounded-md text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-800",
+  iconDanger: "inline-flex size-8 items-center justify-center rounded-md text-neutral-400 transition hover:bg-rose-50 hover:text-rose-600",
 };
 
 export const inputClass =
-  "h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 disabled:bg-neutral-50 disabled:text-neutral-500";
+  "h-10 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 disabled:bg-neutral-50 disabled:text-neutral-500";
 export const textareaClass =
-  "w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100";
+  "w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100";
 export const labelClass = "mb-1 block text-xs font-medium text-neutral-600";
 
 export function Field({ label, hint, className, children }: { label: string; hint?: string; className?: string; children: React.ReactNode }) {
@@ -44,7 +44,7 @@ export function Field({ label, hint, className, children }: { label: string; hin
 
 export function StatusBadge({ status, className }: { status: BookingStatus; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset", statusStyles[status], className)}>
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset", statusStyles[status], className)}>
       {status === "checked-in" && <LiveDot className="size-1.5" />}
       {statusLabels[status]}
     </span>
@@ -53,7 +53,7 @@ export function StatusBadge({ status, className }: { status: BookingStatus; clas
 
 export function PayBadge({ booking }: { booking: Booking }) {
   const s = paymentStatus(booking);
-  return <span className={cn("inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset", s.tone)}>{s.label}</span>;
+  return <span className={cn("inline-flex whitespace-nowrap rounded-md px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset", s.tone)}>{s.label}</span>;
 }
 
 export function LiveDot({ className }: { className?: string }) {
@@ -75,7 +75,7 @@ export function Loader() {
 
 export function NoAccess() {
   return (
-    <div className="mx-auto mt-16 flex max-w-md flex-col items-center gap-3 rounded-2xl border border-dashed border-neutral-300 bg-white p-10 text-center">
+    <div className="mx-auto mt-16 flex max-w-md flex-col items-center gap-3 rounded-md border border-dashed border-neutral-300 bg-white p-10 text-center">
       <ShieldAlert className="size-8 text-amber-500" />
       <p className="font-semibold text-neutral-900">You don&rsquo;t have access to this page</p>
       <p className="text-sm text-neutral-500">Ask an administrator to change your role if you need it.</p>
@@ -121,7 +121,7 @@ export function Tabs<T extends string>({
             {t.dot && <span className={cn("size-2 rounded-full", t.dot)} />}
             {t.label}
             {t.count !== undefined && (
-              <span className={cn("rounded-full px-1.5 text-[11px] tabular-nums", selected ? "bg-sky-600 text-white" : "bg-neutral-100 text-neutral-500")}>{t.count}</span>
+              <span className={cn("rounded-md px-1.5 text-[11px] tabular-nums", selected ? "bg-sky-600 text-white" : "bg-neutral-100 text-neutral-500")}>{t.count}</span>
             )}
             {selected && <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-sky-600" />}
           </button>
@@ -157,7 +157,7 @@ export function Pager({
       </p>
       {pages > 1 && (
         <div className="flex items-center gap-1">
-          <button onClick={() => setPage(page - 1)} disabled={page === 1} aria-label="Previous page" className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 hover:border-sky-400 disabled:opacity-40">
+          <button onClick={() => setPage(page - 1)} disabled={page === 1} aria-label="Previous page" className="flex size-8 items-center justify-center rounded-md border border-neutral-200 hover:border-sky-400 disabled:opacity-40">
             <ChevronLeft className="size-4" />
           </button>
           {nums.map((n, i) => (
@@ -166,13 +166,13 @@ export function Pager({
               <button
                 onClick={() => setPage(n)}
                 aria-current={n === page ? "page" : undefined}
-                className={cn("size-8 rounded-lg text-xs font-medium", n === page ? "bg-sky-600 text-white" : "border border-neutral-200 hover:border-sky-400")}
+                className={cn("size-8 rounded-md text-xs font-medium", n === page ? "bg-sky-600 text-white" : "border border-neutral-200 hover:border-sky-400")}
               >
                 {n}
               </button>
             </span>
           ))}
-          <button onClick={() => setPage(page + 1)} disabled={page === pages} aria-label="Next page" className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 hover:border-sky-400 disabled:opacity-40">
+          <button onClick={() => setPage(page + 1)} disabled={page === pages} aria-label="Next page" className="flex size-8 items-center justify-center rounded-md border border-neutral-200 hover:border-sky-400 disabled:opacity-40">
             <ChevronRight className="size-4" />
           </button>
         </div>
@@ -189,7 +189,7 @@ export function SearchBox({ value, onChange, placeholder, className }: { value: 
       placeholder={placeholder}
       aria-label={placeholder}
       type="search"
-      className={cn("h-9 w-full rounded-full border border-neutral-200 bg-white px-4 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 sm:w-72", className)}
+      className={cn("h-9 w-full rounded-md border border-neutral-200 bg-white px-4 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 sm:w-72", className)}
     />
   );
 }
@@ -212,7 +212,7 @@ export function Select<T extends string>({
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
       aria-label={label}
-      className={cn("h-9 rounded-full border border-neutral-200 bg-white px-3 text-sm text-neutral-700 outline-none focus:border-sky-500", className)}
+      className={cn("h-9 rounded-md border border-neutral-200 bg-white px-3 text-sm text-neutral-700 outline-none focus:border-sky-500", className)}
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>
@@ -224,7 +224,7 @@ export function Select<T extends string>({
 }
 
 export const toolbarClass = "flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 p-3";
-export const tableCardClass = "overflow-hidden rounded-2xl border border-neutral-200 bg-white";
+export const tableCardClass = "overflow-hidden rounded-md border border-neutral-200 bg-white";
 export const linkClass = "font-medium text-sky-700 hover:underline";
 
 export function Pills<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string; count?: number }[]; onChange: (v: T) => void }) {
@@ -236,7 +236,7 @@ export function Pills<T extends string>({ value, options, onChange }: { value: T
           onClick={() => onChange(o.value)}
           aria-pressed={value === o.value}
           className={cn(
-            "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition",
+            "shrink-0 rounded-md px-3.5 py-1.5 text-xs font-medium transition",
             value === o.value ? "bg-sky-950 text-white" : "bg-white text-neutral-600 ring-1 ring-neutral-200 hover:ring-sky-300"
           )}
         >

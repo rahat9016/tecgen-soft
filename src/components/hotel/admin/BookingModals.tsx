@@ -46,7 +46,7 @@ export function PaymentModal({ booking, kind, onClose }: { booking: Booking; kin
   return (
     <Modal open={!!kind} onClose={onClose} title={isRefund ? `Refund · ${booking.code}` : `Record payment · ${booking.code}`}>
       <div className="space-y-4">
-        <div className="grid grid-cols-3 gap-2 rounded-xl bg-neutral-50 p-3 text-center text-xs">
+        <div className="grid grid-cols-3 gap-2 rounded-md bg-neutral-50 p-3 text-center text-xs">
           <div>
             <p className="text-neutral-500">Paid</p>
             <p className="font-semibold text-neutral-900">{taka(paidOf(booking))}</p>
@@ -72,7 +72,7 @@ export function PaymentModal({ booking, kind, onClose }: { booking: Booking; kin
                 type="button"
                 onClick={() => setMethod(m)}
                 aria-pressed={method === m}
-                className={cn("h-9 rounded-lg border text-sm font-medium transition", method === m ? "border-sky-500 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-600 hover:border-sky-300")}
+                className={cn("h-9 rounded-md border text-sm font-medium transition", method === m ? "border-sky-500 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-600 hover:border-sky-300")}
               >
                 {payLabels[m]}
               </button>
@@ -126,7 +126,7 @@ export function ChargeModal({ booking, open, onClose }: { booking: Booking; open
               type="button"
               onClick={() => setCategory(c)}
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium ring-1 transition",
+                "rounded-md px-3 py-1 text-xs font-medium ring-1 transition",
                 category === c ? (c === "discount" ? "bg-emerald-600 text-white ring-emerald-600" : "bg-sky-600 text-white ring-sky-600") : "bg-white text-neutral-600 ring-neutral-200 hover:ring-sky-300"
               )}
             >
@@ -187,7 +187,7 @@ export function RoomsModal({ booking, mode, onClose }: { booking: Booking; mode:
               type="button"
               onClick={() => toggle(u.id)}
               aria-pressed={on}
-              className={cn("rounded-xl border p-3 text-left transition", on ? "border-sky-500 bg-sky-50 ring-2 ring-sky-100" : "border-neutral-200 hover:border-sky-300")}
+              className={cn("rounded-md border p-3 text-left transition", on ? "border-sky-500 bg-sky-50 ring-2 ring-sky-100" : "border-neutral-200 hover:border-sky-300")}
             >
               <p className="text-lg font-bold text-neutral-900">{u.number}</p>
               <p className={cn("text-[11px] font-medium", u.housekeeping === "dirty" ? "text-amber-600" : "text-emerald-600")}>{housekeepingLabels[u.housekeeping]}</p>
@@ -196,15 +196,15 @@ export function RoomsModal({ booking, mode, onClose }: { booking: Booking; mode:
           );
         })}
         {others.map((u) => (
-          <div key={u.id} className="rounded-xl border border-dashed border-neutral-200 p-3 text-left opacity-60" title={u.outOfService ? u.oosReason : "Booked for these dates"}>
+          <div key={u.id} className="rounded-md border border-dashed border-neutral-200 p-3 text-left opacity-60" title={u.outOfService ? u.oosReason : "Booked for these dates"}>
             <p className="text-lg font-bold text-neutral-400">{u.number}</p>
             <p className="text-[11px] text-neutral-400">{u.outOfService ? "Out of service" : "Taken"}</p>
           </div>
         ))}
       </div>
-      {options.length === 0 && <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">No free {booking.roomName} rooms for these dates — change the stay or move another booking first.</p>}
+      {options.length === 0 && <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">No free {booking.roomName} rooms for these dates — change the stay or move another booking first.</p>}
       {mode === "checkin" && picked.some((id) => db.units.find((u) => u.id === id)?.housekeeping === "dirty") && (
-        <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Heads up: a selected room is still marked as needing cleaning.</p>
+        <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">Heads up: a selected room is still marked as needing cleaning.</p>
       )}
       <div className="mt-5 flex justify-end gap-2">
         <button onClick={onClose} className={hbtn.outline}>
@@ -284,7 +284,7 @@ export function ChangeStayModal({ booking, open, onClose }: { booking: Booking; 
           </Field>
         </div>
       </div>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-neutral-50 p-3 text-sm">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md bg-neutral-50 p-3 text-sm">
         <span className={free >= form.rooms ? "text-emerald-700" : "text-rose-600"}>
           {nights < 1 ? "Pick valid dates" : free >= form.rooms ? `${free} ${type?.name ?? ""} free for these dates` : `Only ${free} free for these dates`}
         </span>
@@ -322,7 +322,7 @@ export function CancelModal({ booking, open, onClose }: { booking: Booking; open
   return (
     <Modal open={open} onClose={onClose} title={`Cancel ${booking.code}`}>
       <div className="space-y-4">
-        <p className={cn("rounded-xl p-3 text-sm", terms.free ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800")}>
+        <p className={cn("rounded-md p-3 text-sm", terms.free ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800")}>
           {terms.free
             ? "Inside the free-cancellation window — nothing is kept by default."
             : `Free cancellation has ended — policy keeps ${db.settings.lateCancellationFeeRate}% (up to what was paid).`}
@@ -358,7 +358,7 @@ export function CheckoutModal({ booking, open, onClose, onCollect }: { booking: 
     <Modal open={open} onClose={onClose} title={`Check out · ${booking.guest.name}`}>
       {due > 0 ? (
         <div className="space-y-4">
-          <p className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">
+          <p className="rounded-md bg-rose-50 p-3 text-sm text-rose-700">
             <b>{taka(due)}</b> is still due on this folio.
           </p>
           <div className="flex flex-col gap-2">
@@ -372,7 +372,7 @@ export function CheckoutModal({ booking, open, onClose, onCollect }: { booking: 
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">Folio is settled. The room will be marked as needing cleaning.</p>
+          <p className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-800">Folio is settled. The room will be marked as needing cleaning.</p>
           <div className="flex justify-end gap-2">
             <button onClick={onClose} className={hbtn.outline}>
               Not yet

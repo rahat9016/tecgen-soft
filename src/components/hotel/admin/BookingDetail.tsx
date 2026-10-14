@@ -177,7 +177,7 @@ export default function BookingDetail({ id }: { id: string }) {
                 <span className="font-mono text-sm font-semibold text-neutral-500">{b.code}</span>
                 <StatusBadge status={b.status} />
                 <PayBadge booking={b} />
-                <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs text-neutral-600">{sourceLabels[b.source]}</span>
+                <span className="rounded-md bg-neutral-100 px-2.5 py-0.5 text-xs text-neutral-600">{sourceLabels[b.source]}</span>
               </div>
               <h1 className="mt-1 text-2xl font-bold text-neutral-900">{b.guest.name}</h1>
               <p className="text-sm text-neutral-500">
@@ -208,7 +208,7 @@ export default function BookingDetail({ id }: { id: string }) {
                     <span
                       key={i}
                       className={cn(
-                        "flex h-16 min-w-20 flex-col items-center justify-center rounded-xl px-3",
+                        "flex h-16 min-w-20 flex-col items-center justify-center rounded-md px-3",
                         unitList[i] ? (b.status === "checked-in" ? "bg-emerald-50 text-emerald-800" : "bg-sky-50 text-sky-800") : "border border-dashed border-amber-300 bg-amber-50/50 text-amber-700"
                       )}
                     >
@@ -241,12 +241,12 @@ export default function BookingDetail({ id }: { id: string }) {
                   </div>
                 </dl>
                 {b.guest.note && (
-                  <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+                  <p className="mt-4 flex gap-2 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
                     <StickyNote className="mt-0.5 size-4 shrink-0" /> {b.guest.note}
                   </p>
                 )}
                 {b.status === "checked-in" && b.checkOut < today && (
-                  <p className="mt-3 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">Past check-out date — extend the stay or check the guest out.</p>
+                  <p className="mt-3 rounded-md bg-rose-50 p-3 text-sm text-rose-700">Past check-out date — extend the stay or check the guest out.</p>
                 )}
               </Card>
 
@@ -275,7 +275,7 @@ export default function BookingDetail({ id }: { id: string }) {
                   ))}
                 </ul>
                 {user && (
-                  <div className="mt-4 rounded-xl bg-neutral-50 p-3 text-xs text-neutral-600">
+                  <div className="mt-4 rounded-md bg-neutral-50 p-3 text-xs text-neutral-600">
                     <p>
                       {user.passwordHash ? "Registered guest account" : "Guest profile (no login)"} · {otherStays.length} other booking{otherStays.length === 1 ? "" : "s"}
                     </p>
@@ -435,11 +435,11 @@ export default function BookingDetail({ id }: { id: string }) {
                 )}
               </dl>
               {upcoming && (
-                <p className={cn("mt-4 rounded-xl p-3 text-xs", terms.free ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800")}>
+                <p className={cn("mt-4 rounded-md p-3 text-xs", terms.free ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800")}>
                   {terms.free ? `Free cancellation until ${format(new Date(terms.freeUntil), "dd MMM, h:mm a")}.` : `Late cancellation — policy keeps ${taka(terms.fee)}.`}
                 </p>
               )}
-              {!live && b.cancelReason && <p className="mt-4 rounded-xl bg-neutral-50 p-3 text-xs text-neutral-600">Reason: {b.cancelReason}</p>}
+              {!live && b.cancelReason && <p className="mt-4 rounded-md bg-neutral-50 p-3 text-xs text-neutral-600">Reason: {b.cancelReason}</p>}
             </Card>
 
             <Card>

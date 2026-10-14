@@ -35,7 +35,7 @@ export function ValueBars({
           />
           <Tooltip
             cursor={{ fill: "#f0f9ff" }}
-            contentStyle={{ borderRadius: 12, border: "1px solid #e5e5e5", fontSize: 12 }}
+            contentStyle={{ borderRadius: 8, border: "1px solid #e5e5e5", fontSize: 12 }}
             labelFormatter={(l, payload) => (payload?.[0]?.payload?.hint as string) ?? l}
             formatter={(v) => [fmt(Number(v)), kind === "money" ? "Amount" : "Occupancy"]}
           />

@@ -103,13 +103,13 @@ const termsOptions = [
 
 // ControlledCheckboxField renders a vertical list; lay its rows out as a 2-column grid of bordered options.
 const checkboxGridClass =
-  "[&>div]:grid [&>div]:gap-2.5 [&>div>*]:!m-0 sm:[&>div]:grid-cols-2 [&>div>div]:rounded-xl [&>div>div]:border [&>div>div]:border-neutral-200 [&>div>div]:bg-white [&>div>div]:px-3 [&>div>div]:py-2.5 [&>div>div]:transition [&>div>div:has([data-state=checked])]:border-sky-400 [&>div>div:has([data-state=checked])]:bg-sky-50/60 [&_label]:text-sm [&_label]:leading-snug [&_label]:text-neutral-700 [&_[data-state=checked]]:border-sky-600 [&_[data-state=checked]]:bg-sky-600";
+  "[&>div]:grid [&>div]:gap-2.5 [&>div>*]:!m-0 sm:[&>div]:grid-cols-2 [&>div>div]:rounded-md [&>div>div]:border [&>div>div]:border-neutral-200 [&>div>div]:bg-white [&>div>div]:px-3 [&>div>div]:py-2.5 [&>div>div]:transition [&>div>div:has([data-state=checked])]:border-sky-400 [&>div>div:has([data-state=checked])]:bg-sky-50/60 [&_label]:text-sm [&_label]:leading-snug [&_label]:text-neutral-700 [&_[data-state=checked]]:border-sky-600 [&_[data-state=checked]]:bg-sky-600";
 
 // Passed to the shared controlled fields; border colour is left to them so their error state still shows.
 const inputClass =
-  "h-11 rounded-xl px-3.5 shadow-none placeholder:text-neutral-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
+  "h-11 rounded-md px-3.5 shadow-none placeholder:text-neutral-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
 const selectClass =
-  "h-11 rounded-xl px-3.5 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
+  "h-11 rounded-md px-3.5 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
 
 function Section({
   step,
@@ -125,9 +125,9 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
+    <section className="rounded-md border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
       <div className="flex items-start gap-3">
-        <span className="relative flex size-10 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+        <span className="relative flex size-10 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-600">
           <Icon className="size-5" />
           <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-sky-600 text-[10px] font-bold text-white">
             {step}
@@ -268,8 +268,8 @@ export default function GuestInfoForm() {
 
   if (!selection) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-neutral-200 bg-white p-10 text-center">
-        <span className="flex size-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+      <div className="flex flex-col items-center gap-3 rounded-md border border-dashed border-neutral-200 bg-white p-10 text-center">
+        <span className="flex size-12 items-center justify-center rounded-md bg-sky-50 text-sky-600">
           <BedDouble className="size-6" />
         </span>
         <p className="font-semibold text-neutral-900">No room selected yet</p>
@@ -278,7 +278,7 @@ export default function GuestInfoForm() {
         </p>
         <Link
           href="/hotel-management/rooms"
-          className="mt-1 rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700"
+          className="mt-1 rounded-md bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700"
         >
           Browse rooms
         </Link>
@@ -490,7 +490,7 @@ export default function GuestInfoForm() {
             subtitle="Optional now — it speeds up check-in. Bring the same document with you."
           >
             {!isLocal && (
-              <div className="mb-4 flex gap-2.5 rounded-2xl bg-sky-50 p-3 text-sm text-sky-900">
+              <div className="mb-4 flex gap-2.5 rounded-md bg-sky-50 p-3 text-sm text-sky-900">
                 <Globe2 className="mt-0.5 size-4 shrink-0 text-sky-600" />
                 <p>
                   <span className="font-semibold">International guests:</span>{" "}
@@ -506,7 +506,7 @@ export default function GuestInfoForm() {
                 control={control}
                 render={({ field }) => (
                   <div
-                    className="mb-4 inline-flex rounded-full bg-neutral-100 p-1 text-sm font-medium"
+                    className="mb-4 inline-flex rounded-md bg-neutral-100 p-1 text-sm font-medium"
                     role="radiogroup"
                   >
                     {(["nid", "passport"] as const).map((type) => (
@@ -516,7 +516,7 @@ export default function GuestInfoForm() {
                         role="radio"
                         aria-checked={field.value === type}
                         onClick={() => field.onChange(type)}
-                        className={`rounded-full px-4 py-1.5 transition ${
+                        className={`rounded-md px-4 py-1.5 transition ${
                           field.value === type
                             ? "bg-white font-semibold text-sky-700 shadow-sm"
                             : "text-neutral-600 hover:text-neutral-900"
@@ -575,7 +575,7 @@ export default function GuestInfoForm() {
               <ControlledTextareaField
                 name="note"
                 placeholder="Anything else we should know?"
-                className="h-28 rounded-xl bg-white focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                className="h-28 rounded-md bg-white focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
               />
             </Field>
           </Section>
@@ -621,7 +621,7 @@ export default function GuestInfoForm() {
                         role="radio"
                         aria-checked={selected}
                         onClick={() => field.onChange(option.value)}
-                        className={`relative flex flex-col rounded-2xl border p-4 text-left transition ${
+                        className={`relative flex flex-col rounded-md border p-4 text-left transition ${
                           selected
                             ? "border-sky-500 bg-sky-50/60 ring-2 ring-sky-100"
                             : "border-neutral-200 hover:border-sky-200"
@@ -643,7 +643,7 @@ export default function GuestInfoForm() {
                             {option.title}
                           </span>
                           {option.badge && (
-                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                            <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                               {option.badge}
                             </span>
                           )}
@@ -684,7 +684,7 @@ export default function GuestInfoForm() {
                         role="radio"
                         aria-checked={selected}
                         onClick={() => field.onChange(value)}
-                        className={`flex flex-col items-center gap-2 rounded-2xl border px-3 py-3.5 text-center transition ${
+                        className={`flex flex-col items-center gap-2 rounded-md border px-3 py-3.5 text-center transition ${
                           selected
                             ? "border-sky-500 bg-sky-50/60 ring-2 ring-sky-100"
                             : "border-neutral-200 hover:border-sky-200"
@@ -717,7 +717,7 @@ export default function GuestInfoForm() {
               )}
             />
 
-            <div className="mt-4 flex gap-2.5 rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-800">
+            <div className="mt-4 flex gap-2.5 rounded-md bg-emerald-50 p-3 text-sm text-emerald-800">
               <ShieldCheck className="mt-0.5 size-4 shrink-0" />
               <p>
                 Secure payment in BDT — we never see or store your card number
@@ -728,7 +728,7 @@ export default function GuestInfoForm() {
             </div>
           </Section>
 
-          <div className="rounded-3xl border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
+          <div className="rounded-md border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
             <div className="[&_label]:text-sm [&_label]:leading-snug [&_label]:text-neutral-700 [&_[data-state=checked]]:border-sky-600 [&_[data-state=checked]]:bg-sky-600 [&>div>div]:items-start [&_button]:mt-0.5">
               <ControlledCheckboxField
                 name="acceptTerms"
@@ -747,7 +747,7 @@ export default function GuestInfoForm() {
             <button
               type="submit"
               disabled={confirming}
-              className="mt-5 flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-sky-600 text-base font-semibold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700 disabled:opacity-70"
+              className="mt-5 flex h-13 w-full items-center justify-center gap-2 rounded-md bg-sky-600 text-base font-semibold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700 disabled:opacity-70"
             >
               {confirming ? (
                 <>

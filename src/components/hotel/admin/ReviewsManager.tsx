@@ -50,7 +50,7 @@ function ReviewCard({ review }: { review: Review }) {
       </div>
       <p className="mt-3 text-sm leading-relaxed text-neutral-700">&ldquo;{review.comment}&rdquo;</p>
       {review.reply && !replying && (
-        <p className="mt-3 rounded-xl bg-sky-50 p-3 text-xs text-sky-900">
+        <p className="mt-3 rounded-md bg-sky-50 p-3 text-xs text-sky-900">
           <b>Hotel reply:</b> {review.reply}
         </p>
       )}
@@ -119,7 +119,7 @@ export default function ReviewsManager() {
   return (
     <div>
       <AdminHeader title="Reviews" subtitle={`${published.length} published · average ${avg.toFixed(1)}★ · guests can review after check-out`} />
-      <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+      <div className="overflow-hidden rounded-md border border-neutral-200 bg-white">
         <Tabs
           value={tab}
           onChange={setTab}

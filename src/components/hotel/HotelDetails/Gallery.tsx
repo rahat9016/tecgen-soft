@@ -9,7 +9,7 @@ export default function Gallery({ photos }: { photos: LightboxPhoto[] }) {
 
   return (
     <div className="relative">
-      <div className="grid h-[280px] grid-cols-4 grid-rows-2 gap-2 overflow-hidden rounded-2xl sm:h-[440px]">
+      <div className="grid h-[280px] grid-cols-4 grid-rows-2 gap-2 overflow-hidden rounded-md sm:h-[440px]">
         {photos.slice(0, 5).map(({ src, title }, i) => (
           <button
             key={src}
@@ -33,7 +33,7 @@ export default function Gallery({ photos }: { photos: LightboxPhoto[] }) {
       <button
         type="button"
         onClick={() => setIndex(0)}
-        className="absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-sm font-semibold text-neutral-900 shadow-lg backdrop-blur transition hover:bg-white"
+        className="absolute bottom-4 right-4 flex items-center gap-2 rounded-md bg-white/95 px-4 py-2 text-sm font-semibold text-neutral-900 shadow-lg backdrop-blur transition hover:bg-white"
       >
         <Grid2x2 className="size-4" />
         Show all {photos.length} photos

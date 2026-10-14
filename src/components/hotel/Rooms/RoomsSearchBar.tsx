@@ -37,7 +37,7 @@ export default function RoomsSearchBar({
   };
 
   return (
-    <div className="grid gap-2 rounded-3xl border border-neutral-200/80 bg-neutral-100/80 p-2 shadow-lg shadow-neutral-900/5 md:grid-cols-[1fr_auto_auto] md:items-center md:rounded-[1.75rem]">
+    <div className="grid gap-2 rounded-md border border-neutral-200/80 bg-neutral-100/80 p-2 shadow-lg shadow-neutral-900/5 md:grid-cols-[1fr_auto_auto] md:items-center md:rounded-md">
       <div>
         <DateRangeField
           checkIn={checkIn}
@@ -53,7 +53,7 @@ export default function RoomsSearchBar({
       </div>
       <Button
         onClick={apply}
-        className="h-12 rounded-2xl bg-sky-600 px-6 text-sm font-semibold shadow-lg shadow-sky-600/25 hover:bg-sky-700 md:h-14 md:rounded-[1.25rem]"
+        className="h-12 rounded-md bg-sky-600 px-6 text-sm font-semibold shadow-lg shadow-sky-600/25 hover:bg-sky-700 md:h-14 md:rounded-md"
       >
         <RefreshCw className="size-4" />
         Update

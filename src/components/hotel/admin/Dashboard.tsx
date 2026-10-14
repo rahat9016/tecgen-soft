@@ -46,7 +46,7 @@ function GuestLine({ b, right }: { b: Booking; right: React.ReactNode }) {
       <Link href={`${ADMIN}/bookings/${b.id}`} className="flex min-w-0 flex-1 items-center gap-3 hover:opacity-80">
         <span
           className={cn(
-            "flex h-10 w-14 shrink-0 flex-col items-center justify-center rounded-lg text-xs font-bold",
+            "flex h-10 w-14 shrink-0 flex-col items-center justify-center rounded-md text-xs font-bold",
             rooms.length ? "bg-sky-50 text-sky-800" : "bg-amber-50 text-amber-700"
           )}
           title={rooms.length ? "Room" : "No room assigned yet"}
@@ -180,7 +180,7 @@ export default function Dashboard() {
             <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
               <LogIn className="size-4 text-sky-600" /> Arrivals today
             </h2>
-            <span className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">{arrivals.length}</span>
+            <span className="rounded-md bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">{arrivals.length}</span>
           </div>
           {arrivals.length === 0 ? (
             <p className="py-8 text-center text-sm text-neutral-500">No more arrivals today.</p>
@@ -212,7 +212,7 @@ export default function Dashboard() {
             <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
               <DoorOpen className="size-4 text-sky-600" /> Departures
             </h2>
-            <span className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">{departures.length}</span>
+            <span className="rounded-md bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">{departures.length}</span>
           </div>
           {departures.length === 0 ? (
             <p className="py-8 text-center text-sm text-neutral-500">Everyone due out has checked out.</p>
@@ -249,8 +249,8 @@ export default function Dashboard() {
             <ul className="space-y-2">
               {attention.map((a) => (
                 <li key={a.text}>
-                  <Link href={a.href} className="flex items-center gap-3 rounded-xl border border-neutral-100 p-2.5 text-sm text-neutral-700 transition hover:border-sky-200 hover:bg-sky-50/40">
-                    <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", a.tone)}>
+                  <Link href={a.href} className="flex items-center gap-3 rounded-md border border-neutral-100 p-2.5 text-sm text-neutral-700 transition hover:border-sky-200 hover:bg-sky-50/40">
+                    <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-md", a.tone)}>
                       <a.icon className="size-4" />
                     </span>
                     <span className="flex-1">{a.text}</span>

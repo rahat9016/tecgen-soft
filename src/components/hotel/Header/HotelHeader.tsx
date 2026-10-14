@@ -62,7 +62,7 @@ export default function HotelHeader() {
           <div
             className={
               isHome
-                ? `flex h-full items-center justify-between gap-4 rounded-2xl border px-3 md:px-5 ${fade} ${
+                ? `flex h-full items-center justify-between gap-4 rounded-md border px-3 md:px-5 ${fade} ${
                     scrolled
                       ? `border-white/60 shadow-[0_8px_32px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] ${glass}`
                       : "border-transparent bg-transparent"
@@ -116,7 +116,7 @@ export default function HotelHeader() {
                   <Link
                     key={link.label}
                     href={link.href}
-                    className={`rounded-full px-4 py-2 transition ${tone}`}
+                    className={`rounded-md px-4 py-2 transition ${tone}`}
                   >
                     {link.label}
                   </Link>

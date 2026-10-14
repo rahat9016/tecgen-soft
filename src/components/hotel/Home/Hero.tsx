@@ -28,13 +28,13 @@ export default function Hero() {
           <div className="mb-auto mt-6 flex items-center justify-center gap-3 sm:mt-7">
             <Link
               href="/hotel-management/rooms"
-              className="flex items-center justify-center gap-1.5 rounded-full bg-sky-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-950/30 transition hover:bg-sky-700"
+              className="flex items-center justify-center gap-1.5 rounded-md bg-sky-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-950/30 transition hover:bg-sky-700"
             >
               View Rooms <ArrowRight className="size-4" />
             </Link>
             <a
               href="#gallery"
-              className="hidden items-center justify-center rounded-full border border-white/40 bg-white/10 px-7 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 sm:flex"
+              className="hidden items-center justify-center rounded-md border border-white/40 bg-white/10 px-7 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 sm:flex"
             >
               Take a Tour
             </a>

@@ -43,7 +43,7 @@ export default function PhotoLightbox({
           if (e.key === "ArrowRight") step(1);
           if (e.key === "ArrowLeft") step(-1);
         }}
-        className="max-w-[calc(100%-1.5rem)] gap-3 border-0 bg-neutral-950 p-3 text-white sm:max-w-5xl sm:p-4 [&>button:last-child]:rounded-full [&>button:last-child]:bg-white/10 [&>button:last-child]:p-1.5 [&>button:last-child]:text-white [&>button:last-child]:opacity-100 [&>button:last-child]:hover:bg-white/20"
+        className="rounded-md max-w-[calc(100%-1.5rem)] gap-3 border-0 bg-neutral-950 p-3 text-white sm:max-w-5xl sm:p-4 [&>button:last-child]:rounded-full [&>button:last-child]:bg-white/10 [&>button:last-child]:p-1.5 [&>button:last-child]:text-white [&>button:last-child]:opacity-100 [&>button:last-child]:hover:bg-white/20"
       >
         <DialogTitle className="sr-only">Photo gallery</DialogTitle>
         <DialogDescription className="sr-only">
@@ -52,7 +52,7 @@ export default function PhotoLightbox({
 
         {current && index !== null && (
           <>
-            <div className="relative mt-8 h-[50vh] overflow-hidden rounded-xl bg-black sm:mt-6 sm:h-[62vh]">
+            <div className="relative mt-8 h-[50vh] overflow-hidden rounded-md bg-black sm:mt-6 sm:h-[62vh]">
               <img
                 key={current.src}
                 src={sizedPhoto(current.src, 1600)}
@@ -84,7 +84,7 @@ export default function PhotoLightbox({
                   <p className="truncate text-xs text-white/60">{current.subtitle}</p>
                 )}
               </div>
-              <span className="shrink-0 rounded-full bg-white/10 px-3 py-1 text-xs font-medium">
+              <span className="shrink-0 rounded-md bg-white/10 px-3 py-1 text-xs font-medium">
                 {index + 1} / {photos.length}
               </span>
             </div>
@@ -100,7 +100,7 @@ export default function PhotoLightbox({
                   onClick={() => onIndexChange(i)}
                   aria-label={`Show photo ${i + 1}`}
                   aria-current={i === index}
-                  className={`relative h-14 w-20 shrink-0 overflow-hidden rounded-lg transition ${
+                  className={`relative h-14 w-20 shrink-0 overflow-hidden rounded-md transition ${
                     i === index
                       ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-neutral-950"
                       : "opacity-50 hover:opacity-100"

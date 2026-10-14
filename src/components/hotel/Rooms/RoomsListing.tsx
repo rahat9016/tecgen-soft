@@ -70,9 +70,9 @@ export default function RoomsListing({ stringParams }: { stringParams: Record<st
 
         <Link
           href="/hotel-management#reviews"
-          className="flex items-center gap-3 rounded-2xl border border-neutral-200/80 bg-white py-2 pl-2 pr-4 shadow-sm transition hover:border-sky-200"
+          className="flex items-center gap-3 rounded-md border border-neutral-200/80 bg-white py-2 pl-2 pr-4 shadow-sm transition hover:border-sky-200"
         >
-          <span className="flex size-11 items-center justify-center rounded-xl rounded-bl-none bg-sky-700 text-base font-bold text-white">
+          <span className="flex size-11 items-center justify-center rounded-md rounded-bl-none bg-sky-700 text-base font-bold text-white">
             {hotel.rating.toFixed(1)}
           </span>
           <span>
@@ -129,13 +129,13 @@ export default function RoomsListing({ stringParams }: { stringParams: Record<st
 
         <div className="flex w-full items-center gap-2 sm:w-auto">
           <span className="hidden text-xs font-medium text-neutral-500 sm:inline">Sort by</span>
-          <div className="grid flex-1 grid-cols-2 gap-1 rounded-2xl bg-neutral-100 p-1 text-xs font-medium sm:flex sm:rounded-full sm:text-sm">
+          <div className="grid flex-1 grid-cols-2 gap-1 rounded-md bg-neutral-100 p-1 text-xs font-medium sm:flex sm:rounded-md sm:text-sm">
             {sortOptions.map((option) => (
               <Link
                 key={option.key}
                 href={sortHref(option.key)}
                 scroll={false}
-                className={`flex-1 whitespace-nowrap rounded-full px-3.5 py-1.5 text-center transition ${
+                className={`flex-1 whitespace-nowrap rounded-md px-3.5 py-1.5 text-center transition ${
                   sort === option.key
                     ? "bg-white font-semibold text-sky-700 shadow-sm"
                     : "text-neutral-600 hover:text-neutral-900"

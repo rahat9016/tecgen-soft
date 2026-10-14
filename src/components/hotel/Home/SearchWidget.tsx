@@ -31,7 +31,7 @@ export default function SearchWidget() {
   };
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-2 rounded-3xl border border-white/60 bg-white/75 p-2 shadow-2xl shadow-neutral-950/30 ring-1 ring-black/5 backdrop-blur-2xl backdrop-saturate-150 md:grid-cols-[1fr_auto_auto] md:items-center md:rounded-[1.75rem]">
+    <div className="mx-auto grid max-w-4xl gap-2 rounded-md border border-white/60 bg-white/75 p-2 shadow-2xl shadow-neutral-950/30 ring-1 ring-black/5 backdrop-blur-2xl backdrop-saturate-150 md:grid-cols-[1fr_auto_auto] md:items-stretch">
       <div>
         <DateRangeField
           checkIn={checkIn}
@@ -53,7 +53,7 @@ export default function SearchWidget() {
 
       <Button
         onClick={handleSearch}
-        className="h-12 rounded-2xl bg-gradient-to-r from-sky-500 to-sky-700 px-6 text-sm font-semibold shadow-lg shadow-sky-600/30 transition hover:from-sky-600 hover:to-sky-800 md:h-14 md:rounded-[1.25rem]"
+        className="h-12 rounded-md bg-gradient-to-r from-sky-500 to-sky-700 px-6 text-sm font-semibold shadow-lg shadow-sky-600/30 transition hover:from-sky-600 hover:to-sky-800 md:h-auto"
       >
         <CalendarSearch className="size-5" />
         Check Availability

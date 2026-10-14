@@ -12,7 +12,7 @@ export default function BookingSteps({ current }: { current: number }) {
   const active = steps[Math.min(current, steps.length - 1)];
 
   return (
-    <nav aria-label="Booking progress" className="w-full rounded-3xl border border-neutral-200/80 bg-white p-4 shadow-sm md:px-6 md:py-5">
+    <nav aria-label="Booking progress" className="w-full rounded-md border border-neutral-200/80 bg-white p-4 shadow-sm md:px-6 md:py-5">
       {/* Phones: one line of text plus a segmented bar. */}
       <div className="md:hidden">
         <div className="flex items-center justify-between text-sm">
@@ -49,7 +49,7 @@ export default function BookingSteps({ current }: { current: number }) {
             >
               <div className="flex items-center gap-3">
                 <span
-                  className={`relative flex size-11 shrink-0 items-center justify-center rounded-2xl transition ${
+                  className={`relative flex size-11 shrink-0 items-center justify-center rounded-md transition ${
                     done
                       ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/25"
                       : isCurrent

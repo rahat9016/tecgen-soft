@@ -32,8 +32,8 @@ export default function PoliciesSection({ policies }: { policies: string[] }) {
             { label: "Check-in", value: `From ${times.checkIn}` },
             { label: "Check-out", value: `Until ${times.checkOut}` },
           ].map(({ label, value }) => (
-            <div key={label} className="flex items-center gap-3 rounded-2xl bg-sky-50 p-4">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-sky-600 shadow-sm">
+            <div key={label} className="flex items-center gap-3 rounded-md bg-sky-50 p-4">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-white text-sky-600 shadow-sm">
                 <Clock3 className="size-5" />
               </span>
               <div>

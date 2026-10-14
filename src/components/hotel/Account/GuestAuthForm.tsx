@@ -8,7 +8,7 @@ import { Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
 import { logIn, signUp, useCurrentGuest } from "@/src/lib/hotel-store/store";
 
 const inputClass =
-  "h-11 w-full rounded-xl border border-neutral-200 bg-white px-3.5 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
+  "h-11 w-full rounded-md border border-neutral-200 bg-white px-3.5 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
 
 /** Only same-site paths, so a crafted ?next= link can't bounce guests to another website. */
 const safeNext = (next: string | null) => (next && next.startsWith("/hotel-management") ? next : "/hotel-management/my-bookings");
@@ -49,7 +49,7 @@ export default function GuestAuthForm({ mode }: { mode: "login" | "signup" }) {
   return (
     <div className="container flex min-h-[70vh] items-center justify-center py-12">
       <div className="w-full max-w-md">
-        <div className="rounded-3xl border border-neutral-200/80 bg-white p-6 shadow-xl shadow-neutral-900/5 md:p-8">
+        <div className="rounded-md border border-neutral-200/80 bg-white p-6 shadow-xl shadow-neutral-900/5 md:p-8">
           <h1 className="text-2xl font-bold text-neutral-900">{mode === "login" ? "Log in" : "Create your account"}</h1>
           <p className="mt-1 text-sm text-neutral-500">
             {mode === "login"
@@ -91,19 +91,19 @@ export default function GuestAuthForm({ mode }: { mode: "login" | "signup" }) {
                   type="button"
                   onClick={() => setShow((v) => !v)}
                   aria-label={show ? "Hide password" : "Show password"}
-                  className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700"
+                  className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-neutral-400 hover:text-neutral-700"
                 >
                   {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </span>
             </label>
 
-            {error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
+            {error && <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
 
             <button
               type="submit"
               disabled={busy}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-sky-600 text-sm font-semibold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700 disabled:opacity-70"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-md bg-sky-600 text-sm font-semibold text-white shadow-lg shadow-sky-600/25 transition hover:bg-sky-700 disabled:opacity-70"
             >
               {busy && <Loader2 className="size-4 animate-spin" />}
               {mode === "login" ? "Log in" : "Create account"}
@@ -122,7 +122,7 @@ export default function GuestAuthForm({ mode }: { mode: "login" | "signup" }) {
           <button
             type="button"
             onClick={() => setForm((f) => ({ ...f, email: "tamim@example.com", password: "guest123" }))}
-            className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-dashed border-sky-200 bg-sky-50/60 p-3 text-left text-xs text-sky-900 transition hover:bg-sky-50"
+            className="mt-4 flex w-full items-center gap-3 rounded-md border border-dashed border-sky-200 bg-sky-50/60 p-3 text-left text-xs text-sky-900 transition hover:bg-sky-50"
           >
             <Sparkles className="size-4 shrink-0 text-sky-600" />
             <span>

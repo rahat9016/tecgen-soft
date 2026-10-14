@@ -31,7 +31,7 @@ export default function WhyChooseAndReviews() {
       <SectionHeading title="What Our Guests Say" subtitle="Real stories from guests who stayed with us." />
 
       <div className="mt-6 grid gap-5 lg:grid-cols-[340px_1fr]">
-        <div className="relative overflow-hidden rounded-3xl bg-sky-950 p-6 text-white md:p-8">
+        <div className="relative overflow-hidden rounded-md bg-sky-950 p-6 text-white md:p-8">
           <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-sky-500/30 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 -left-10 size-48 rounded-full bg-amber-400/20 blur-3xl" />
 
@@ -64,7 +64,7 @@ export default function WhyChooseAndReviews() {
           {latestReviews.map((review) => (
             <article
               key={`${review.name}-${review.date}`}
-              className="flex flex-col rounded-2xl border border-neutral-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+              className="flex flex-col rounded-md border border-neutral-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
             >
               <div className="flex items-start justify-between">
                 <Stars rating={review.rating} className="size-4" />

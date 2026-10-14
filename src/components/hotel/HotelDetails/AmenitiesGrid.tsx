@@ -54,9 +54,9 @@ export default function AmenitiesGrid({ amenities }: { amenities: string[] }) {
         return (
           <div
             key={amenity}
-            className="flex items-center gap-3 rounded-xl border border-neutral-200/70 bg-white p-3 text-sm font-medium text-neutral-700"
+            className="flex items-center gap-3 rounded-md border border-neutral-200/70 bg-white p-3 text-sm font-medium text-neutral-700"
           >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-600">
               <Icon className="size-4" />
             </span>
             {amenity}

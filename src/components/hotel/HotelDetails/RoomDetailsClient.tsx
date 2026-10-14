@@ -202,7 +202,7 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
               <div className="flex items-center gap-2">
                 <a
                   href="#reviews"
-                  className="flex items-center gap-2.5 rounded-xl border border-neutral-200/70 py-1.5 pl-3 pr-1.5 transition hover:border-sky-200"
+                  className="flex items-center gap-2.5 rounded-md border border-neutral-200/70 py-1.5 pl-3 pr-1.5 transition hover:border-sky-200"
                 >
                   <span className="text-right">
                     <span className="block text-sm font-bold text-neutral-900">
@@ -210,7 +210,7 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
                     </span>
                     <span className="block text-xs text-neutral-500">{hotel.reviewsCount} reviews</span>
                   </span>
-                  <span className="flex size-10 items-center justify-center rounded-lg rounded-bl-none bg-sky-700 font-bold text-white">
+                  <span className="flex size-10 items-center justify-center rounded-md rounded-bl-none bg-sky-700 font-bold text-white">
                     {hotel.rating.toFixed(1)}
                   </span>
                 </a>
@@ -234,7 +234,7 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
 
             <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
               {specs.map(({ icon: Icon, label, value, tone }) => (
-                <div key={label} className="rounded-2xl border border-neutral-200/70 bg-white p-4">
+                <div key={label} className="rounded-md border border-neutral-200/70 bg-white p-4">
                   <Icon className="size-5 text-sky-600" />
                   <p className="mt-2 text-xs text-neutral-500">{label}</p>
                   <p className={`text-sm font-bold text-neutral-900 ${tone ?? ""}`}>{value}</p>
@@ -247,7 +247,7 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
                 {facts.map(({ icon: Icon, text, tone }) => (
                   <li
                     key={text}
-                    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${tone}`}
+                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold ${tone}`}
                   >
                     <Icon className="size-3.5" />
                     {text}
@@ -271,7 +271,7 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
               {hotel.amenities.map((amenity) => (
                 <li
                   key={amenity}
-                  className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700"
+                  className="rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700"
                 >
                   {amenity}
                 </li>
@@ -354,7 +354,7 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
           </div>
           <a
             href="#booking"
-            className={`shrink-0 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-lg ${
+            className={`shrink-0 rounded-md px-5 py-3 text-sm font-semibold text-white shadow-lg ${
               unavailable ? "bg-neutral-900" : "bg-sky-600 shadow-sky-600/25"
             }`}
           >

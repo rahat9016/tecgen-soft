@@ -53,7 +53,7 @@ export default function BookingSummary({
   }).toString()}`;
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-neutral-200/80 bg-white shadow-xl shadow-neutral-900/5">
+    <div className="overflow-hidden rounded-md border border-neutral-200/80 bg-white shadow-xl shadow-neutral-900/5">
       <div className="relative aspect-[16/9]">
         <img src={selection.hotelImage} alt={selection.roomName} className="absolute inset-0 size-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-neutral-950/10 to-transparent" />
@@ -64,7 +64,7 @@ export default function BookingSummary({
           </p>
         </div>
         {room && (
-          <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-neutral-900 backdrop-blur-sm">
+          <span className="absolute right-3 top-3 flex items-center gap-1 rounded-md bg-white/90 px-2.5 py-1 text-xs font-bold text-neutral-900 backdrop-blur-sm">
             <Star className="size-3.5 fill-amber-400 text-amber-400" /> {room.rating.toFixed(1)}
             <span className="font-medium text-neutral-500">{ratingLabel(room.rating)}</span>
           </span>
@@ -80,7 +80,7 @@ export default function BookingSummary({
         </div>
 
         <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
-          <div className="rounded-2xl border border-neutral-200 bg-white p-3">
+          <div className="rounded-md border border-neutral-200 bg-white p-3">
             <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
               <LogIn className="size-3.5" /> Check-in
             </p>
@@ -88,11 +88,11 @@ export default function BookingSummary({
             {times && <p className="text-xs text-neutral-500">From {times.checkIn}</p>}
           </div>
           <span className="flex items-center">
-            <span className="flex items-center gap-1 rounded-full bg-sky-600 px-2 py-0.5 text-[11px] font-bold text-white">
+            <span className="flex items-center gap-1 rounded-md bg-sky-600 px-2 py-0.5 text-[11px] font-bold text-white">
               <Moon className="size-3" /> {nights}
             </span>
           </span>
-          <div className="rounded-2xl border border-neutral-200 bg-white p-3">
+          <div className="rounded-md border border-neutral-200 bg-white p-3">
             <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
               <LogOut className="size-3.5" /> Check-out
             </p>
@@ -116,7 +116,7 @@ export default function BookingSummary({
         </ul>
 
         <div className="mt-5 space-y-3 text-sm">
-          <div className="overflow-hidden rounded-2xl border border-neutral-200">
+          <div className="overflow-hidden rounded-md border border-neutral-200">
             <p className="border-b border-neutral-200 bg-neutral-50 px-3 py-2.5 font-bold text-neutral-900">
               Price details
             </p>
@@ -143,7 +143,7 @@ export default function BookingSummary({
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-sky-100">
+          <div className="overflow-hidden rounded-md border border-sky-100">
             <div className="flex items-center justify-between bg-sky-600 px-3 py-2.5 text-white">
               <span className="text-sm font-semibold">
                 {plan === "full" ? "Pay now (full amount)" : `Pay now (${settings.depositRate}% deposit)`}
@@ -156,7 +156,7 @@ export default function BookingSummary({
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-neutral-50 px-3 py-2">
+          <div className="flex items-center justify-between gap-3 rounded-md bg-neutral-50 px-3 py-2">
             <label htmlFor="summary-currency" className="text-xs text-neutral-500">
               Approx. in
             </label>
@@ -170,7 +170,7 @@ export default function BookingSummary({
                 id="summary-currency"
                 value={currency}
                 onChange={(e) => onCurrencyChange(e.target.value as CurrencyCode)}
-                className="rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs font-semibold text-neutral-700 outline-none focus:border-sky-400"
+                className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs font-semibold text-neutral-700 outline-none focus:border-sky-400"
               >
                 {currencyCodes.map((code) => (
                   <option key={code} value={code}>
@@ -186,7 +186,7 @@ export default function BookingSummary({
         </div>
 
         {freeCancellation && (
-          <div className="mt-4 flex gap-2.5 rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-800">
+          <div className="mt-4 flex gap-2.5 rounded-md bg-emerald-50 p-3 text-sm text-emerald-800">
             <BadgeCheck className="mt-0.5 size-4 shrink-0" />
             <p>
               <span className="font-semibold">Free cancellation</span> until{" "}

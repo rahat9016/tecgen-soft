@@ -30,8 +30,8 @@ export default function ReviewsSection({
 }) {
   return (
     <div>
-      <div className="flex items-center gap-4 rounded-2xl bg-sky-950 p-5 text-white">
-        <span className="flex size-16 shrink-0 items-center justify-center rounded-2xl rounded-bl-none bg-white text-2xl font-extrabold text-sky-950">
+      <div className="flex items-center gap-4 rounded-md bg-sky-950 p-5 text-white">
+        <span className="flex size-16 shrink-0 items-center justify-center rounded-md rounded-bl-none bg-white text-2xl font-extrabold text-sky-950">
           {rating.toFixed(1)}
         </span>
         <div>
@@ -47,7 +47,7 @@ export default function ReviewsSection({
         {reviews.map((review) => (
           <article
             key={`${review.name}-${review.date}`}
-            className="flex flex-col rounded-2xl border border-neutral-200/70 bg-white p-5"
+            className="flex flex-col rounded-md border border-neutral-200/70 bg-white p-5"
           >
             <div className="flex items-center gap-3">
               {review.avatar ? (
@@ -73,7 +73,7 @@ export default function ReviewsSection({
             </div>
             <p className="mt-2 text-sm leading-relaxed text-neutral-700">&ldquo;{review.comment}&rdquo;</p>
             {review.reply && (
-              <p className="mt-3 rounded-xl bg-sky-50 p-3 text-xs leading-relaxed text-sky-900">
+              <p className="mt-3 rounded-md bg-sky-50 p-3 text-xs leading-relaxed text-sky-900">
                 <span className="font-semibold">Reply from the hotel:</span> {review.reply}
               </p>
             )}

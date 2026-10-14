@@ -40,7 +40,7 @@ export default function LocationCard({ hotel }: { hotel: Hotel }) {
   const query = encodeURIComponent(hotel.address);
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-neutral-200/80 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-md border border-neutral-200/80 bg-white shadow-sm">
       <div className="relative">
         <div className="relative h-72 bg-sky-50 sm:h-96">
           <iframe
@@ -54,9 +54,9 @@ export default function LocationCard({ hotel }: { hotel: Hotel }) {
         </div>
 
         {/* Phones: card sits under the map, overlapping its edge. sm+: floats over the map. */}
-        <div className="relative mx-3 -mt-10 rounded-2xl border border-white/60 bg-white/85 p-4 shadow-xl shadow-neutral-900/15 backdrop-blur-xl sm:absolute sm:bottom-5 sm:left-5 sm:mx-0 sm:mt-0 sm:w-96">
+        <div className="relative mx-3 -mt-10 rounded-md border border-white/60 bg-white/85 p-4 shadow-xl shadow-neutral-900/15 backdrop-blur-xl sm:absolute sm:bottom-5 sm:left-5 sm:mx-0 sm:mt-0 sm:w-96">
           <div className="flex items-start gap-3">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-sky-600 text-white shadow-md shadow-sky-600/30">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-sky-600 text-white shadow-md shadow-sky-600/30">
               <MapPin className="size-5" />
             </span>
             <div className="min-w-0">
@@ -77,13 +77,13 @@ export default function LocationCard({ hotel }: { hotel: Hotel }) {
               href={`https://www.google.com/maps/dir/?api=1&destination=${query}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-600/25 transition hover:bg-sky-700"
+              className="flex items-center justify-center gap-1.5 rounded-md bg-sky-600 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-600/25 transition hover:bg-sky-700"
             >
               <Navigation className="size-4" /> Get directions
             </a>
             <a
               href={`tel:${hotel.phone}`}
-              className="flex items-center justify-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-800 transition hover:border-sky-200 hover:text-sky-700"
+              className="flex items-center justify-center gap-1.5 rounded-md border border-neutral-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-800 transition hover:border-sky-200 hover:text-sky-700"
             >
               <Phone className="size-4" /> Call hotel
             </a>
@@ -104,10 +104,10 @@ export default function LocationCard({ hotel }: { hotel: Hotel }) {
             return (
               <li
                 key={place.name}
-                className="flex items-center gap-3 rounded-2xl border border-neutral-200/70 p-3 transition hover:border-sky-200 hover:bg-sky-50/40"
+                className="flex items-center gap-3 rounded-md border border-neutral-200/70 p-3 transition hover:border-sky-200 hover:bg-sky-50/40"
               >
                 <span
-                  className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${tone}`}
+                  className={`flex size-11 shrink-0 items-center justify-center rounded-md ${tone}`}
                 >
                   <Icon className="size-5" />
                 </span>
@@ -121,7 +121,7 @@ export default function LocationCard({ hotel }: { hotel: Hotel }) {
                     </p>
                   )}
                 </div>
-                <span className="shrink-0 rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-bold text-neutral-700">
+                <span className="shrink-0 rounded-md bg-neutral-100 px-2.5 py-1 text-xs font-bold text-neutral-700">
                   {place.distance}
                 </span>
               </li>

@@ -109,11 +109,11 @@ export default function RoomTypes() {
           const tonight = freeRooms(db, t.id, today, shiftDay(today, 1));
           return (
             <Card key={t.id} className={cn("flex flex-col p-0", !t.active && "opacity-70")}>
-              <div className="relative aspect-[16/7] overflow-hidden rounded-t-2xl bg-neutral-100">
+              <div className="relative aspect-[16/7] overflow-hidden rounded-t-md bg-neutral-100">
                 {/* eslint-disable-next-line @next/next/no-img-element -- admin preview */}
                 <img src={t.images[0]} alt="" className="size-full object-cover" />
-                {!t.active && <span className="absolute left-3 top-3 rounded-full bg-neutral-900/80 px-2.5 py-1 text-xs font-semibold text-white">Hidden from website</span>}
-                <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-neutral-800">{t.images.length} photos</span>
+                {!t.active && <span className="absolute left-3 top-3 rounded-md bg-neutral-900/80 px-2.5 py-1 text-xs font-semibold text-white">Hidden from website</span>}
+                <span className="absolute right-3 top-3 rounded-md bg-white/90 px-2.5 py-1 text-xs font-semibold text-neutral-800">{t.images.length} photos</span>
               </div>
               <div className="flex flex-1 flex-col p-5">
                 <div className="flex items-start justify-between gap-3">
@@ -140,7 +140,7 @@ export default function RoomTypes() {
                         onClick={() => setUnitModal(u)}
                         title={u.outOfService ? `Out of service — ${u.oosReason ?? ""}` : occ ? `Occupied by ${occ.guest.name}` : housekeepingLabels[u.housekeeping]}
                         className={cn(
-                          "flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ring-1 ring-inset transition hover:ring-sky-400",
+                          "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold ring-1 ring-inset transition hover:ring-sky-400",
                           u.outOfService ? "bg-neutral-100 text-neutral-500 ring-neutral-200" : occ ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : "bg-white text-neutral-700 ring-neutral-200"
                         )}
                       >
@@ -172,7 +172,7 @@ export default function RoomTypes() {
         })}
         <Link
           href={`${ADMIN}/room-types/new`}
-          className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-200 text-sm font-medium text-neutral-500 transition hover:border-sky-300 hover:text-sky-700"
+          className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-neutral-200 text-sm font-medium text-neutral-500 transition hover:border-sky-300 hover:text-sky-700"
         >
           <BedDouble className="size-6" /> Add a room type
         </Link>

@@ -93,7 +93,7 @@ export default function ContentManager() {
         }
       />
 
-      <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+      <div className="overflow-hidden rounded-md border border-neutral-200 bg-white">
         <Tabs
           value={tab}
           onChange={setTab}
@@ -156,9 +156,9 @@ export default function ContentManager() {
                 <p className="text-xs text-neutral-500">Wide landscape photos work best (1920px+). Slides rotate every 6 seconds.</p>
                 <div className="mt-3 space-y-2">
                   {draft.hero.slides.map((slide, i) => (
-                    <div key={slide.id} className="flex items-center gap-3 rounded-xl border border-neutral-200 p-2">
+                    <div key={slide.id} className="flex items-center gap-3 rounded-md border border-neutral-200 p-2">
                       {/* eslint-disable-next-line @next/next/no-img-element -- admin preview */}
-                      <img src={slide.src} alt="" className="h-14 w-24 shrink-0 rounded-lg object-cover" />
+                      <img src={slide.src} alt="" className="h-14 w-24 shrink-0 rounded-md object-cover" />
                       <input
                         value={slide.alt}
                         onChange={(e) => set("hero", { ...draft.hero, slides: draft.hero.slides.map((s) => (s.id === slide.id ? { ...s, alt: e.target.value } : s)) })}
@@ -206,7 +206,7 @@ export default function ContentManager() {
 
           {tab === "policies" && (
             <div className="max-w-2xl">
-              <p className="mb-3 rounded-xl bg-sky-50 p-3 text-xs text-sky-900">
+              <p className="mb-3 rounded-md bg-sky-50 p-3 text-xs text-sky-900">
                 Check-in/out times and the free-cancellation rule are generated from{" "}
                 <Link href={`${ADMIN}/settings`} className="font-semibold underline">
                   Settings

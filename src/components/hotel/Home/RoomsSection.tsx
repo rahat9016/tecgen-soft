@@ -12,6 +12,7 @@ export default function RoomsSection() {
     <section id="rooms" className="container scroll-mt-24 pb-4 pt-12">
       <SectionHeading
         title="Our Rooms"
+        hideSubtitleOnMobile
         subtitle={`From great-value twins to top-floor ocean suites — ${hotel.rooms.length} room types to choose from.`}
         href="/hotel-management/rooms"
         linkLabel="View all rooms"
@@ -24,7 +25,7 @@ export default function RoomsSection() {
             <Link
               key={room.id}
               href={`/hotel-management/rooms/${room.id}`}
-              className="group flex flex-col overflow-hidden rounded-lg border border-neutral-200/70 bg-white shadow-sm transition hover:-translate-y-1 hover:border-sky-200 hover:shadow-xl"
+              className="group flex flex-col overflow-hidden rounded-md border border-neutral-200/70 bg-white shadow-sm transition hover:-translate-y-1 hover:border-sky-200 hover:shadow-xl"
             >
               <div className="relative aspect-[4/3] overflow-hidden">
                 <img
@@ -33,7 +34,7 @@ export default function RoomsSection() {
                   className="absolute inset-0 size-full object-cover transition duration-500 group-hover:scale-105"
                 />
                 {discount > 0 && (
-                  <span className="absolute left-3 top-3 rounded-full bg-sky-600 px-2.5 py-1 text-xs font-bold text-white shadow-md">
+                  <span className="absolute left-3 top-3 rounded-md bg-sky-600 px-2.5 py-1 text-xs font-bold text-white shadow-md">
                     -{discount}% OFF
                   </span>
                 )}
@@ -56,7 +57,7 @@ export default function RoomsSection() {
                       <span className="text-xs font-medium text-neutral-500"> /night</span>
                     </p>
                   </div>
-                  <span className="flex items-center gap-1 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-600/25 transition group-hover:bg-sky-700">
+                  <span className="flex items-center gap-1 rounded-md bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-600/25 transition group-hover:bg-sky-700">
                     View room <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
                   </span>
                 </div>

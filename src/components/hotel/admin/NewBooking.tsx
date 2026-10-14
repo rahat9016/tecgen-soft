@@ -179,7 +179,7 @@ export default function NewBooking() {
                       type="button"
                       onClick={() => toggleUnit(u.id)}
                       aria-pressed={on}
-                      className={cn("w-20 rounded-xl border p-2 text-left transition", on ? "border-sky-500 bg-sky-50 ring-2 ring-sky-100" : "border-neutral-200 hover:border-sky-300")}
+                      className={cn("w-20 rounded-md border p-2 text-left transition", on ? "border-sky-500 bg-sky-50 ring-2 ring-sky-100" : "border-neutral-200 hover:border-sky-300")}
                     >
                       <span className="flex items-center justify-between text-base font-bold text-neutral-900">
                         {u.number} {on && <Check className="size-4 text-sky-600" />}
@@ -195,9 +195,9 @@ export default function NewBooking() {
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-semibold text-neutral-900">Guest</h2>
-              <div className="flex gap-1 rounded-full bg-neutral-100 p-1 text-xs font-medium">
+              <div className="flex gap-1 rounded-md bg-neutral-100 p-1 text-xs font-medium">
                 {(["walk-in", "phone", "agent"] as const).map((s) => (
-                  <button key={s} onClick={() => setSource(s)} className={cn("rounded-full px-3 py-1", source === s ? "bg-white text-sky-700 shadow-sm" : "text-neutral-600")}>
+                  <button key={s} onClick={() => setSource(s)} className={cn("rounded-md px-3 py-1", source === s ? "bg-white text-sky-700 shadow-sm" : "text-neutral-600")}>
                     {sourceLabels[s]}
                   </button>
                 ))}
@@ -207,7 +207,7 @@ export default function NewBooking() {
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
               <input value={lookup} onChange={(e) => setLookup(e.target.value)} placeholder="Find a returning guest by name, phone or email" className={cn(inputClass, "pl-9")} />
               {matches.length > 0 && (
-                <ul className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg">
+                <ul className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg">
                   {matches.map((u) => (
                     <li key={u.id}>
                       <button onClick={() => pickGuest(u)} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-sky-50">
@@ -296,7 +296,7 @@ export default function NewBooking() {
             <h3 className="mt-5 text-xs font-semibold uppercase tracking-wide text-neutral-500">Payment now</h3>
             <div className="mt-2 grid grid-cols-3 gap-1.5">
               {methods.map((m) => (
-                <button key={m} onClick={() => setPayMethod(m)} className={cn("h-8 rounded-lg border text-xs font-medium", payMethod === m ? "border-sky-500 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-600")}>
+                <button key={m} onClick={() => setPayMethod(m)} className={cn("h-8 rounded-md border text-xs font-medium", payMethod === m ? "border-sky-500 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-600")}>
                   {payLabels[m]}
                 </button>
               ))}

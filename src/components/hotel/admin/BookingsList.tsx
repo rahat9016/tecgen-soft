@@ -148,9 +148,9 @@ export default function BookingsList() {
           />
           <span className="flex items-center gap-1 text-xs text-neutral-500">
             Stay
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Stay from" className="h-9 rounded-full border border-neutral-200 bg-white px-3 text-sm" />
+            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Stay from" className="h-9 rounded-md border border-neutral-200 bg-white px-3 text-sm" />
             –
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Stay to" className="h-9 rounded-full border border-neutral-200 bg-white px-3 text-sm" />
+            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Stay to" className="h-9 rounded-md border border-neutral-200 bg-white px-3 text-sm" />
           </span>
           <Select
             label="Sort"

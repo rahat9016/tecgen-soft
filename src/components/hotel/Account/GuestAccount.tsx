@@ -22,13 +22,13 @@ import {
 import type { User } from "@/src/lib/hotel-store/types";
 
 const inputClass =
-  "h-11 w-full rounded-xl border border-neutral-200 bg-white px-3.5 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
+  "h-11 w-full rounded-md border border-neutral-200 bg-white px-3.5 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
 
 function Panel({ title, icon: Icon, children, id }: { title: string; icon: typeof Bell; children: React.ReactNode; id?: string }) {
   return (
-    <section id={id} className="scroll-mt-24 rounded-3xl border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
+    <section id={id} className="scroll-mt-24 rounded-md border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
       <h2 className="flex items-center gap-2 font-bold text-neutral-900">
-        <span className="flex size-8 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+        <span className="flex size-8 items-center justify-center rounded-md bg-sky-50 text-sky-600">
           <Icon className="size-4" />
         </span>
         {title}
@@ -60,7 +60,7 @@ function ProfileForm({ user }: { user: User }) {
         <span className="mb-1 block text-xs font-medium text-neutral-600">Country</span>
         <input value={profile.country} onChange={(e) => setProfile((p) => ({ ...p, country: e.target.value }))} className={inputClass} />
       </label>
-      <button className="h-10 w-full rounded-xl bg-sky-600 text-sm font-semibold text-white hover:bg-sky-700">Save profile</button>
+      <button className="h-10 w-full rounded-md bg-sky-600 text-sm font-semibold text-white hover:bg-sky-700">Save profile</button>
     </form>
   );
 }
@@ -99,7 +99,7 @@ export default function GuestAccount() {
     <div className="container py-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-sky-700 text-lg font-bold text-white shadow-lg">
+          <span className="flex size-14 items-center justify-center rounded-md bg-gradient-to-br from-sky-500 to-sky-700 text-lg font-bold text-white shadow-lg">
             {initials(user.name)}
           </span>
           <div>
@@ -114,7 +114,7 @@ export default function GuestAccount() {
             logOut("guest");
             router.push("/hotel-management");
           }}
-          className="flex items-center gap-2 rounded-xl border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 hover:border-rose-200 hover:text-rose-600"
+          className="flex items-center gap-2 rounded-md border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 hover:border-rose-200 hover:text-rose-600"
         >
           <LogOut className="size-4" /> Log out
         </button>
@@ -126,7 +126,7 @@ export default function GuestAccount() {
           { icon: Moon, label: "Stays", value: stays.length },
           { icon: Wallet, label: "Paid", value: bdt(spent) },
         ].map(({ icon: Icon, label, value }) => (
-          <Link key={label} href="/hotel-management/my-bookings" className="rounded-2xl border border-neutral-200/80 bg-white p-4 transition hover:border-sky-200">
+          <Link key={label} href="/hotel-management/my-bookings" className="rounded-md border border-neutral-200/80 bg-white p-4 transition hover:border-sky-200">
             <Icon className="size-5 text-sky-600" />
             <p className="mt-2 text-xl font-bold text-neutral-900">{value}</p>
             <p className="text-xs text-neutral-500">{label}</p>
@@ -194,7 +194,7 @@ export default function GuestAccount() {
             <form onSubmit={savePassword} className="space-y-3">
               <input type="password" autoComplete="current-password" placeholder="Current password" value={pw.current} onChange={(e) => setPw((p) => ({ ...p, current: e.target.value }))} className={inputClass} />
               <input type="password" autoComplete="new-password" placeholder="New password (6+ characters)" value={pw.next} onChange={(e) => setPw((p) => ({ ...p, next: e.target.value }))} className={inputClass} />
-              <button className="h-10 w-full rounded-xl border border-neutral-200 text-sm font-semibold text-neutral-700 hover:border-sky-300 hover:text-sky-700">
+              <button className="h-10 w-full rounded-md border border-neutral-200 text-sm font-semibold text-neutral-700 hover:border-sky-300 hover:text-sky-700">
                 Change password
               </button>
             </form>
