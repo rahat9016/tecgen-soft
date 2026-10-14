@@ -49,7 +49,7 @@ import {
 } from "@/src/lib/hotel-store/store";
 import type { Notice } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
-import { ADMIN, LiveDot, Loader, NoAccess } from "./ui";
+import { ADMIN, Loader, NoAccess } from "./ui";
 
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }>; perm?: Permission; badge?: "pending" | "refunds" | "reviews" | "notices" };
@@ -337,9 +337,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <button onClick={() => setOpen(true)} aria-label="Open menu" className="lg:hidden">
             <Menu className="size-6" />
           </button>
-          <p className="hidden items-center gap-2 text-sm text-neutral-500 md:flex">
-            <LiveDot /> Live — bookings from the website appear instantly
-          </p>
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             {can(staff.role, "bookings.manage") && (
               <Link

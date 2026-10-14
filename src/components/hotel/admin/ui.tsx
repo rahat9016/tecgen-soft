@@ -6,9 +6,105 @@ import { paymentStatus } from "@/src/lib/hotel-store/store";
 import type { Booking, BookingStatus } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
 
-export { AdminHeader, Card, Drawer, Modal, StatCard, Switch, Table, td, th, usePagination } from "@/src/components/gadgets/admin/kit";
+import { Card as KitCard } from "@/src/components/gadgets/admin/kit";
+
+export { AdminHeader, Drawer, Modal, Switch, Table, td, th, usePagination } from "@/src/components/gadgets/admin/kit";
 
 export const ADMIN = "/hotel-management/admin";
+
+export function Card({ className, children }: { className?: string; children: React.ReactNode }) {
+  return <KitCard className={cn("rounded-md", className)}>{children}</KitCard>;
+}
+
+const statTones = {
+  neutral: { icon: "bg-slate-100 text-slate-700", art: "text-slate-400", bar: "bg-slate-500" },
+  sky: { icon: "bg-sky-50 text-sky-600", art: "text-sky-500", bar: "bg-sky-600" },
+  orange: { icon: "bg-orange-50 text-orange-600", art: "text-orange-400", bar: "bg-orange-500" },
+  green: { icon: "bg-emerald-50 text-emerald-600", art: "text-emerald-500", bar: "bg-emerald-500" },
+  rose: { icon: "bg-rose-50 text-rose-600", art: "text-rose-400", bar: "bg-rose-500" },
+  violet: { icon: "bg-violet-50 text-violet-600", art: "text-violet-500", bar: "bg-violet-500" },
+};
+
+/** Animations sit paused until the parent `group/card` is hovered. */
+const onHover = "[animation-play-state:paused] group-hover/card:[animation-play-state:running] motion-reduce:animate-none";
+/** One wave per 200 units across 800, so sliding the double-width svg by half loops seamlessly. */
+const wave = (y: number, dip: number) => `M0 ${y}Q50 ${y + dip} 100 ${y}T200 ${y}T300 ${y}T400 ${y}T500 ${y}T600 ${y}T700 ${y}T800 ${y}V80H0z`;
+
+/** Decorative sea-wave backdrop (with optional rings), tinted through currentColor; drifts while the card is hovered. Parent needs `group/card relative isolate overflow-hidden`. */
+export function CardArt({ className, rings = true }: { className?: string; rings?: boolean }) {
+  return (
+    <span aria-hidden className={cn("pointer-events-none absolute inset-0 -z-10", className)}>
+      {rings && (
+        <svg viewBox="0 0 120 120" fill="none" className="absolute -right-10 -top-10 size-36 transition-transform duration-700 ease-out group-hover/card:scale-110">
+          <circle cx="60" cy="60" r="58" stroke="currentColor" strokeOpacity=".12" strokeWidth="1.5" />
+          <circle
+            cx="60"
+            cy="60"
+            r="42"
+            stroke="currentColor"
+            strokeOpacity=".16"
+            strokeWidth="1.5"
+            strokeDasharray="5 7"
+            className={cn("origin-center [transform-box:fill-box] animate-[spin_14s_linear_infinite]", onHover)}
+          />
+          <circle cx="60" cy="60" r="26" fill="currentColor" fillOpacity=".06" />
+        </svg>
+      )}
+      <span className="absolute inset-x-0 bottom-0 h-14 origin-bottom overflow-hidden transition-transform duration-500 ease-out group-hover/card:scale-y-125">
+        <svg viewBox="0 0 800 80" preserveAspectRatio="none" fill="currentColor" className={cn("absolute bottom-0 left-0 h-full w-[200%] animate-[marquee_9s_linear_infinite]", onHover)}>
+          <path fillOpacity=".07" d={wave(36, -16)} />
+        </svg>
+        <svg viewBox="0 0 800 80" preserveAspectRatio="none" fill="currentColor" className={cn("absolute bottom-0 left-0 h-full w-[200%] animate-[marquee-reverse_6s_linear_infinite]", onHover)}>
+          <path fillOpacity=".11" d={wave(56, 12)} />
+        </svg>
+      </span>
+    </span>
+  );
+}
+
+export function StatCard({
+  label,
+  value,
+  hint,
+  icon: Icon,
+  tone = "neutral",
+  meter,
+  className,
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tone?: keyof typeof statTones;
+  /** Optional 0–100 fill shown as a slim bar under the value. */
+  meter?: number;
+  className?: string;
+}) {
+  const t = statTones[tone];
+  return (
+    <section
+      className={cn(
+        "group/card relative isolate flex min-h-36 min-w-0 flex-col overflow-hidden rounded-md border border-neutral-200 bg-white p-4 transition duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-neutral-900/5 motion-reduce:hover:translate-y-0",
+        className
+      )}
+    >
+      <CardArt className={t.art} />
+      <div className="flex items-center gap-2.5">
+        <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-md transition-transform duration-300 group-hover/card:scale-110", t.icon)}>
+          <Icon className="size-4.5" />
+        </span>
+        <p className="text-sm font-medium leading-tight text-neutral-600">{label}</p>
+      </div>
+      <p className="mt-auto pt-4 text-2xl font-bold tabular-nums tracking-tight text-neutral-900">{value}</p>
+      {meter !== undefined && (
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-neutral-100">
+          <div className={cn("h-full rounded-full", t.bar)} style={{ width: `${Math.min(100, Math.max(0, meter))}%` }} />
+        </div>
+      )}
+      {hint && <p className="mt-1.5 truncate text-xs text-neutral-500">{hint}</p>}
+    </section>
+  );
+}
 
 export const hbtn = {
   primary:

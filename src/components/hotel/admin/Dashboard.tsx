@@ -36,7 +36,7 @@ import type { Booking } from "@/src/lib/hotel-store/types";
 import { toDayKey } from "@/src/lib/hotelDates";
 import { cn } from "@/src/lib/utils";
 import { RankBars, ValueBars } from "./charts";
-import { ADMIN, Card, hbtn, LiveDot, StatCard, StatusBadge } from "./ui";
+import { ADMIN, Card, CardArt, hbtn, LiveDot, StatCard, StatusBadge } from "./ui";
 
 function GuestLine({ b, right }: { b: Booking; right: React.ReactNode }) {
   const db = useHotelDB();
@@ -91,6 +91,15 @@ export default function Dashboard() {
 
   const total = roomsInService(db);
   const soldTonight = roomsSoldOn(db, today);
+  const occupancy = total ? Math.round((soldTonight / total) * 100) : 0;
+  const occupiedIds = new Set(inHouse.flatMap((b) => b.unitIds));
+  const idle = db.units.filter((u) => !occupiedIds.has(u.id));
+  const roomMix = [
+    { label: "Occupied", n: db.units.length - idle.length, dot: "bg-sky-600" },
+    { label: "Ready", n: idle.filter((u) => !u.outOfService && u.housekeeping !== "dirty").length, dot: "bg-emerald-500" },
+    { label: "To clean", n: idle.filter((u) => !u.outOfService && u.housekeeping === "dirty").length, dot: "bg-amber-400" },
+    { label: "Out of service", n: idle.filter((u) => u.outOfService).length, dot: "bg-neutral-300" },
+  ];
   const rows = ledger(db);
   const byDay = collectedByDay(rows);
   const collectedToday = byDay.get(today) ?? 0;
@@ -117,6 +126,9 @@ export default function Dashboard() {
   const sources = (Object.keys(sourceLabels) as (keyof typeof sourceLabels)[])
     .map((s) => ({ label: sourceLabels[s], value: live.filter((b) => b.source === s && toDayKey(new Date(b.createdAt)) >= since && b.status !== "cancelled").length }))
     .sort((a, b) => b.value - a.value);
+  const sourceTotal = sources.reduce((s, r) => s + r.value, 0);
+  const share = (n: number) => (sourceTotal ? Math.round((n / sourceTotal) * 100) : 0);
+  const sourceRows = sources.map((r) => ({ ...r, note: `${share(r.value)}%` }));
 
   const quickCheckIn = (b: Booking) => {
     const r = checkInBooking(b.id);
@@ -144,7 +156,7 @@ export default function Dashboard() {
     pendingReviews.length && { icon: Star, tone: "text-amber-600 bg-amber-50", text: `${pendingReviews.length} review${pendingReviews.length > 1 ? "s" : ""} to moderate`, href: `${ADMIN}/reviews` },
   ].filter(Boolean) as { icon: typeof Star; tone: string; text: string; href: string }[];
 
-  const activity = db.notices.filter((n) => n.to === "staff").slice(0, 6);
+  const activity = db.notices.filter((n) => n.to === "staff").slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -165,17 +177,17 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-6">
-        <StatCard label="Occupancy tonight" value={`${total ? Math.round((soldTonight / total) * 100) : 0}%`} hint={`${soldTonight} of ${total} rooms`} icon={Gauge} tone="violet" />
-        <StatCard label="In house" value={inHouse.reduce((s, b) => s + b.adults + b.children, 0)} hint={`guests in ${inHouse.reduce((s, b) => s + b.rooms, 0)} rooms`} icon={BedDouble} tone="green" />
-        <StatCard label="Arrivals today" value={arrivals.length} hint={`${live.filter((b) => b.checkIn === today && b.status === "checked-in").length} already checked in`} icon={LogIn} tone="neutral" />
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <StatCard label="Occupancy tonight" value={`${occupancy}%`} meter={occupancy} hint={`${soldTonight} of ${total} rooms sold`} icon={Gauge} tone="sky" />
+        <StatCard label="In house" value={inHouse.reduce((s, b) => s + b.adults + b.children, 0)} hint={`guests in ${inHouse.reduce((s, b) => s + b.rooms, 0)} rooms`} icon={BedDouble} tone="violet" />
+        <StatCard label="Arrivals today" value={arrivals.length} hint={`${live.filter((b) => b.checkIn === today && b.status === "checked-in").length} already checked in`} icon={LogIn} tone="green" />
         <StatCard label="Departures today" value={departures.length} hint={`${departedToday.length} already left`} icon={LogOut} tone="neutral" />
         <StatCard label="Collected today" value={taka(collectedToday)} hint="Payments − refunds" icon={Wallet} tone="green" />
         <StatCard label="Outstanding" value={taka(outstanding)} hint="Due from in-house & departed" icon={Receipt} tone={outstanding ? "orange" : "neutral"} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
-        <Card>
+        <Panel>
           <div className="mb-2 flex items-center justify-between">
             <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
               <LogIn className="size-4 text-sky-600" /> Arrivals today
@@ -205,9 +217,10 @@ export default function Dashboard() {
               ))}
             </ul>
           )}
-        </Card>
+          <MoreLink href={`${ADMIN}/bookings`} label={arrivals.length > 7 ? `View all ${arrivals.length} arrivals` : "All bookings"} />
+        </Panel>
 
-        <Card>
+        <Panel>
           <div className="mb-2 flex items-center justify-between">
             <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
               <DoorOpen className="size-4 text-sky-600" /> Departures
@@ -237,12 +250,16 @@ export default function Dashboard() {
               })}
             </ul>
           )}
-        </Card>
+          <MoreLink href={`${ADMIN}/bookings?status=checked-in`} label={departures.length > 7 ? `View all ${departures.length} departures` : "Guests in house"} />
+        </Panel>
 
-        <Card>
-          <h2 className="mb-3 flex items-center gap-2 font-semibold text-neutral-900">
-            <AlertTriangle className="size-4 text-amber-500" /> Needs attention
-          </h2>
+        <Panel>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
+              <AlertTriangle className="size-4 text-amber-500" /> Needs attention
+            </h2>
+            {attention.length > 0 && <span className="rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">{attention.length}</span>}
+          </div>
           {attention.length === 0 ? (
             <p className="py-8 text-center text-sm text-neutral-500">All caught up.</p>
           ) : (
@@ -260,7 +277,8 @@ export default function Dashboard() {
               ))}
             </ul>
           )}
-        </Card>
+          <RoomMix mix={roomMix} total={db.units.length} />
+        </Panel>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -289,19 +307,31 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
-        <Card>
+        <Panel>
           <h2 className="font-semibold text-neutral-900">Room revenue this month</h2>
-          <p className="mb-4 text-xs text-neutral-500">
-            {taka(mtd.revenue)} · ADR {taka(adr)} · RevPAR {taka(revpar)}
-          </p>
+          <p className="mb-4 text-xs text-neutral-500">Revenue by room type, month to date</p>
           <RankBars rows={typeRows} />
-        </Card>
-        <Card>
+          <TileRow
+            tiles={[
+              { label: "Revenue", value: taka(mtd.revenue) },
+              { label: "ADR", value: taka(adr) },
+              { label: "RevPAR", value: taka(revpar) },
+            ]}
+          />
+        </Panel>
+        <Panel>
           <h2 className="font-semibold text-neutral-900">Where bookings come from</h2>
           <p className="mb-4 text-xs text-neutral-500">Bookings made in the last 30 days</p>
-          <RankBars rows={sources} format={(n) => `${n} booking${n === 1 ? "" : "s"}`} />
-        </Card>
-        <Card>
+          <RankBars rows={sourceRows} format={(n) => `${n} booking${n === 1 ? "" : "s"}`} />
+          <TileRow
+            tiles={[
+              { label: "Bookings", value: String(sourceTotal) },
+              { label: "Online", value: `${share(sources.find((r) => r.label === sourceLabels.website)?.value ?? 0)}%` },
+              { label: "Per day", value: (sourceTotal / 30).toFixed(1) },
+            ]}
+          />
+        </Panel>
+        <Panel>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
               <LiveDot /> Latest activity
@@ -339,10 +369,69 @@ export default function Dashboard() {
               })}
             </ul>
           )}
-        </Card>
+        </Panel>
       </div>
     </div>
   );
 }
 
 const i0 = (d: string, today: string) => (d === today ? "Tonight" : relativeDay(d) === "Tomorrow" ? "Tmrw" : dateLabel(d, "dd"));
+
+function MoreLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link href={href} className="mt-auto flex items-center justify-center gap-1 border-t border-neutral-100 pt-3 text-xs font-medium text-sky-700 hover:underline">
+      {label} <ArrowRight className="size-3.5" />
+    </Link>
+  );
+}
+
+/** Where every physical room stands right now, as one stacked bar plus a legend. */
+function RoomMix({ mix, total }: { mix: { label: string; n: number; dot: string }[]; total: number }) {
+  return (
+    <div className="mt-auto pt-4">
+      <div className="rounded-md border border-neutral-100 bg-neutral-50/70 p-3">
+        <div className="mb-2.5 flex items-center justify-between text-xs">
+          <span className="font-semibold text-neutral-800">Rooms right now</span>
+          <Link href={`${ADMIN}/rooms`} className="font-medium text-sky-700 hover:underline">
+            Rooms board
+          </Link>
+        </div>
+        <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-neutral-100">
+          {mix.map((m) => m.n > 0 && <div key={m.label} className={m.dot} style={{ width: `${(m.n / Math.max(1, total)) * 100}%` }} />)}
+        </div>
+        <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-neutral-600">
+          {mix.map((m) => (
+            <li key={m.label} className="flex items-center gap-1.5">
+              <span className={cn("size-2 shrink-0 rounded-full", m.dot)} />
+              {m.label}
+              <span className="ml-auto font-semibold tabular-nums text-neutral-900">{m.n}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function TileRow({ tiles }: { tiles: { label: string; value: string }[] }) {
+  return (
+    <div className="mt-auto grid grid-cols-3 gap-2 pt-5">
+      {tiles.map((t) => (
+        <div key={t.label} className="min-w-0 rounded-md bg-neutral-50 px-3 py-2.5">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-500">{t.label}</p>
+          <p className="mt-0.5 truncate text-sm font-semibold tabular-nums text-neutral-900">{t.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** A dashboard card that grows to its row's height, with a soft wave filling the space below short lists. */
+function Panel({ children }: { children: React.ReactNode }) {
+  return (
+    <Card className="group/card relative isolate flex flex-col overflow-hidden transition-shadow duration-300 hover:shadow-lg hover:shadow-neutral-900/5">
+      <CardArt rings={false} className="text-sky-500" />
+      {children}
+    </Card>
+  );
+}
