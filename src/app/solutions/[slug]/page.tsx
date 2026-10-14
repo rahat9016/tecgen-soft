@@ -54,20 +54,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-function Eyebrow({ children }: { children: ReactNode }) {
-  return (
-    <span className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-xs font-medium text-indigo-200">
-      <span className="size-1.5 rounded-full bg-indigo-300" />
-      {children}
-    </span>
-  );
-}
-
-function SectionHeading({ eyebrow, title, desc }: { eyebrow: string; title: ReactNode; desc?: string }) {
+function SectionHeading({ title, desc }: { title: ReactNode; desc?: string }) {
   return (
     <Reveal className="mx-auto max-w-2xl text-center">
-      <Eyebrow>{eyebrow}</Eyebrow>
-      <h2 className="mt-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl lg:text-4xl">{title}</h2>
+      <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl lg:text-4xl">{title}</h2>
       {desc && <p className="text-bn mx-auto mt-3 max-w-xl text-[15px] text-neutral-400 sm:text-base">{desc}</p>}
     </Reveal>
   );
@@ -255,7 +245,6 @@ export default async function SolutionDetailPage({
         <section id="screens" className="py-12 sm:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
-              eyebrow={`${toBnDigits(solution.screens.length)}টি page`}
               title={
                 <>
                   Product-এর{" "}
@@ -278,7 +267,6 @@ export default async function SolutionDetailPage({
       <section className="py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            eyebrow="Features"
             title={
               <>
                 Exactly{" "}
@@ -299,7 +287,6 @@ export default async function SolutionDetailPage({
       <section className="py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            eyebrow="Package scope"
             title="Order-এর আগেই সব পরিষ্কার"
             desc="কী পাচ্ছেন আর কী package-এর বাইরে — কোনো hidden খরচ নেই।"
           />
@@ -380,7 +367,6 @@ export default async function SolutionDetailPage({
       <section className="py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            eyebrow="Teamwork"
             title="আপনার কাছ থেকে কী লাগবে?"
             desc="আপনি শুধু তথ্যগুলো দিন — technical সব কাজ আমাদের।"
           />
@@ -473,7 +459,6 @@ export default async function SolutionDetailPage({
       <section className="py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            eyebrow="Pricing"
             title="Payment কীভাবে কাজ করে"
             desc="কোনো upfront বা setup খরচ নেই — website live হওয়ার পর থেকে মাসিক payment শুরু।"
           />
@@ -526,7 +511,7 @@ export default async function SolutionDetailPage({
       {/* other packages */}
       <section className="py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionHeading eyebrow="More packages" title="অন্য packages-ও দেখুন" />
+          <SectionHeading title="অন্য packages-ও দেখুন" />
 
           <StaggerGrid className="mt-10 grid gap-4 sm:mt-12 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {others.map((s) => (
