@@ -1,3 +1,11 @@
+export type Screen = {
+  /** who uses the page — the storefront visitor or the business owner */
+  group: "customer" | "admin";
+  title: string;
+  desc: string;
+  src: string;
+};
+
 export type Solution = {
   slug: string;
   name: string;
@@ -13,6 +21,8 @@ export type Solution = {
   /** internal route to the running demo of this product */
   demoHref?: string;
   features: { title: string; desc: string }[];
+  /** real screenshots of every page in the demo */
+  screens: Screen[];
   included: string[];
   notIncluded: string[];
   customerProvides: string[];
@@ -22,6 +32,9 @@ export type Solution = {
 // Monthly subscription — no upfront cost, billing starts once the site is live, cancel any month.
 const SUBSCRIPTION_INCLUDED = ["Hosting ও SSL", "Updates ও bug fixes", "Ongoing support", "Domain setup", "Basic training"];
 const SUBSCRIPTION_HANDLED = ["Setup ও customization", "Domain connect", "Hosting ও SSL", "Updates ও maintenance", "Basic training", "Ongoing support"];
+
+const screens = (slug: string, list: [Screen["group"], string, string, string][]): Screen[] =>
+  list.map(([group, file, title, desc]) => ({ group, title, desc, src: `/solutions/screens/${slug}/${file}.webp` }));
 
 export const SOLUTIONS: Solution[] = [
   {
@@ -42,6 +55,18 @@ export const SOLUTIONS: Solution[] = [
       { title: "Admin Dashboard", desc: "সব booking ও room status এক dashboard থেকে manage করুন।" },
       { title: "Mobile Responsive Website", desc: "Desktop ও mobile — সব জায়গা থেকে booking নেওয়া যাবে।" },
     ],
+    screens: screens("hotel-booking", [
+      ["customer", "home", "Home page", "Hero slider থেকেই date ও guest দিয়ে room availability check।"],
+      ["customer", "rooms", "Rooms list", "সব room type, price, review ও sort এক page-এ।"],
+      ["customer", "room-detail", "Room details", "Photo gallery, amenities, policy ও বাছাই করা date-এর live price।"],
+      ["customer", "book", "Booking ও checkout", "Guest তথ্য, ID ও payment — ৩ step-এ booking শেষ।"],
+      ["admin", "admin-dashboard", "Admin dashboard", "আজকের arrival, departure, occupancy ও collection এক নজরে।"],
+      ["admin", "admin-bookings", "Bookings", "সব booking search, filter ও status manage করুন।"],
+      ["admin", "admin-calendar", "Booking calendar", "Room-wise calendar-এ কোন দিন কোন room-এ কে আছে।"],
+      ["admin", "admin-rooms", "Rooms board", "প্রতিটি room vacant, occupied না cleaning-এ — live দেখুন।"],
+      ["admin", "admin-payments", "Payments", "Payment, refund ও due-এর পুরো হিসাব।"],
+      ["admin", "admin-content", "Website content", "Hotel তথ্য, facilities ও rules — developer ছাড়াই edit।"],
+    ]),
     included: ["Mobile responsive website", "Admin dashboard", "Room management", "Booking ও availability system", ...SUBSCRIPTION_INCLUDED],
     notIncluded: [
       "Domain কেনা ও renewal (domain আপনার নামে)",
@@ -71,6 +96,22 @@ export const SOLUTIONS: Solution[] = [
       { title: "Cash Memo ও Sales Report", desc: "Shop-এর sale-এর cash memo তৈরি করুন, payment method অনুযায়ী হিসাব দেখুন।" },
       { title: "Customer Chat", desc: "Website থেকেই customer-এর সাথে সরাসরি message-এ কথা বলুন।" },
     ],
+    screens: screens("gadget-ecommerce", [
+      ["customer", "home", "Home page", "Banner, EMI offer, category ও featured product।"],
+      ["customer", "shop", "Shop ও filter", "Category, brand ও stock দিয়ে product খুঁজে নেওয়া।"],
+      ["customer", "product", "Product details", "Color ও storage variant, EMI plan ও price।"],
+      ["customer", "cart", "Shopping cart", "Quantity, discount ও free delivery-র হিসাব।"],
+      ["customer", "checkout", "Checkout", "Delivery তথ্য দিয়ে Cash on Delivery বা bKash-এ order।"],
+      ["customer", "pre-order", "Pre-order", "নতুন launch-এর আগেই deposit দিয়ে reserve।"],
+      ["customer", "track-order", "Order tracking", "Order number ও phone দিয়ে customer নিজেই track করে।"],
+      ["admin", "admin-dashboard", "Admin dashboard", "Sales, profit, order ও category-wise report।"],
+      ["admin", "admin-orders", "Orders", "Online order, payment ও delivery status manage।"],
+      ["admin", "admin-products", "Products ও stock", "Product, price, margin ও stock level।"],
+      ["admin", "admin-pre-orders", "Pre-orders", "Product-wise reservation ও deposit-এর হিসাব।"],
+      ["admin", "admin-cash-memo", "Cash memo", "Shop counter-এর sale, payment ও due-এর memo।"],
+      ["admin", "admin-chat", "Customer chat", "Website থেকে আসা message-এর উত্তর এখান থেকেই।"],
+      ["admin", "admin-accounts", "Accounts", "Profit & loss, expense ও cash flow।"],
+    ]),
     included: ["Mobile responsive website", "Admin dashboard", "Pre-order ও order tracking", "Cash memo ও sales report", ...SUBSCRIPTION_INCLUDED],
     notIncluded: [
       "Domain কেনা ও renewal (domain আপনার নামে)",
@@ -100,6 +141,12 @@ export const SOLUTIONS: Solution[] = [
       { title: "Shopping Cart ও Checkout", desc: "Customer-দের জন্য সহজ cart ও checkout flow।" },
       { title: "Mobile Responsive Website", desc: "Desktop, tablet ও mobile — সব ডিভাইসে perfect দেখাবে।" },
     ],
+    screens: screens("ecommerce", [
+      ["customer", "home", "Home page", "Banner slider, offer ও category।"],
+      ["customer", "product", "Product details", "Photo gallery, price, discount ও description।"],
+      ["customer", "cart", "Shopping cart", "Cart-এর item, quantity ও total।"],
+      ["customer", "checkout", "Checkout", "Delivery তথ্য দিয়ে Cash on Delivery, card বা mobile banking।"],
+    ]),
     included: ["Mobile responsive website", "Admin dashboard", "Product ও category management", "Order management", ...SUBSCRIPTION_INCLUDED],
     notIncluded: [
       "Domain কেনা ও renewal (domain আপনার নামে)",
@@ -129,6 +176,13 @@ export const SOLUTIONS: Solution[] = [
       { title: "Booking Management", desc: "Admin panel থেকে সব booking, payment ও schedule manage করুন।" },
       { title: "My Bookings", desc: "Player নিজের booking ও status যেকোনো সময় দেখতে পারবে।" },
     ],
+    screens: screens("turf-booking", [
+      ["customer", "home", "Home page", "Sport, court ও সময় বেছে দ্রুত slot খোঁজা।"],
+      ["customer", "book", "Live slot booking", "Free ও booked slot live দেখে slot hold ও advance payment।"],
+      ["admin", "admin-dashboard", "Admin dashboard", "আজকের booking, utilization, collection ও verify বাকি payment।"],
+      ["admin", "admin-bookings", "Bookings", "সব booking, due ও status এক table-এ।"],
+      ["admin", "admin-schedule", "Schedule board", "Court-wise দিনের schedule, walk-in ও slot block।"],
+    ]),
     included: ["Mobile responsive website", "Admin dashboard", "Live slot booking", "Advance payment flow", ...SUBSCRIPTION_INCLUDED],
     notIncluded: [
       "Domain কেনা ও renewal (domain আপনার নামে)",

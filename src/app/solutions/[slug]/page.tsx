@@ -1,15 +1,76 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, CheckCircle2, Clock, LayoutDashboard, MessageCircle, Smartphone, Wrench, XCircle } from "lucide-react";
+import type { ReactNode } from "react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  CalendarX,
+  Check,
+  Globe,
+  MessageCircle,
+  Minus,
+  PackagePlus,
+  RefreshCw,
+  Rocket,
+  ShieldCheck,
+  UserRound,
+  Wrench,
+} from "lucide-react";
 
 import AgencyFooter from "@/src/components/agency/AgencyFooter";
 import AgencyHeader from "@/src/components/agency/AgencyHeader";
+import AuroraBackground from "@/src/components/agency/AuroraBackground";
+import FeatureShowcase from "@/src/components/agency/FeatureShowcase";
+import Reveal from "@/src/components/agency/Reveal";
+import ScreenGallery from "@/src/components/agency/ScreenGallery";
+import { StaggerGrid, StaggerItem } from "@/src/components/agency/StaggerGrid";
 import { CONTACT } from "@/src/lib/contact";
+import { describeScopeItem } from "@/src/lib/packageScope";
 import { SOLUTIONS, getSolution } from "@/src/lib/solutions";
+
+/** per-product glow behind the hero — kept soft so the page reads calm on a dark background */
+const productGlow: Record<string, string> = {
+  "hotel-booking": "rgba(56,189,248,0.14)",
+  "gadget-ecommerce": "rgba(99,102,241,0.16)",
+  ecommerce: "rgba(244,114,182,0.12)",
+  "turf-booking": "rgba(52,211,153,0.12)",
+};
+
+const toBnDigits = (n: number) => String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[Number(d)]);
 
 export function generateStaticParams() {
   return SOLUTIONS.map((s) => ({ slug: s.slug }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const solution = getSolution(slug);
+  if (!solution) return {};
+  return {
+    title: `${solution.name} — Tecgen Soft`,
+    description: solution.outcome,
+  };
+}
+
+function Eyebrow({ children }: { children: ReactNode }) {
+  return (
+    <span className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-xs font-medium text-indigo-200">
+      <span className="size-1.5 rounded-full bg-indigo-300" />
+      {children}
+    </span>
+  );
+}
+
+function SectionHeading({ eyebrow, title, desc }: { eyebrow: string; title: ReactNode; desc?: string }) {
+  return (
+    <Reveal className="mx-auto max-w-2xl text-center">
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <h2 className="mt-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl lg:text-4xl">{title}</h2>
+      {desc && <p className="text-bn mx-auto mt-3 max-w-xl text-[15px] text-neutral-400 sm:text-base">{desc}</p>}
+    </Reveal>
+  );
 }
 
 export default async function SolutionDetailPage({
@@ -21,207 +82,486 @@ export default async function SolutionDetailPage({
   const solution = getSolution(slug);
   if (!solution) notFound();
 
+  const glow = productGlow[solution.slug] ?? productGlow["gadget-ecommerce"];
+  const preview = `/solutions/${solution.slug}`;
+  const others = SOLUTIONS.filter((s) => s.slug !== solution.slug);
+
+  // last word of the name gets the brand gradient, like the home hero
+  const nameWords = solution.name.split(" ");
+  const nameLead = nameWords.slice(0, -1).join(" ");
+  const nameTail = nameWords[nameWords.length - 1];
+  const [, ...priceNoteRest] = solution.priceNote.split(" · ");
+
+  // dashboard slot in the hero — the admin panel when the demo has one, else another storefront page
+  const dashScreen =
+    solution.screens.find((s) => s.group === "admin") ?? solution.screens.find((s) => !s.src.endsWith("/home.webp"));
+
+  const terms = [
+    { icon: Globe, title: "Domain", desc: "আপনার নামে registered থাকবে — কেনা ও setup-এ আমরা সাহায্য করি।" },
+    { icon: ShieldCheck, title: "Hosting ও SSL", desc: "Monthly subscription-এর মধ্যেই included।" },
+    { icon: RefreshCw, title: "Updates, bug fix ও support", desc: `${solution.support} included।` },
+    {
+      icon: CalendarX,
+      title: "যেকোনো মাসে cancel",
+      desc: "Website offline হবে, কিন্তু domain ও আপনার content/data আপনার কাছেই থাকবে।",
+    },
+    { icon: PackagePlus, title: "Additional features", desc: "প্রতিটির খরচ কাজ শুরুর আগেই জানিয়ে দেওয়া হয়।" },
+  ];
+
+  const steps = [
+    { label: "Order ও Setup", value: "৳০", note: "কোনো payment লাগবে না" },
+    { label: "Website Live", value: solution.setup, note: "Setup শেষে আপনার site চালু" },
+    { label: "প্রতি মাসে", value: solution.price, note: "Live হওয়ার পর থেকে billing" },
+  ];
+
   return (
-    <div className="min-h-screen bg-white">
-      <AgencyHeader />
-      <div className="h-16" aria-hidden="true" />
+    <div className="relative isolate min-h-screen overflow-x-clip bg-[#0a0a0a]">
+      <AuroraBackground />
+      <AgencyHeader overlay />
 
-      {/* Header */}
-      <section className="bg-[#061531] py-14 md:py-20">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <p className="text-xs font-medium text-indigo-300">{solution.forWho.join(" · ")}</p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-4xl">{solution.name}</h1>
-          <p className="mt-3 max-w-xl text-sm text-slate-300 sm:text-base">{solution.outcome}</p>
+      {/* hero — copy on the left (~35%), landing page + dashboard + mobile on the right (~65%) */}
+      <section className="relative pt-28 pb-12 sm:pt-32 sm:pb-16 lg:pt-36">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{ background: `radial-gradient(ellipse 50% 55% at 68% 35%, ${glow}, transparent 70%)` }}
+        />
 
-          <div className="mt-6 flex flex-wrap items-baseline gap-3">
-            <span className="text-3xl font-bold text-white">{solution.price}</span>
-            <span className="text-sm text-indigo-200">{solution.priceNote}</span>
-          </div>
+        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[35fr_65fr] lg:gap-10 lg:px-8">
+          <Reveal className="text-center lg:text-left">
+            <h1 className="text-4xl leading-[1.1] font-semibold tracking-tight text-balance text-white sm:text-5xl">
+              {nameLead}{" "}
+              <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text whitespace-nowrap text-transparent">
+                {nameTail}
+              </span>
+            </h1>
+            <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-neutral-400 sm:text-lg lg:mx-0">
+              {solution.outcome}
+            </p>
 
-          <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 text-sm text-slate-300">
-            <span className="flex items-center gap-2">
-              <Clock className="size-4 text-indigo-300" /> Live in: {solution.setup}
-            </span>
-            <span className="flex items-center gap-2">
-              <Smartphone className="size-4 text-indigo-300" /> Mobile Responsive
-            </span>
-            <span className="flex items-center gap-2">
-              <LayoutDashboard className="size-4 text-indigo-300" /> Admin Dashboard
-            </span>
-            <span className="flex items-center gap-2">
-              <Wrench className="size-4 text-indigo-300" /> Support: {solution.support}
-            </span>
-          </div>
-
-          <div className="mt-8 flex flex-wrap gap-3">
-            {solution.demoHref && (
-              <Link
-                href={solution.demoHref}
-                className="inline-flex h-12 items-center gap-2 rounded-lg bg-white px-6 text-sm font-semibold text-indigo-700 shadow-md transition hover:bg-indigo-50"
-              >
-                View Live Demo
-                <ArrowRight className="size-4" />
-              </Link>
-            )}
-            <Link
-              href="#contact"
-              className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-6 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/10"
-            >
-              <MessageCircle className="size-4" />
-              Talk to Us
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* What you get */}
-      <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Exactly What You Get</h2>
-
-        <div className="mt-8 space-y-10">
-          {solution.features.map((f) => (
-            <div key={f.title} className="grid gap-6 sm:grid-cols-2 sm:items-center">
-              {solution.image ? (
-                <div className="relative aspect-16/10 w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-                  <Image src={solution.image} alt={f.title} fill className="object-cover object-top" />
-                </div>
-              ) : (
-                <div className="flex aspect-16/10 w-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-400">
-                  Screenshot coming soon
-                </div>
+            <p className="mt-6 text-[15px] text-neutral-400">
+              মাসে মাত্র <span className="text-2xl font-semibold text-white">{solution.price}</span>
+              {priceNoteRest.length > 0 && (
+                <span className="mt-1 block text-sm text-neutral-500">{priceNoteRest.join(" · ")}</span>
               )}
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-500">{f.desc}</p>
+            </p>
+
+            <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
+              {solution.demoHref && (
+                <Link
+                  href={solution.demoHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group inline-flex h-12 items-center gap-2 rounded-xl bg-white px-6 text-sm font-medium text-[#0a0a0a] shadow-[0_10px_30px_-12px_rgba(255,255,255,0.4)] transition hover:-translate-y-0.5 hover:bg-neutral-200"
+                >
+                  Live Demo দেখুন
+                  <ArrowUpRight className="size-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </Link>
+              )}
+              <Link
+                href={CONTACT.whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/15 bg-white/6 px-6 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/10"
+              >
+                <MessageCircle className="size-4" />
+                কথা বলুন
+              </Link>
+            </div>
+          </Reveal>
+
+          {/* product composition — landing page behind, dashboard in front-left, phone in front-right */}
+          <Reveal delay={0.12} className="relative aspect-16/11 w-full">
+            <div className="pointer-events-none absolute inset-x-[10%] top-1/4 h-1/2 rounded-full bg-white/7 blur-[100px]" />
+
+            {/* landing page */}
+            <div className="absolute top-0 right-0 w-[80%]">
+              <span className="glass-strong absolute -top-3.5 right-5 z-10 hidden rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white sm:inline-flex">
+                Landing page
+              </span>
+              <div className="overflow-hidden rounded-2xl border border-white/15 bg-white/6 shadow-[0_40px_80px_-24px_rgba(0,0,0,0.75)] backdrop-blur-xl">
+                <div className="flex items-center gap-3 border-b border-white/10 bg-white/6 px-3 py-2 sm:px-4 sm:py-2.5">
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-white/30 sm:size-2.5" />
+                    <span className="size-2 rounded-full bg-white/30 sm:size-2.5" />
+                    <span className="size-2 rounded-full bg-white/30 sm:size-2.5" />
+                  </div>
+                  <div className="min-w-0 flex-1 truncate rounded-full border border-white/10 bg-white/6 px-3 py-0.5 text-center text-[10px] text-white/60 sm:text-[11px]">
+                    {solution.name}
+                  </div>
+                </div>
+                <div className="relative aspect-16/10">
+                  <Image
+                    src={`${preview}-desktop.webp`}
+                    alt={`${solution.name} — landing page`}
+                    fill
+                    priority
+                    sizes="(min-width: 1280px) 620px, (min-width: 1024px) 50vw, 80vw"
+                    className="object-cover object-top brightness-95"
+                  />
+                </div>
               </div>
             </div>
-          ))}
+
+            {/* dashboard */}
+            {dashScreen && (
+              <div className="absolute bottom-[4%] left-0 z-10 w-[60%]">
+                <span className="glass-strong absolute -top-3.5 left-4 z-10 hidden items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white sm:inline-flex">
+                  {dashScreen.group === "admin" ? "Admin dashboard" : dashScreen.title}
+                </span>
+                <div className="overflow-hidden rounded-xl border border-white/15 bg-neutral-900 shadow-[0_30px_60px_-16px_rgba(0,0,0,0.85)] ring-1 ring-white/10">
+                  <div className="flex h-5 items-center gap-1 border-b border-white/10 bg-white/8 px-2 sm:h-6">
+                    <span className="size-1.5 rounded-full bg-white/30" />
+                    <span className="size-1.5 rounded-full bg-white/30" />
+                    <span className="size-1.5 rounded-full bg-white/30" />
+                  </div>
+                  <div className="relative aspect-16/10">
+                    <Image
+                      src={dashScreen.src}
+                      alt={`${solution.name} — ${dashScreen.title}`}
+                      fill
+                      sizes="(min-width: 1280px) 460px, (min-width: 1024px) 38vw, 60vw"
+                      className="object-cover object-top brightness-95"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* mobile */}
+            <div className="absolute right-[3%] bottom-0 z-20 w-[19%]">
+              <span className="glass-strong absolute -top-3.5 left-1/2 z-10 hidden -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white sm:inline-flex">
+                Mobile
+              </span>
+              <div className="overflow-hidden rounded-[20px] border-4 border-neutral-950 bg-neutral-950 shadow-[0_30px_60px_-16px_rgba(0,0,0,0.85)] ring-1 ring-white/20">
+                <div className="relative aspect-9/19">
+                  <Image
+                    src={`${preview}-mobile.webp`}
+                    alt={`${solution.name} — mobile`}
+                    fill
+                    sizes="(min-width: 1280px) 150px, (min-width: 1024px) 12vw, 19vw"
+                    className="object-cover object-top brightness-95"
+                  />
+                  <span className="absolute top-1.5 left-1/2 h-1.5 w-1/3 -translate-x-1/2 rounded-full bg-neutral-950" />
+                </div>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* Included vs not included */}
-      <section className="bg-slate-50 py-16 md:py-20">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <h2 className="text-center text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Everything should be clear before you order.
-          </h2>
+      {/* every page of the product — customer side and admin side */}
+      {solution.screens.length > 0 && (
+        <section id="screens" className="py-12 sm:py-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <SectionHeading
+              eyebrow={`${toBnDigits(solution.screens.length)}টি page`}
+              title={
+                <>
+                  Product-এর{" "}
+                  <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
+                    প্রতিটি page
+                  </span>{" "}
+                  দেখুন
+                </>
+              }
+              desc="আপনার customer যা দেখবে আর আপনি admin panel থেকে যা manage করবেন — সব আসল demo-র screenshot।"
+            />
+            <Reveal className="mt-10 sm:mt-12">
+              <ScreenGallery screens={solution.screens} name={solution.name} />
+            </Reveal>
+          </div>
+        </section>
+      )}
 
-          <div className="mt-10 grid gap-6 sm:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-white p-6">
-              <h3 className="text-sm font-semibold text-emerald-600">Included</h3>
-              <ul className="mt-4 space-y-2.5">
-                {solution.included.map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-sm text-slate-700">
-                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-                    {item}
-                  </li>
-                ))}
+      {/* features — list beside a live-scrolling screenshot of the demo */}
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionHeading
+            eyebrow="Features"
+            title={
+              <>
+                Exactly{" "}
+                <span className="bg-linear-to-r from-indigo-300 via-[#8F87FF] to-indigo-400 bg-clip-text text-transparent">
+                  what you get
+                </span>
+              </>
+            }
+            desc="নিচের প্রতিটি feature আসল demo-তে চালু আছে — scroll করলে screen-এ পুরো website দেখতে পাবেন।"
+          />
+          <div className="mt-10 sm:mt-14">
+            <FeatureShowcase features={solution.features} pageSrc={`${preview}-page.webp`} title={solution.name} />
+          </div>
+        </div>
+      </section>
+
+      {/* included vs not included */}
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionHeading
+            eyebrow="Package scope"
+            title="Order-এর আগেই সব পরিষ্কার"
+            desc="কী পাচ্ছেন আর কী package-এর বাইরে — কোনো hidden খরচ নেই।"
+          />
+
+          <div className="mt-10 grid gap-4 sm:mt-12 sm:gap-5 lg:grid-cols-[1.55fr_1fr]">
+            <Reveal className="glass relative overflow-hidden rounded-3xl border-emerald-300/15 bg-linear-to-br from-emerald-400/6 via-white/3 to-transparent p-6 sm:p-8">
+              <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-linear-to-r from-transparent via-emerald-300/50 to-transparent" />
+
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex size-11 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-400/10 text-emerald-300">
+                    <Check className="size-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Included</h3>
+                    <p className="text-sm text-neutral-400">মাসিক subscription-এর মধ্যেই</p>
+                  </div>
+                </div>
+                <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-200">
+                  {toBnDigits(solution.included.length)}টি জিনিস
+                </span>
+              </div>
+
+              <ul className="mt-6 grid gap-2.5 sm:grid-cols-2">
+                {solution.included.map((line) => {
+                  const { icon: Icon, title, desc } = describeScopeItem(line);
+                  return (
+                    <li
+                      key={line}
+                      className="flex items-start gap-3 rounded-xl border border-white/6 bg-white/3 p-3.5 sm:last:odd:col-span-2"
+                    >
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-emerald-300/15 bg-emerald-400/10 text-emerald-300">
+                        <Icon className="size-4.5" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[15px] font-medium text-white">{title}</span>
+                        {desc && <span className="text-bn mt-0.5 block text-sm text-neutral-400">{desc}</span>}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-6">
-              <h3 className="text-sm font-semibold text-red-500">Not Included</h3>
-              <ul className="mt-4 space-y-2.5">
-                {solution.notIncluded.map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-sm text-slate-700">
-                    <XCircle className="mt-0.5 size-4 shrink-0 text-red-400" />
-                    {item}
-                  </li>
-                ))}
+            </Reveal>
+
+            <Reveal delay={0.08} className="glass rounded-3xl p-6 sm:p-8">
+              <div className="flex items-center gap-3">
+                <span className="flex size-11 items-center justify-center rounded-2xl border border-rose-300/15 bg-rose-400/8 text-rose-300/90">
+                  <Minus className="size-5" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Not included</h3>
+                  <p className="text-sm text-neutral-400">এগুলোর খরচ আলাদা</p>
+                </div>
+              </div>
+
+              <ul className="mt-6 divide-y divide-white/6">
+                {solution.notIncluded.map((line) => {
+                  const { icon: Icon, title, desc } = describeScopeItem(line);
+                  return (
+                    <li key={line} className="flex items-start gap-3 py-4 first:pt-0 last:pb-0">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-rose-300/15 bg-rose-400/8 text-rose-300/90">
+                        <Icon className="size-4.5" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[15px] font-medium text-neutral-200">{title}</span>
+                        {desc && <span className="text-bn mt-0.5 block text-sm text-neutral-500">{desc}</span>}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
-            </div>
-          </div>
-
-          <p className="mt-6 text-center text-sm text-slate-500">
-            Need something outside the package? We&apos;ll tell you the additional cost before starting.
-          </p>
-        </div>
-      </section>
-
-      {/* Customer responsibility */}
-      <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
-        <h2 className="text-center text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-          What do we need from you?
-        </h2>
-
-        <div className="mt-10 grid gap-6 sm:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">
-            <h3 className="text-sm font-semibold text-slate-900">You provide</h3>
-            <ul className="mt-4 space-y-2 text-sm text-slate-600">
-              {solution.customerProvides.map((item) => (
-                <li key={item}>• {item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">
-            <h3 className="text-sm font-semibold text-slate-900">We handle</h3>
-            <ul className="mt-4 space-y-2 text-sm text-slate-600">
-              {solution.weHandle.map((item) => (
-                <li key={item}>• {item}</li>
-              ))}
-            </ul>
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* Payment */}
-      <section className="bg-slate-50 py-16 md:py-20">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Monthly Subscription</h2>
+      {/* responsibilities — step 1 you send, step 2 we build, then it's live */}
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionHeading
+            eyebrow="Teamwork"
+            title="আপনার কাছ থেকে কী লাগবে?"
+            desc="আপনি শুধু তথ্যগুলো দিন — technical সব কাজ আমাদের।"
+          />
 
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <div className="rounded-2xl border border-slate-200 bg-white px-6 py-4">
-              <p className="text-xs text-slate-400">Order ও Setup</p>
-              <p className="text-sm font-semibold text-slate-700">No Payment Needed</p>
+          <div className="mt-10 grid gap-4 sm:mt-12 lg:grid-cols-[1fr_auto_1fr] lg:gap-5">
+            <Reveal className="glass rounded-3xl p-6 sm:p-8">
+              <div className="flex items-center gap-3">
+                <span className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-indigo-200">
+                  <UserRound className="size-5" />
+                </span>
+                <div>
+                  <p className="text-xs font-medium text-neutral-500">ধাপ ১</p>
+                  <h3 className="text-lg font-semibold text-white">আপনি দেবেন</h3>
+                </div>
+              </div>
+              <p className="text-bn mt-3 text-sm text-neutral-400">Order করার পর WhatsApp-এ এগুলো পাঠিয়ে দিন।</p>
+
+              <ul className="mt-5 divide-y divide-white/6">
+                {solution.customerProvides.map((line) => {
+                  const { icon: Icon, title, desc } = describeScopeItem(line);
+                  return (
+                    <li key={line} className="flex items-start gap-3.5 py-3.5 first:pt-0 last:pb-0">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-indigo-200">
+                        <Icon className="size-4.5" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[15px] font-medium text-white">{title}</span>
+                        {desc && <span className="text-bn mt-0.5 block text-sm text-neutral-400">{desc}</span>}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Reveal>
+
+            <div aria-hidden="true" className="flex items-center justify-center">
+              <span className="glass-strong flex size-11 items-center justify-center rounded-full bg-black/40 text-indigo-200">
+                <ArrowRight className="size-5 rotate-90 lg:rotate-0" />
+              </span>
             </div>
-            <ArrowRight className="size-5 shrink-0 rotate-90 text-indigo-400 sm:rotate-0" />
-            <div className="rounded-2xl border border-slate-200 bg-white px-6 py-4">
-              <p className="text-xs text-slate-400">Website Live</p>
-              <p className="text-sm font-semibold text-slate-700">{solution.setup}-এর মধ্যে</p>
-            </div>
-            <ArrowRight className="size-5 shrink-0 rotate-90 text-indigo-400 sm:rotate-0" />
-            <div className="rounded-2xl border border-indigo-200 bg-white px-6 py-4">
-              <p className="text-xs text-slate-400">প্রতি মাসে</p>
-              <p className="text-lg font-bold text-indigo-600">{solution.price}</p>
-            </div>
-          </div>
 
-          <p className="mx-auto mt-4 max-w-md text-sm text-slate-500">
-            কোনো upfront বা setup খরচ নেই — website live হওয়ার পর থেকে মাসিক payment শুরু হয়।
-          </p>
-
-          <ul className="mx-auto mt-8 max-w-md space-y-2 text-left text-sm text-slate-600">
-            <li>• Domain: আপনার নামে registered থাকবে — কেনা ও setup-এ আমরা সাহায্য করি।</li>
-            <li>• Hosting ও SSL: monthly subscription-এর মধ্যেই included।</li>
-            <li>• Updates, bug fix ও support: {solution.support} included।</li>
-            <li>• Cancel: যেকোনো মাসে cancel করা যায় — website offline হবে, domain ও আপনার content/data আপনার থাকবে।</li>
-            <li>• Additional features: প্রতিটির খরচ আগে থেকে জানিয়ে দেওয়া হয়।</li>
-          </ul>
-        </div>
-      </section>
-
-      <section id="contact" className="relative overflow-hidden bg-indigo-700 py-16 md:py-20">
-        <div className="relative mx-auto max-w-2xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            আপনার business idea আমাদের বলুন।
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-indigo-100 sm:text-base">
-            আপনার business ও requirements শুনে আমরা আপনাকে suitable solution suggest করব।
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link
-              href={CONTACT.whatsappHref}
-              className="inline-flex h-12 items-center gap-2 rounded-lg bg-emerald-500 px-6 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-600"
+            <Reveal
+              delay={0.08}
+              className="glass relative overflow-hidden rounded-3xl border-indigo-300/20 bg-linear-to-br from-[#3D2EF9]/10 via-white/3 to-transparent p-6 sm:p-8"
             >
-              <MessageCircle className="size-4" />
-              WhatsApp / Messenger
-            </Link>
-            <Link
-              href={CONTACT.phoneHref}
-              className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-6 text-sm font-semibold text-white transition hover:bg-white/20"
-            >
-              Call Us
-            </Link>
+              <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-linear-to-r from-transparent via-indigo-300/50 to-transparent" />
+              <div className="flex items-center gap-3">
+                <span className="flex size-11 items-center justify-center rounded-2xl border border-[#3D2EF9]/30 bg-[#3D2EF9]/20 text-indigo-200">
+                  <Wrench className="size-5" />
+                </span>
+                <div>
+                  <p className="text-xs font-medium text-neutral-500">ধাপ ২</p>
+                  <h3 className="text-lg font-semibold text-white">আমরা করব</h3>
+                </div>
+              </div>
+              <p className="text-bn mt-3 text-sm text-neutral-400">সব subscription-এর মধ্যেই — আলাদা কোনো খরচ নেই।</p>
+
+              <ul className="mt-5 divide-y divide-white/6">
+                {solution.weHandle.map((line) => {
+                  const { icon: Icon, title, desc } = describeScopeItem(line);
+                  return (
+                    <li key={line} className="flex items-start gap-3.5 py-3.5 first:pt-0 last:pb-0">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[#3D2EF9]/30 bg-[#3D2EF9]/15 text-indigo-200">
+                        <Icon className="size-4.5" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[15px] font-medium text-white">{title}</span>
+                        {desc && <span className="text-bn mt-0.5 block text-sm text-neutral-400">{desc}</span>}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Reveal>
           </div>
+
+          <Reveal className="glass mt-4 flex flex-col items-center justify-center gap-3 rounded-2xl px-6 py-5 text-center sm:mt-5 sm:flex-row sm:text-left">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-400/10 text-emerald-300">
+              <Rocket className="size-5" />
+            </span>
+            <p className="text-bn text-[15px] text-neutral-300">
+              <span className="font-semibold text-white">তারপর {solution.setup}ের মধ্যে আপনার website live</span> — আপনি
+              শুধু ব্যবসা চালান।
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* how billing works */}
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionHeading
+            eyebrow="Pricing"
+            title="Payment কীভাবে কাজ করে"
+            desc="কোনো upfront বা setup খরচ নেই — website live হওয়ার পর থেকে মাসিক payment শুরু।"
+          />
+
+          <StaggerGrid className="relative mt-10 grid gap-3 sm:mt-12 sm:gap-4 md:grid-cols-3">
+            {steps.map((step, i) => {
+              const last = i === steps.length - 1;
+              return (
+                <StaggerItem
+                  key={step.label}
+                  className={`glass relative rounded-2xl p-5 sm:p-6 ${
+                    last ? "border-indigo-300/30 bg-linear-to-br from-[#3D2EF9]/10 to-transparent" : ""
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium tracking-wide text-neutral-500 uppercase">
+                      Step {i + 1}
+                    </span>
+                    {!last && <ArrowRight className="hidden size-4 text-neutral-600 md:block" />}
+                  </div>
+                  <p className="mt-3 text-sm text-neutral-400">{step.label}</p>
+                  <p className={`mt-1 text-2xl font-semibold tracking-tight ${last ? "text-indigo-200" : "text-white"}`}>
+                    {step.value}
+                  </p>
+                  <p className="mt-2 text-sm text-neutral-500">{step.note}</p>
+                </StaggerItem>
+              );
+            })}
+          </StaggerGrid>
+
+          <StaggerGrid className="mt-3 grid gap-3 sm:mt-4 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+            {terms.map(({ icon: Icon, title, desc }, i) => (
+              <StaggerItem
+                key={title}
+                className={`glass flex gap-4 rounded-2xl p-5 ${i === terms.length - 1 ? "sm:col-span-2" : ""}`}
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-indigo-200">
+                  <Icon className="size-4.5" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-white">{title}</h3>
+                  <p className="text-bn mt-0.5 text-sm text-neutral-400">{desc}</p>
+                </div>
+              </StaggerItem>
+            ))}
+          </StaggerGrid>
+        </div>
+      </section>
+
+      {/* other packages */}
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionHeading eyebrow="More packages" title="অন্য packages-ও দেখুন" />
+
+          <StaggerGrid className="mt-10 grid gap-4 sm:mt-12 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+            {others.map((s) => (
+              <StaggerItem key={s.slug}>
+                <Link
+                  href={`/solutions/${s.slug}`}
+                  className="glass group flex h-full flex-col overflow-hidden rounded-2xl transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/7"
+                >
+                  <div className="relative aspect-16/10 overflow-hidden border-b border-white/10">
+                    <Image
+                      src={`/solutions/${s.slug}-desktop.webp`}
+                      alt={s.name}
+                      fill
+                      sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover object-top brightness-90 transition duration-500 group-hover:scale-[1.03] group-hover:brightness-100"
+                    />
+                  </div>
+                  <div className="flex flex-1 flex-col p-5">
+                    <h3 className="text-base font-semibold text-white">{s.name}</h3>
+                    <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-neutral-400">{s.outcome}</p>
+                    <div className="mt-4 flex items-center justify-between border-t border-dashed border-white/10 pt-4">
+                      <p className="text-indigo-200">
+                        <span className="text-lg font-semibold">{s.price}</span>
+                        <span className="text-sm text-neutral-500">/মাস</span>
+                      </p>
+                      <span className="inline-flex items-center gap-1 text-sm font-medium text-neutral-300 transition group-hover:text-white">
+                        বিস্তারিত
+                        <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </StaggerItem>
+            ))}
+          </StaggerGrid>
         </div>
       </section>
 
