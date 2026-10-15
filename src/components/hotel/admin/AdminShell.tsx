@@ -8,10 +8,10 @@ import { toast } from "react-toastify";
 import {
   Bell,
   BedDouble,
-  CalendarDays,
   CalendarRange,
   CheckCheck,
   ClipboardList,
+  DoorOpen,
   ExternalLink,
   Image as ImageIcon,
   LayoutDashboard,
@@ -69,7 +69,7 @@ const groups: { title: string; items: NavItem[] }[] = [
   {
     title: "Website",
     items: [
-      { href: `${ADMIN}/room-types`, label: "Room types", icon: CalendarDays, perm: "rooms.manage" },
+      { href: `${ADMIN}/room-types`, label: "Rooms", icon: DoorOpen, perm: "rooms.manage" },
       { href: `${ADMIN}/content`, label: "Content", icon: LayoutTemplate, perm: "content.manage" },
       { href: `${ADMIN}/gallery`, label: "Gallery", icon: ImageIcon, perm: "content.manage" },
       { href: `${ADMIN}/reviews`, label: "Reviews", icon: Star, perm: "reviews.manage", badge: "reviews" },

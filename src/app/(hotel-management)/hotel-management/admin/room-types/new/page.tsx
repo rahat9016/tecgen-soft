@@ -1,5 +1,6 @@
-import RoomTypeForm from "@/src/components/hotel/admin/RoomTypeForm";
+import RoomForm from "@/src/components/hotel/admin/RoomForm";
 
-export default function Page() {
-  return <RoomTypeForm />;
+export default async function Page({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
+  const { kind } = await searchParams;
+  return <RoomForm key={kind ?? "new"} kind={kind} />;
 }
