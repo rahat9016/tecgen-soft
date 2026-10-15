@@ -8,22 +8,17 @@ import { toast } from "react-toastify";
 import { Download, KeyRound, Pencil, Plus, ShieldCheck, UserRound, Users } from "lucide-react";
 import { can, staffRoles } from "@/src/lib/hotel-store/auth";
 import { downloadCsv, initials, rangeLabel, roleLabels, taka } from "@/src/lib/hotel-store/format";
-import { paidOf, saveStaff, setUserStatus, updateGuestProfile, useCurrentStaff, useHotelDB, type StaffInput } from "@/src/lib/hotel-store/store";
-import type { HotelDB, StaffRole, User } from "@/src/lib/hotel-store/types";
+import { guestStats, saveStaff, setUserStatus, updateGuestProfile, useCurrentStaff, useHotelDB, type StaffInput } from "@/src/lib/hotel-store/store";
+import type { StaffRole, User } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
 import { ADMIN, AdminHeader, Drawer, Empty, Field, hbtn, inputClass, Modal, Pager, SearchBox, Select, StatusBadge, tableCardClass, Tabs, textareaClass, toolbarClass, usePagination } from "./ui";
 
-const guestStats = (db: HotelDB, u: User) => {
-  const bookings = db.bookings.filter((b) => b.userId === u.id).sort((a, b) => b.checkIn.localeCompare(a.checkIn));
-  const stays = bookings.filter((b) => b.status === "checked-out" || b.status === "checked-in");
-  return { bookings, stays: stays.length, spent: bookings.reduce((s, b) => s + Math.max(0, paidOf(b)), 0), last: stays[0]?.checkIn, inHouse: bookings.some((b) => b.status === "checked-in") };
-};
 
 function GuestDrawer({ user, onClose }: { user: User; onClose: () => void }) {
   const db = useHotelDB();
   const staff = useCurrentStaff();
   const canManage = can(staff?.role, "guests.manage");
-  const stats = guestStats(db, user);
+  const stats = guestStats(db, user.id);
   const [form, setForm] = useState({ name: user.name, phone: user.phone, country: user.country ?? "", note: user.note ?? "" });
 
   return (
@@ -205,7 +200,7 @@ export default function UsersManager() {
     const n = q.trim().toLowerCase();
     return db.users
       .filter((u) => u.role === "guest")
-      .map((u) => ({ u, s: guestStats(db, u) }))
+      .map((u) => ({ u, s: guestStats(db, u.id) }))
       .filter(({ u, s }) => {
         if (kind === "registered" && !u.passwordHash) return false;
         if (kind === "profile" && u.passwordHash) return false;

@@ -317,6 +317,18 @@ export default function BookingDetail({ id }: { id: string }) {
                     <td className="py-2.5 text-right tabular-nums">{taka(b.subtotal)}</td>
                     <td className="w-8" />
                   </tr>
+                  {b.discount && (
+                    <tr>
+                      <td className="py-2.5 text-neutral-700">
+                        Discount{b.discount.kind === "percent" ? ` (${b.discount.value}%)` : ""}
+                        <span className="ml-1.5 text-xs text-neutral-400">
+                          {b.discount.reason} · {b.discount.by}
+                        </span>
+                      </td>
+                      <td className="py-2.5 text-right tabular-nums text-emerald-700">−{taka(b.discount.amount)}</td>
+                      <td />
+                    </tr>
+                  )}
                   <tr>
                     <td className="py-2.5 text-neutral-700">Service charge ({db.settings.serviceFeeRate}%)</td>
                     <td className="py-2.5 text-right tabular-nums">{taka(b.serviceFee)}</td>

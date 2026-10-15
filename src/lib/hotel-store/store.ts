@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Hotel, RoomType } from "@/src/data/hotels";
-import { hashPassword, isStaff } from "./auth";
+import { discountLimit, hashPassword, isStaff } from "./auth";
 import { clockMinutes, nightsBetween, shiftDay, stayNights, todayKey } from "./format";
 import { createSeed, DB_VERSION, staticState } from "./seed";
 import type {
@@ -11,6 +11,7 @@ import type {
   BookingStatus,
   Charge,
   Content,
+  DiscountKind,
   GalleryImage,
   GuestInfo,
   HotelDB,
@@ -29,6 +30,7 @@ import type {
   Session,
   Settings,
   StaffRole,
+  StayDiscount,
   User,
 } from "./types";
 
@@ -211,14 +213,29 @@ export function paymentStatus(b: Booking): { label: string; tone: string } {
   return { label: "Unpaid", tone: "bg-amber-50 text-amber-700 ring-amber-200" };
 }
 
-export function quoteStay(settings: Settings, price: number, nights: number, rooms: number) {
-  const subtotal = price * nights * rooms;
-  const serviceFee = Math.round((subtotal * settings.serviceFeeRate) / 100);
-  const tax = Math.round((subtotal * settings.vatRate) / 100);
-  const total = subtotal + serviceFee + tax;
-  // Whole taka, rounded up so the deposit never falls below the rate.
-  return { subtotal, serviceFee, tax, total, deposit: Math.ceil((total * settings.depositRate) / 100) };
+export type DiscountInput = { kind: DiscountKind; value: number };
+
+/** BDT a discount takes off a room charge — never more than the charge itself. */
+export function discountAmount(subtotal: number, d?: DiscountInput) {
+  if (!d || !(d.value > 0)) return 0;
+  const raw = d.kind === "percent" ? (subtotal * Math.min(d.value, 100)) / 100 : d.value;
+  return Math.min(subtotal, Math.round(raw));
 }
+
+/** Room charge → discount → service charge and VAT on the discounted price → total. */
+export function quoteStay(settings: Settings, price: number, nights: number, rooms: number, discount?: DiscountInput) {
+  const subtotal = price * nights * rooms;
+  const off = discountAmount(subtotal, discount);
+  const net = subtotal - off;
+  const serviceFee = Math.round((net * settings.serviceFeeRate) / 100);
+  const tax = Math.round((net * settings.vatRate) / 100);
+  const total = net + serviceFee + tax;
+  // Whole taka, rounded up so the deposit never falls below the rate.
+  return { subtotal, discount: off, net, serviceFee, tax, total, deposit: Math.ceil((total * settings.depositRate) / 100) };
+}
+
+/** Discount as a percent of the room charge, for checking against a staff member's limit. */
+export const discountRate = (subtotal: number, amount: number) => (subtotal > 0 ? (amount / subtotal) * 100 : 0);
 
 /** When free cancellation ends, and what the hotel keeps if the booking is cancelled at `now`. */
 export function cancellationTerms(db: HotelDB, b: Booking, now = Date.now()) {
@@ -521,6 +538,35 @@ export function updateGuestProfile(id: string, patch: Partial<Pick<User, "name" 
   update((s) => ({ ...s, users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)) }));
 }
 
+const phoneDigits = (p: string) => p.replace(/\D/g, "").replace(/^880/, "0");
+
+/** An existing guest with the same email or phone number — so staff don't create a second profile. */
+export function findGuestMatch(db: HotelDB, guest: Pick<GuestInfo, "email" | "phone">, skipId?: string) {
+  const email = normEmail(guest.email);
+  const phone = phoneDigits(guest.phone);
+  return db.users.find(
+    (u) => u.role === "guest" && u.id !== skipId && ((email && u.email === email) || (phone.length >= 7 && phoneDigits(u.phone) === phone))
+  );
+}
+
+/** A guest's history with the hotel, newest stay first. */
+export function guestStats(db: HotelDB, userId: string) {
+  const bookings = db.bookings.filter((b) => b.userId === userId).sort((a, b) => b.checkIn.localeCompare(a.checkIn));
+  const stays = bookings.filter((b) => b.status === "checked-out" || b.status === "checked-in");
+  return {
+    bookings,
+    stays: stays.length,
+    nights: stays.reduce((s, b) => s + b.nights, 0),
+    spent: bookings.reduce((s, b) => s + Math.max(0, paidOf(b)), 0),
+    last: stays[0]?.checkIn,
+    inHouse: bookings.some((b) => b.status === "checked-in"),
+    upcoming: bookings.filter((b) => (b.status === "pending" || b.status === "confirmed") && b.checkIn >= todayKey()),
+    noShows: bookings.filter((b) => b.status === "no-show").length,
+    /** Latest ID the guest showed, to save asking again. */
+    lastId: bookings.find((b) => b.guest.idNumber)?.guest,
+  };
+}
+
 /** Finds the guest profile for an email (or phone), creating one if this is a first-time guest. */
 function ensureGuest(s: HotelDB, guest: GuestInfo, preferId?: string): { users: User[]; user: User } {
   const byId = preferId ? s.users.find((u) => u.id === preferId) : undefined;
@@ -680,6 +726,9 @@ export type StaffBookingInput = {
   source: Exclude<BookingSource, "website">;
   /** Negotiated or corporate rate; defaults to the room's price. */
   pricePerNight?: number;
+  discount?: DiscountInput & { reason: string };
+  /** Travel agent or company that made the booking. */
+  agentName?: string;
   unitIds?: string[];
   payment?: { amount: number; method: PayMethod; ref?: string };
   checkInNow?: boolean;
@@ -737,7 +786,21 @@ export function createStaffBooking(input: StaffBookingInput): Result<Booking> {
     const { users, user } = ensureGuest(s, input.guest, input.userId);
     const nights = nightsBetween(input.checkIn, input.checkOut);
     const rate = input.pricePerNight && input.pricePerNight > 0 ? Math.round(input.pricePerNight) : type.price;
-    const q = quoteStay(s.settings, rate, nights, input.rooms);
+    const q = quoteStay(s.settings, rate, nights, input.rooms, input.discount);
+    let discount: StayDiscount | undefined;
+    if (q.discount > 0 && input.discount) {
+      const reason = input.discount.reason.trim();
+      if (!reason) {
+        result = fail("Give a reason for the discount.");
+        return s;
+      }
+      const limit = discountLimit(s.users.find((u) => u.id === getSession().staffId)?.role);
+      if (discountRate(q.subtotal, q.discount) > limit + 0.001) {
+        result = fail(`Your discount limit is ${limit}% of the room charge — ask a manager for more.`);
+        return s;
+      }
+      discount = { kind: input.discount.kind, value: input.discount.value, amount: q.discount, reason, by };
+    }
     const pay = input.payment && input.payment.amount > 0 ? Math.min(Math.round(input.payment.amount), q.total) : 0;
     const at = nowIso();
     const seq = s.seq.booking + 1;
@@ -758,6 +821,7 @@ export function createStaffBooking(input: StaffBookingInput): Result<Booking> {
       children: input.children,
       pricePerNight: rate,
       subtotal: q.subtotal,
+      discount,
       serviceFee: q.serviceFee,
       tax: q.tax,
       total: q.total,
@@ -766,12 +830,13 @@ export function createStaffBooking(input: StaffBookingInput): Result<Booking> {
       guest: { ...input.guest, email: normEmail(input.guest.email) },
       status,
       source: input.source,
-      internalNote: input.internalNote,
+      internalNote: [input.agentName?.trim() && `Agent: ${input.agentName.trim()}`, input.internalNote?.trim()].filter(Boolean).join("\n") || undefined,
       createdAt: at,
       updatedAt: at,
       checkedInAt: input.checkInNow ? at : undefined,
       log: [
-        { at, text: `Booking taken (${input.source})${rate !== type.price ? ` at ${money(rate)}/night` : ""}`, by },
+        { at, text: `Booking taken (${input.source}${input.agentName?.trim() ? ` · ${input.agentName.trim()}` : ""})${rate !== type.price ? ` at ${money(rate)}/night` : ""}`, by },
+        ...(discount ? [{ at, text: `Discount ${discount.kind === "percent" ? `${discount.value}% ` : ""}${money(discount.amount)} — ${discount.reason}`, by }] : []),
         ...(pay ? [{ at, text: `Received ${money(pay)} via ${input.payment!.method}`, by }] : []),
         ...(input.checkInNow ? [{ at, text: `Checked in to room ${numbers}`, by }] : []),
       ],
@@ -925,7 +990,7 @@ export function changeStay(id: string, change: StayChange) {
     if (problem || !type) return problem ?? "Room unavailable.";
     const nights = nightsBetween(change.checkIn, change.checkOut);
     const rate = Math.max(1, Math.round(change.pricePerNight));
-    const q = quoteStay(s.settings, rate, nights, change.rooms);
+    const q = quoteStay(s.settings, rate, nights, change.rooms, b.discount);
     const keep =
       change.roomTypeId === b.roomTypeId
         ? b.unitIds.filter((unitId) => !validateUnits(s, type.id, [unitId], b.status === "checked-in" ? todayKey() : change.checkIn, change.checkOut, b.id)).slice(0, change.rooms)
@@ -940,6 +1005,7 @@ export function changeStay(id: string, change: StayChange) {
       roomName: type.name,
       nights,
       subtotal: q.subtotal,
+      discount: b.discount && (q.discount ? { ...b.discount, amount: q.discount } : undefined),
       serviceFee: q.serviceFee,
       tax: q.tax,
       total: q.total,

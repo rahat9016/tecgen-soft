@@ -56,6 +56,7 @@ export default function PrintableInvoice({ booking, db }: { booking: Booking; db
   const total = folioTotal(booking);
   const extras = booking.charges.filter((c) => c.amount > 0);
   const discounts = booking.charges.filter((c) => c.amount < 0);
+  const discountTotal = (booking.discount?.amount ?? 0) - discounts.reduce((s, c) => s + c.amount, 0);
   const payments = booking.payments.filter((p) => !p.void);
   const rooms = unitNumbers(db, booking.unitIds);
   const terms = cancellationTerms(db, booking);
@@ -196,10 +197,12 @@ export default function PrintableInvoice({ booking, db }: { booking: Booking; db
               <td className="py-1 text-neutral-500">Subtotal</td>
               <td className="py-1 text-right">BDT {money(booking.subtotal + booking.serviceFee + extras.reduce((s, c) => s + c.amount, 0))}</td>
             </tr>
-            {discounts.length > 0 && (
+            {discountTotal > 0 && (
               <tr>
-                <td className="py-1 text-neutral-500">Discount</td>
-                <td className="py-1 text-right">− BDT {money(-discounts.reduce((s, c) => s + c.amount, 0))}</td>
+                <td className="py-1 text-neutral-500">
+                  Discount{booking.discount?.kind === "percent" && !discounts.length ? ` (${booking.discount.value}% on room)` : ""}
+                </td>
+                <td className="py-1 text-right">− BDT {money(discountTotal)}</td>
               </tr>
             )}
             <tr>

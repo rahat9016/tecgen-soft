@@ -89,6 +89,19 @@ export type GuestInfo = {
 
 export type BookingEvent = { at: string; text: string; by: string };
 
+export type DiscountKind = "percent" | "amount";
+
+/** Taken off the room charge before service charge and VAT, so both are worked out on the discounted price. */
+export type StayDiscount = {
+  kind: DiscountKind;
+  /** As entered: a percent (0–100) or a flat BDT amount for the whole stay. */
+  value: number;
+  /** BDT actually taken off `subtotal`. */
+  amount: number;
+  reason: string;
+  by: string;
+};
+
 export type Booking = {
   id: string;
   code: string;
@@ -107,10 +120,12 @@ export type Booking = {
   adults: number;
   children: number;
   pricePerNight: number;
+  /** Room charge before any discount: pricePerNight × nights × rooms. */
   subtotal: number;
+  discount?: StayDiscount;
   serviceFee: number;
   tax: number;
-  /** Room charge incl. service fee and VAT. Extras live in `charges`. */
+  /** Room charge less discount, plus service fee and VAT. Extras live in `charges`. */
   total: number;
   charges: Charge[];
   payments: Payment[];

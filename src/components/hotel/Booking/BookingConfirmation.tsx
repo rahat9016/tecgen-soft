@@ -528,6 +528,12 @@ export default function BookingConfirmation({
                       BDT {booking.subtotal.toLocaleString()}
                     </span>
                   </div>
+                  {booking.discount && (
+                    <div className="flex justify-between gap-3 text-emerald-700">
+                      <span>Discount{booking.discount.kind === "percent" ? ` (${booking.discount.value}%)` : ""}</span>
+                      <span className="shrink-0">− BDT {booking.discount.amount.toLocaleString()}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-neutral-600">
                     <span>Service fee ({db.settings.serviceFeeRate}%)</span>
                     <span>BDT {booking.serviceFee.toLocaleString()}</span>

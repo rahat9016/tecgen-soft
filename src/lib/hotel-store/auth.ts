@@ -31,3 +31,7 @@ export type Permission = keyof typeof grants;
 
 export const can = (role: Role | undefined, permission: Permission) =>
   isStaff(role) && (grants[permission] as StaffRole[]).includes(role);
+
+/** Largest discount, as a percent of the room charge, each role may give without a manager. */
+export const discountLimits: Record<StaffRole, number> = { admin: 100, manager: 50, receptionist: 10 };
+export const discountLimit = (role: Role | undefined) => (isStaff(role) ? discountLimits[role] : 0);

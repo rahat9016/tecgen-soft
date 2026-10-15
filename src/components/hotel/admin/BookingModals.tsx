@@ -232,7 +232,7 @@ export function ChangeStayModal({ booking, open, onClose }: { booking: Booking; 
   });
   const type = db.roomTypes.find((t) => t.id === form.roomTypeId);
   const nights = nightsBetween(form.checkIn, form.checkOut);
-  const q = quoteStay(db.settings, form.pricePerNight, nights, form.rooms);
+  const q = quoteStay(db.settings, form.pricePerNight, nights, form.rooms, booking.discount);
   const free = nights > 0 ? freeRooms(db, form.roomTypeId, form.checkIn, form.checkOut, booking.id) : 0;
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -291,6 +291,7 @@ export function ChangeStayModal({ booking, open, onClose }: { booking: Booking; 
         <span>
           {nights} night{nights !== 1 ? "s" : ""} · new room total <b>{taka(q.total)}</b>
           <span className="text-neutral-500"> (was {taka(booking.total)})</span>
+          {booking.discount && <span className="block text-right text-xs text-emerald-700">Discount kept: −{taka(q.discount)}</span>}
         </span>
       </div>
       <div className="mt-5 flex justify-end gap-2">

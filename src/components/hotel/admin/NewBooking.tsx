@@ -1,339 +1,284 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
-import { ArrowLeft, Check, Search, UserRound } from "lucide-react";
-import { housekeepingLabels, nightsBetween, payLabels, shiftDay, sourceLabels, taka, todayKey } from "@/src/lib/hotel-store/format";
-import { createStaffBooking, freeRooms, freeUnits, quoteStay, suggestUnits, useHotelDB } from "@/src/lib/hotel-store/store";
-import type { BookingSource, GuestInfo, PayMethod, User } from "@/src/lib/hotel-store/types";
+import { FormProvider, useForm, useWatch, type FieldErrors, type Resolver } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { discountLimit } from "@/src/lib/hotel-store/auth";
+import { shiftDay, taka, todayKey } from "@/src/lib/hotel-store/format";
+import { createStaffBooking, findGuestMatch, freeUnits, guestStats, suggestUnits, updateGuestProfile, useCurrentStaff, useHotelDB, useHydrated } from "@/src/lib/hotel-store/store";
+import type { HotelDB } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
-import { ADMIN, Card, Field, hbtn, inputClass, textareaClass } from "./ui";
+import GuestSection from "./booking-form/GuestSection";
+import { PaymentSection, PricingSection } from "./booking-form/PricingSection";
+import { RoomsSection, StaySection } from "./booking-form/StaySection";
+import SummaryPanel, { submitLabel } from "./booking-form/SummaryPanel";
+import {
+  bookingSchema,
+  computeStay,
+  emptyGuest,
+  fieldForStoreError,
+  OTHER_REASON,
+  sectionOf,
+  sectionOrder,
+  toNum,
+  type BookingFormValues,
+} from "./booking-form/schema";
+import { ADMIN, Card, hbtn, Loader } from "./ui";
 
-const methods: PayMethod[] = ["cash", "card", "bkash", "nagad", "rocket", "bank"];
-const emptyGuest: GuestInfo = { name: "", phone: "", email: "", country: "Bangladesh", idType: "nid", idNumber: "", note: "" };
+/** Field paths with an error, e.g. ["checkIn", "guest.phone"]. */
+const errorPaths = (e: FieldErrors, prefix = ""): string[] =>
+  Object.entries(e).flatMap(([k, v]) => {
+    if (!v || typeof v !== "object") return [];
+    const path = prefix ? `${prefix}.${k}` : k;
+    return "message" in v && typeof v.message === "string" ? [path] : errorPaths(v as FieldErrors, path);
+  });
+
+const scrollToSection = (section: string, field?: string) => {
+  document.getElementById(`bf-${section}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (field) (document.querySelector(`[name="${field}"]`) as HTMLElement | null)?.focus({ preventScroll: true });
+};
+
+function initialValues(db: HotelDB, params: URLSearchParams): BookingFormValues {
+  const today = todayKey();
+  const typeId = params.get("type") ?? db.roomTypes.find((t) => t.active)?.id ?? db.roomTypes[0]?.id ?? "";
+  const checkIn = params.get("checkIn") ?? today;
+  const checkOut = params.get("checkOut") ?? shiftDay(checkIn, 1);
+  const user = db.users.find((u) => u.id === params.get("guest") && u.role === "guest");
+  const lastId = user ? guestStats(db, user.id).lastId : undefined;
+  return {
+    source: "walk-in",
+    agentName: "",
+    typeId,
+    checkIn,
+    checkOut,
+    rooms: 1,
+    adults: 2,
+    children: 0,
+    rate: db.roomTypes.find((t) => t.id === typeId)?.price ?? "",
+    unitIds: params.get("unit") ? [params.get("unit")!] : [],
+    guestMode: user ? "returning" : "new",
+    userId: user?.id ?? "",
+    guest: user
+      ? { ...emptyGuest, name: user.name, phone: user.phone, email: user.email, country: user.country ?? "Bangladesh", idType: lastId?.idType ?? "nid", idNumber: lastId?.idNumber ?? "" }
+      : emptyGuest,
+    updateProfile: false,
+    discountKind: "percent",
+    discountValue: "",
+    discountReason: "",
+    discountNote: "",
+    payAmount: "",
+    payMethod: "cash",
+    payRef: "",
+    status: checkIn === today ? "check-in" : "confirmed",
+    internalNote: "",
+  };
+}
 
 export default function NewBooking() {
+  // Wait for the browser copy of the data so URL presets (guest, room) resolve against it.
+  return useHydrated() ? <NewBookingForm /> : <Loader />;
+}
+
+function NewBookingForm() {
   const db = useHotelDB();
+  const staff = useCurrentStaff();
   const router = useRouter();
   const params = useSearchParams();
-  const today = todayKey();
-  const activeTypes = db.roomTypes;
-  const [typeId, setTypeId] = useState(params.get("type") ?? activeTypes[0]?.id ?? "");
-  const [checkIn, setCheckIn] = useState(params.get("checkIn") ?? today);
-  const [checkOut, setCheckOut] = useState(params.get("checkOut") ?? shiftDay(params.get("checkIn") ?? today, 1));
-  const [roomsCount, setRoomsCount] = useState(1);
-  const [adults, setAdults] = useState(2);
-  const [children, setChildren] = useState(0);
-  const [rate, setRate] = useState<number | "">("");
-  const [picked, setPicked] = useState<string[] | null>(params.get("unit") ? [params.get("unit")!] : null);
-  const [source, setSource] = useState<Exclude<BookingSource, "website">>("walk-in");
-  const [guest, setGuest] = useState<GuestInfo>(emptyGuest);
-  const [userId, setUserId] = useState<string | undefined>(params.get("guest") ?? undefined);
-  const [lookup, setLookup] = useState("");
-  const [payAmount, setPayAmount] = useState("");
-  const [payMethod, setPayMethod] = useState<PayMethod>("cash");
-  const [payRef, setPayRef] = useState("");
-  const [checkInNow, setCheckInNow] = useState(true);
-  const [tentative, setTentative] = useState(false);
-  const [note, setNote] = useState("");
+  const limit = discountLimit(staff?.role);
+  const [saving, setSaving] = useState(false);
 
-  const type = db.roomTypes.find((t) => t.id === typeId);
-  const nights = nightsBetween(checkIn, checkOut);
-  const price = rate === "" ? (type?.price ?? 0) : rate;
-  const q = quoteStay(db.settings, price, nights, roomsCount);
-  const free = type && nights > 0 ? freeRooms(db, type.id, checkIn, checkOut) : 0;
-  const units = type && nights > 0 ? freeUnits(db, type.id, checkIn, checkOut) : [];
-  const chosen = (picked ?? (type && nights > 0 ? suggestUnits(db, type.id, checkIn, checkOut, roomsCount) : [])).filter((id) => units.some((u) => u.id === id)).slice(0, roomsCount);
-  const canCheckInNow = checkIn === today;
+  // The resolver reads live availability, so it always sees the latest data.
+  const dbRef = useRef(db);
+  useEffect(() => {
+    dbRef.current = db;
+  }, [db]);
+  const resolver = useCallback<Resolver<BookingFormValues>>(
+    (values, ctx, opts) => (yupResolver(bookingSchema, { context: { db: dbRef.current, limit } }) as unknown as Resolver<BookingFormValues>)(values, ctx, opts),
+    [limit]
+  );
 
-  const preset = userId ? db.users.find((u) => u.id === userId) : undefined;
-  const [presetApplied, setPresetApplied] = useState(false);
-  if (preset && !presetApplied) {
-    setPresetApplied(true);
-    setGuest({ ...emptyGuest, name: preset.name, phone: preset.phone, email: preset.email, country: preset.country ?? "Bangladesh" });
-  }
+  const methods = useForm<BookingFormValues>({ resolver, defaultValues: initialValues(db, params), mode: "onTouched", shouldFocusError: false });
+  const { control, getValues, setValue, setError, handleSubmit, formState } = methods;
+  const { isDirty, isSubmitted } = formState;
+  const [typeId, checkIn, checkOut, rooms, status] = useWatch({ control, name: ["typeId", "checkIn", "checkOut", "rooms", "status"] });
+  const v = useWatch({ control }) as BookingFormValues;
+  const { quote } = computeStay(db, v);
+  const due = Math.max(0, quote.total - Math.min(toNum(v.payAmount), quote.total));
 
-  const matches = useMemo(() => {
-    const n = lookup.trim().toLowerCase();
-    if (n.length < 2) return [];
-    return db.users.filter((u) => u.role === "guest" && [u.name, u.phone, u.email].some((v) => v.toLowerCase().includes(n))).slice(0, 6);
-  }, [db.users, lookup]);
+  // A new room type starts at its own rack rate.
+  const lastType = useRef(typeId);
+  useEffect(() => {
+    if (lastType.current === typeId) return;
+    lastType.current = typeId;
+    const t = db.roomTypes.find((x) => x.id === typeId);
+    if (t) setValue("rate", t.price, { shouldDirty: true });
+  }, [typeId, db.roomTypes, setValue]);
 
-  const pickGuest = (u: User) => {
-    setUserId(u.id);
-    setGuest({ ...emptyGuest, name: u.name, phone: u.phone, email: u.email, country: u.country ?? "Bangladesh" });
-    setLookup("");
+  // Keep picked rooms that are still free for the stay and top up with the best free ones.
+  useEffect(() => {
+    const count = Math.max(1, toNum(rooms));
+    if (!typeId || !checkIn || !checkOut || checkOut <= checkIn) return setValue("unitIds", []);
+    const free = new Set(freeUnits(db, typeId, checkIn, checkOut).map((u) => u.id));
+    const keep = getValues("unitIds").filter((id) => free.has(id)).slice(0, count);
+    const extra = suggestUnits(db, typeId, checkIn, checkOut, count)
+      .filter((id) => !keep.includes(id))
+      .slice(0, count - keep.length);
+    setValue("unitIds", [...keep, ...extra], { shouldValidate: isSubmitted });
+  }, [db, typeId, checkIn, checkOut, rooms, getValues, setValue, isSubmitted]);
+
+  // Check-in now only makes sense for a stay starting today.
+  useEffect(() => {
+    if (status === "check-in" && checkIn !== todayKey()) setValue("status", "confirmed");
+  }, [checkIn, status, setValue]);
+
+  // Warn before a reload or tab close loses unsaved details.
+  useEffect(() => {
+    if (!isDirty) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [isDirty]);
+
+  const leave = () => {
+    if (isDirty && !confirm("Discard this booking? The details you entered will be lost.")) return;
+    router.push(`${ADMIN}/bookings`);
   };
 
-  const toggleUnit = (id: string) => {
-    const cur = chosen;
-    setPicked(cur.includes(id) ? cur.filter((x) => x !== id) : cur.length >= roomsCount ? [...cur.slice(1), id] : [...cur, id]);
+  const onInvalid = (errors: FieldErrors<BookingFormValues>) => {
+    const paths = errorPaths(errors).sort((a, b) => sectionOrder.indexOf(sectionOf(a)) - sectionOrder.indexOf(sectionOf(b)));
+    if (!paths.length) return;
+    scrollToSection(sectionOf(paths[0]), paths[0]);
+    toast.error(paths.length > 1 ? `${paths.length} fields need attention` : "One field needs attention");
   };
 
-  const submit = () => {
-    if (userId && db.users.find((u) => u.id === userId)?.status === "blocked" && !confirm("This guest is blocked. Book anyway?")) return;
+  const onValid = (values: BookingFormValues) => {
+    if (saving) return;
+    const user = values.userId ? db.users.find((u) => u.id === values.userId) : undefined;
+    if (user?.status === "blocked" && !confirm(`${user.name} is blocked${user.note ? ` — ${user.note}` : ""}.\n\nBook anyway?`)) return;
+
+    let userId = user?.id;
+    if (!user) {
+      const match = findGuestMatch(db, values.guest);
+      if (match && confirm(`${match.name} already has a guest profile with this phone or email.\n\nOK — add this booking to their profile\nCancel — keep as a new guest`)) userId = match.id;
+    }
+    if (values.status === "check-in") {
+      const dirty = values.unitIds.map((id) => db.units.find((u) => u.id === id)).filter((u) => u?.housekeeping === "dirty");
+      if (dirty.length && !confirm(`Room ${dirty.map((u) => u!.number).join(", ")} is not cleaned yet. Check the guest in anyway?`)) return;
+    }
+
+    setSaving(true);
+    const discountValue = toNum(values.discountValue);
+    const note = values.discountNote.trim();
     const r = createStaffBooking({
-      roomTypeId: typeId,
-      checkIn,
-      checkOut,
-      rooms: roomsCount,
-      adults,
-      children,
-      guest,
+      roomTypeId: values.typeId,
+      checkIn: values.checkIn,
+      checkOut: values.checkOut,
+      rooms: toNum(values.rooms),
+      adults: toNum(values.adults),
+      children: toNum(values.children),
+      guest: {
+        name: values.guest.name.trim(),
+        phone: values.guest.phone.trim(),
+        email: values.guest.email.trim(),
+        country: values.guest.country.trim() || undefined,
+        idType: values.guest.idType,
+        idNumber: values.guest.idNumber.trim() || undefined,
+        note: values.guest.note.trim() || undefined,
+      },
       userId,
-      source,
-      pricePerNight: price,
-      unitIds: chosen,
-      payment: Number(payAmount) > 0 ? { amount: Number(payAmount), method: payMethod, ref: payRef } : undefined,
-      checkInNow: canCheckInNow && checkInNow && !tentative,
-      tentative,
-      internalNote: note || undefined,
+      source: values.source,
+      agentName: values.source === "agent" ? values.agentName : undefined,
+      pricePerNight: toNum(values.rate),
+      discount: discountValue > 0 ? { kind: values.discountKind, value: discountValue, reason: values.discountReason === OTHER_REASON ? note : [values.discountReason, note].filter(Boolean).join(" — ") } : undefined,
+      unitIds: values.unitIds,
+      payment: toNum(values.payAmount) > 0 ? { amount: toNum(values.payAmount), method: values.payMethod, ref: values.payRef.trim() } : undefined,
+      checkInNow: values.status === "check-in",
+      tentative: values.status === "tentative",
+      internalNote: values.internalNote.trim() || undefined,
     });
-    if (!r.ok) return toast.error(r.error);
-    toast.success(`${r.value.code} created${r.value.status === "checked-in" ? " — guest checked in" : ""}`);
+
+    if (!r.ok) {
+      setSaving(false);
+      const field = fieldForStoreError(r.error);
+      if (!field) return toast.error(r.error);
+      setError(field, { type: "store", message: r.error });
+      scrollToSection(sectionOf(field), field);
+      return;
+    }
+    if (user && values.updateProfile) updateGuestProfile(user.id, { name: values.guest.name.trim(), phone: values.guest.phone.trim(), country: values.guest.country.trim() || undefined });
+
+    toast.success(`${r.value.code} created${r.value.status === "checked-in" ? " — guest checked in" : r.value.status === "pending" ? " — on hold until deposit" : ""}`);
     router.push(`${ADMIN}/bookings/${r.value.id}`);
   };
 
   return (
-    <div>
-      <Link href={`${ADMIN}/bookings`} className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-sky-700">
-        <ArrowLeft className="size-4" /> Bookings
-      </Link>
-      <h1 className="mt-2 text-2xl font-bold text-neutral-900">New booking</h1>
-      <p className="mt-1 text-sm text-neutral-500">For walk-in guests, phone reservations and travel agents.</p>
-
-      <div className="mt-6 grid items-start gap-6 xl:grid-cols-[1fr_360px]">
-        <div className="space-y-6">
-          <Card>
-            <h2 className="font-semibold text-neutral-900">Stay</h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Field label="Room type" className="sm:col-span-2">
-                <select
-                  value={typeId}
-                  onChange={(e) => {
-                    setTypeId(e.target.value);
-                    setPicked(null);
-                    setRate("");
-                  }}
-                  className={inputClass}
-                >
-                  {activeTypes.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} · {taka(t.price)} · sleeps {t.capacity}
-                      {t.active ? "" : " (hidden on website)"}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Check-in">
-                <input
-                  type="date"
-                  min={today}
-                  value={checkIn}
-                  onChange={(e) => {
-                    setCheckIn(e.target.value);
-                    if (e.target.value >= checkOut) setCheckOut(shiftDay(e.target.value, 1));
-                    setPicked(null);
-                  }}
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Check-out">
-                <input
-                  type="date"
-                  min={shiftDay(checkIn, 1)}
-                  value={checkOut}
-                  onChange={(e) => {
-                    setCheckOut(e.target.value);
-                    setPicked(null);
-                  }}
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Rooms">
-                <input type="number" min={1} max={Math.max(1, free)} value={roomsCount} onChange={(e) => setRoomsCount(Math.max(1, Number(e.target.value)))} className={inputClass} />
-              </Field>
-              <Field label="Adults">
-                <input type="number" min={1} value={adults} onChange={(e) => setAdults(Math.max(1, Number(e.target.value)))} className={inputClass} />
-              </Field>
-              <Field label="Children">
-                <input type="number" min={0} value={children} onChange={(e) => setChildren(Math.max(0, Number(e.target.value)))} className={inputClass} />
-              </Field>
-              <Field label="Rate / night (BDT)" hint={type ? `Rack rate ${taka(type.price)}` : undefined}>
-                <input type="number" min={1} value={rate} placeholder={String(type?.price ?? "")} onChange={(e) => setRate(e.target.value === "" ? "" : Number(e.target.value))} className={inputClass} />
-              </Field>
-            </div>
-
-            <div className="mt-5">
-              <p className={cn("text-sm font-medium", free >= roomsCount ? "text-emerald-700" : "text-rose-600")}>
-                {nights < 1 ? "Pick valid dates" : free >= roomsCount ? `${free} ${type?.name} free · pick room${roomsCount > 1 ? "s" : ""}` : free ? `Only ${free} free for these dates` : "Fully booked for these dates"}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {units.map((u) => {
-                  const on = chosen.includes(u.id);
-                  return (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => toggleUnit(u.id)}
-                      aria-pressed={on}
-                      className={cn("w-20 rounded-md border p-2 text-left transition", on ? "border-sky-500 bg-sky-50 ring-2 ring-sky-100" : "border-neutral-200 hover:border-sky-300")}
-                    >
-                      <span className="flex items-center justify-between text-base font-bold text-neutral-900">
-                        {u.number} {on && <Check className="size-4 text-sky-600" />}
-                      </span>
-                      <span className={cn("block text-[10px]", u.housekeeping === "dirty" ? "text-amber-600" : "text-emerald-600")}>{housekeepingLabels[u.housekeeping]}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-semibold text-neutral-900">Guest</h2>
-              <div className="flex gap-1 rounded-md bg-neutral-100 p-1 text-xs font-medium">
-                {(["walk-in", "phone", "agent"] as const).map((s) => (
-                  <button key={s} onClick={() => setSource(s)} className={cn("rounded-md px-3 py-1", source === s ? "bg-white text-sky-700 shadow-sm" : "text-neutral-600")}>
-                    {sourceLabels[s]}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="relative mt-4">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
-              <input value={lookup} onChange={(e) => setLookup(e.target.value)} placeholder="Find a returning guest by name, phone or email" className={cn(inputClass, "pl-9")} />
-              {matches.length > 0 && (
-                <ul className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg">
-                  {matches.map((u) => (
-                    <li key={u.id}>
-                      <button onClick={() => pickGuest(u)} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-sky-50">
-                        <UserRound className="size-4 text-neutral-400" />
-                        <span className="flex-1">
-                          <span className="font-medium text-neutral-900">{u.name}</span>
-                          <span className="block text-xs text-neutral-500">
-                            {u.phone} · {u.email}
-                          </span>
-                        </span>
-                        {u.status === "blocked" && <span className="text-xs font-semibold text-rose-600">Blocked</span>}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            {userId && (
-              <p className="mt-2 flex items-center gap-2 text-xs text-sky-700">
-                Returning guest linked.
-                <button
-                  onClick={() => {
-                    setUserId(undefined);
-                    setGuest(emptyGuest);
-                  }}
-                  className="font-semibold underline"
-                >
-                  Clear
-                </button>
-              </p>
-            )}
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <Field label="Full name">
-                <input value={guest.name} onChange={(e) => setGuest({ ...guest, name: e.target.value })} className={inputClass} />
-              </Field>
-              <Field label="Phone">
-                <input value={guest.phone} onChange={(e) => setGuest({ ...guest, phone: e.target.value })} className={inputClass} placeholder="+880 17XX-XXXXXX" />
-              </Field>
-              <Field label="Email (optional)">
-                <input value={guest.email} onChange={(e) => setGuest({ ...guest, email: e.target.value })} className={inputClass} />
-              </Field>
-              <Field label="Country">
-                <input value={guest.country ?? ""} onChange={(e) => setGuest({ ...guest, country: e.target.value })} className={inputClass} />
-              </Field>
-              <Field label="ID">
-                <div className="flex gap-2">
-                  <select value={guest.idType} onChange={(e) => setGuest({ ...guest, idType: e.target.value as "nid" | "passport" })} className={cn(inputClass, "w-32")}>
-                    <option value="nid">NID</option>
-                    <option value="passport">Passport</option>
-                  </select>
-                  <input value={guest.idNumber ?? ""} onChange={(e) => setGuest({ ...guest, idNumber: e.target.value })} className={inputClass} placeholder="Number" />
-                </div>
-              </Field>
-              <Field label="Requests">
-                <input value={guest.note ?? ""} onChange={(e) => setGuest({ ...guest, note: e.target.value })} className={inputClass} placeholder="e.g. Extra bed, late check-out" />
-              </Field>
-            </div>
-          </Card>
-        </div>
-
-        <div className="space-y-6 xl:sticky xl:top-24">
-          <Card>
-            <h2 className="font-semibold text-neutral-900">Summary</h2>
-            <dl className="mt-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-neutral-500">
-                  {taka(price)} × {nights} night{nights !== 1 ? "s" : ""}
-                  {roomsCount > 1 ? ` × ${roomsCount}` : ""}
-                </dt>
-                <dd className="tabular-nums">{taka(q.subtotal)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-neutral-500">Service ({db.settings.serviceFeeRate}%)</dt>
-                <dd className="tabular-nums">{taka(q.serviceFee)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-neutral-500">VAT ({db.settings.vatRate}%)</dt>
-                <dd className="tabular-nums">{taka(q.tax)}</dd>
-              </div>
-              <div className="flex justify-between border-t border-neutral-100 pt-2 text-base font-bold">
-                <dt>Total</dt>
-                <dd className="tabular-nums">{taka(q.total)}</dd>
-              </div>
-            </dl>
-
-            <h3 className="mt-5 text-xs font-semibold uppercase tracking-wide text-neutral-500">Payment now</h3>
-            <div className="mt-2 grid grid-cols-3 gap-1.5">
-              {methods.map((m) => (
-                <button key={m} onClick={() => setPayMethod(m)} className={cn("h-8 rounded-md border text-xs font-medium", payMethod === m ? "border-sky-500 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-600")}>
-                  {payLabels[m]}
-                </button>
-              ))}
-            </div>
-            <div className="mt-2 flex gap-2">
-              <input type="number" min={0} value={payAmount} onChange={(e) => setPayAmount(e.target.value)} placeholder="Amount" className={inputClass} />
-              <button onClick={() => setPayAmount(String(q.deposit))} className={hbtn.small} title="Deposit">
-                {db.settings.depositRate}%
-              </button>
-              <button onClick={() => setPayAmount(String(q.total))} className={hbtn.small}>
-                Full
-              </button>
-            </div>
-            {payMethod !== "cash" && Number(payAmount) > 0 && (
-              <input value={payRef} onChange={(e) => setPayRef(e.target.value)} placeholder="Transaction / reference" className={cn(inputClass, "mt-2")} />
-            )}
-
-            <div className="mt-5 space-y-2 text-sm">
-              {canCheckInNow && (
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={checkInNow && !tentative} disabled={tentative} onChange={(e) => setCheckInNow(e.target.checked)} className="size-4 accent-sky-600" />
-                  Check the guest in now
-                </label>
-              )}
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={tentative} onChange={(e) => setTentative(e.target.checked)} className="size-4 accent-sky-600" />
-                Tentative (awaiting deposit)
-              </label>
-            </div>
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Staff note (optional)" className={cn(textareaClass, "mt-3")} />
-
-            <button onClick={submit} disabled={!type || nights < 1 || free < roomsCount} className={cn(hbtn.primary, "mt-4 h-11 w-full")}>
-              {canCheckInNow && checkInNow && !tentative ? "Create & check in" : "Create booking"}
+    <FormProvider {...methods}>
+      <form onSubmit={handleSubmit(onValid, onInvalid)} noValidate className="pb-4">
+        <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={leave}
+              aria-label="Back to bookings"
+              className="flex size-10 shrink-0 items-center justify-center rounded-md border border-neutral-200 text-neutral-500 transition hover:border-sky-300 hover:text-sky-700"
+            >
+              <ArrowLeft className="size-4" />
             </button>
-          </Card>
+            <div>
+              <h1 className="text-xl font-bold text-neutral-900">New booking</h1>
+              <p className="mt-0.5 text-sm text-neutral-500">Walk-in, phone or agent reservation — the website handles online bookings.</p>
+            </div>
+          </div>
+          <div className="hidden gap-2 sm:flex">
+            <Link
+              href={`${ADMIN}/bookings`}
+              onClick={(e) => {
+                e.preventDefault();
+                leave();
+              }}
+              className={hbtn.outline}
+            >
+              Cancel
+            </Link>
+            <button type="submit" disabled={saving} className={hbtn.primary}>
+              {saving && <Loader2 className="size-4 animate-spin" />}
+              {submitLabel(status)}
+            </button>
+          </div>
+        </Card>
+
+        <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0 space-y-6">
+            <StaySection step={1} />
+            <RoomsSection step={2} />
+            <GuestSection step={3} />
+            <PricingSection step={4} />
+            <PaymentSection step={5} />
+          </div>
+          <div className="xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
+            <SummaryPanel saving={saving} />
+          </div>
         </div>
-      </div>
-    </div>
+
+        {/* Phones and tablets: total and submit always in reach. */}
+        <div className="sticky bottom-0 z-20 mt-6 flex items-center justify-between gap-3 rounded-md border border-neutral-200 bg-white/95 p-3 shadow-lg backdrop-blur xl:hidden">
+          <div className="text-sm">
+            <p className="font-bold tabular-nums text-neutral-900">{taka(quote.total)}</p>
+            <p className={cn("text-xs", due ? "text-amber-700" : "text-emerald-700")}>{due ? `${taka(due)} due` : "Fully paid"}</p>
+          </div>
+          <button type="submit" disabled={saving} className={cn(hbtn.primary, "h-11")}>
+            {saving && <Loader2 className="size-4 animate-spin" />}
+            {submitLabel(status)}
+          </button>
+        </div>
+      </form>
+    </FormProvider>
   );
 }
