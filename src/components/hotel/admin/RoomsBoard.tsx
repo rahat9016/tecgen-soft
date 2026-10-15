@@ -59,10 +59,10 @@ export default function RoomsBoard() {
   const floors = [...new Set(db.units.map((u) => u.floor))].sort((a, b) => a - b);
 
   const styles = {
-    occupied: { card: "border-emerald-300 bg-emerald-50/50", chip: "bg-emerald-600 text-white", label: "Occupied" },
-    departing: { card: "border-orange-300 bg-orange-50/50", chip: "bg-orange-500 text-white", label: "Due out" },
-    arriving: { card: "border-sky-300 bg-sky-50/50", chip: "bg-sky-600 text-white", label: "Arriving" },
-    vacant: { card: "border-neutral-200 bg-white", chip: "bg-neutral-100 text-neutral-600", label: "Vacant" },
+    occupied: { card: "border-emerald-300 bg-emerald-50/50", chip: "bg-emerald-600 text-white", label: "Guest staying" },
+    departing: { card: "border-orange-300 bg-orange-50/50", chip: "bg-orange-500 text-white", label: "Leaving today" },
+    arriving: { card: "border-sky-300 bg-sky-50/50", chip: "bg-sky-600 text-white", label: "Arriving today" },
+    vacant: { card: "border-neutral-200 bg-white", chip: "bg-neutral-100 text-neutral-600", label: "Free" },
     oos: { card: "border-dashed border-neutral-300 bg-neutral-100/70", chip: "bg-neutral-700 text-white", label: "Out of service" },
   };
 
@@ -76,10 +76,10 @@ export default function RoomsBoard() {
           onChange={setFilter}
           options={[
             { value: "all", label: "All rooms", count: count("all") },
-            { value: "occupied", label: "Occupied", count: count("occupied") },
-            { value: "arriving", label: "Arriving", count: count("arriving") },
-            { value: "departing", label: "Due out", count: count("departing") },
-            { value: "vacant", label: "Vacant", count: count("vacant") },
+            { value: "occupied", label: "Guest staying", count: count("occupied") },
+            { value: "arriving", label: "Arriving today", count: count("arriving") },
+            { value: "departing", label: "Leaving today", count: count("departing") },
+            { value: "vacant", label: "Free", count: count("vacant") },
             { value: "dirty", label: "Needs cleaning", count: count("dirty") },
             { value: "oos", label: "Out of service", count: count("oos") },
           ]}

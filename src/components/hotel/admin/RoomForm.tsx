@@ -1,38 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { ArrowLeft, ArrowLeftRight, Info, Plus, Trash2, Wrench, X } from "lucide-react";
+import { FormProvider, useController, useForm, type Resolver } from "react-hook-form";
+import type { StylesConfig } from "react-select";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import { ArrowLeft, BadgeDollarSign, ChevronLeft, ChevronRight, GripVertical, ImagePlus, DoorOpen, Images, Link2, ListChecks, Loader2, Plus, Sparkles, Star, Trash2, X } from "lucide-react";
+import ControlledInputField from "@/src/components/shared/FromController/ControlledInputField";
+import ControlledMultiSelectField from "@/src/components/shared/FromController/ControlledMultiSelectField";
+import ControlledSelectField from "@/src/components/shared/FromController/ControlledSelectField";
+import ControlledSwitchField from "@/src/components/shared/FromController/ControlledSwitchField";
+import ControlledTextareaField from "@/src/components/shared/FromController/ControlledTextareaField";
 import { amenityIcons } from "@/src/components/hotel/HotelDetails/AmenitiesGrid";
-import { roomDiscount } from "@/src/data/hotels";
-import { housekeepingLabels, taka } from "@/src/lib/hotel-store/format";
-import { deleteUnit, newRoomTypeId, newUnitId, saveRoomType, saveUnit, unitToday, useHotelDB } from "@/src/lib/hotel-store/store";
-import type { HotelDB, Housekeeping, RoomTypeRecord, RoomUnit } from "@/src/lib/hotel-store/types";
+import { deleteUnit, newRoomTypeId, roomRating, newUnitId, saveRoomType, saveUnit, useHotelDB } from "@/src/lib/hotel-store/store";
+import type { HotelDB, RoomTypeRecord } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
-import ImageInput from "./ImageInput";
-import { ADMIN, Card, Empty, Field, hbtn, inputClass, Switch, textareaClass } from "./ui";
+import { compressImage } from "./ImageInput";
+import { ADMIN, Card, Empty, hbtn, inputClass, labelClass, textareaClass } from "./ui";
 
-const suggestedAmenities = Object.keys(amenityIcons);
 const NEW = "__new";
-const blankDetails: RoomTypeRecord = {
-  id: "",
-  name: "",
-  description: "",
-  size: "",
-  beds: "",
-  capacity: 2,
-  price: 0,
-  originalPrice: 0,
-  highlight: "",
-  rating: 4.5,
-  reviewsCount: 0,
-  amenities: ["Free WiFi", "AC"],
-  images: [],
-  active: true,
-};
-
+// "AC" and "AC Rooms" etc. are older duplicates kept for existing data; offer one of each.
+const amenityOptions = Object.keys(amenityIcons)
+  .filter((a) => !["AC Rooms", "Free Breakfast"].includes(a))
+  .sort((x, y) => x.localeCompare(y))
+  .map((a) => ({ label: a, value: a }));
 const floorLabel = (f: number) => (f === 0 ? "Ground" : `Floor ${f}`);
 
 /** The next unused number on a floor, e.g. 207 when 201–206 exist. */
@@ -41,33 +35,297 @@ function nextNumber(db: HotelDB, floor: number) {
   return String(nums.length ? Math.max(...nums) + 1 : (floor || 0) * 100 + 1);
 }
 
-function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+const num = (label: string) =>
+  yup
+    .number()
+    .transform((v, raw) => (raw === "" || raw === null ? undefined : v))
+    .typeError(`${label} must be a number`);
+
+const schema = yup.object({
+  floor: num("Floor").required().min(0, "Floor can't be negative"),
+  number: yup.string().trim().required("Enter a room number"),
+  copyFrom: yup.string().default(NEW),
+  name: yup.string().trim().required("Enter a room name"),
+  highlight: yup.string().default(""),
+  description: yup.string().default(""),
+  beds: yup.string().default(""),
+  size: yup.string().default(""),
+  capacity: num("Max guests").required("Enter how many guests can stay").min(1, "At least 1 guest"),
+  price: num("Price").required("Enter the price per night").min(1, "Enter the price per night"),
+  originalPrice: num("Regular price")
+    .min(0)
+    .default(0)
+    .test("gte", "Regular price should be higher than the price per night", function (v) {
+      return !v || v >= this.parent.price;
+    }),
+  amenities: yup.array(yup.string().required()).default([]),
+  images: yup.array(yup.mixed<File | string>().required()).default([]),
+  active: yup.boolean().default(true),
+});
+type FormValues = yup.InferType<typeof schema>;
+
+const listingFields = (t?: RoomTypeRecord) => ({
+  copyFrom: t?.id ?? NEW,
+  name: t?.name ?? "",
+  highlight: t?.highlight ?? "",
+  description: t?.description ?? "",
+  beds: t?.beds ?? "",
+  size: t?.size ?? "",
+  capacity: t?.capacity ?? 2,
+  price: t?.price ?? 0,
+  originalPrice: t?.originalPrice ?? 0,
+  amenities: t?.amenities ?? ["Free WiFi", "AC"],
+  images: t?.images ?? [],
+  active: t?.active ?? true,
+});
+
+/** Room 208 is on floor 2; anything that isn't a 3+ digit number gives no hint. */
+const floorFromNumber = (number: string) => {
+  const n = Number(number);
+  return Number.isInteger(n) && n >= 100 ? Math.floor(n / 100) : undefined;
+};
+
+type Opt = { label: string; value: string };
+const selectStyles: StylesConfig<Opt, true> = {
+  control: (base, s) => ({
+    ...base,
+    minHeight: 40,
+    borderRadius: 6,
+    fontSize: 14,
+    borderColor: s.isFocused ? "#0ea5e9" : "#e5e5e5",
+    boxShadow: s.isFocused ? "0 0 0 2px #e0f2fe" : "none",
+    "&:hover": { borderColor: s.isFocused ? "#0ea5e9" : "#d4d4d4" },
+  }),
+  placeholder: (base) => ({ ...base, color: "#a3a3a3" }),
+  multiValue: (base) => ({ ...base, backgroundColor: "#f0f9ff", borderRadius: 6 }),
+  multiValueLabel: (base) => ({ ...base, color: "#075985", fontWeight: 500, fontSize: 12, padding: "3px 6px" }),
+  multiValueRemove: (base) => ({ ...base, color: "#0369a1", borderRadius: 6, "&:hover": { backgroundColor: "#e0f2fe", color: "#0c4a6e" } }),
+  menu: (base) => ({ ...base, zIndex: 30, fontSize: 14 }),
+};
+
+function Section({ icon: Icon, title, sub, children, className }: { icon: React.ComponentType<{ className?: string }>; title: string; sub?: string; children: React.ReactNode; className?: string }) {
   return (
-    <Card>
-      <h2 className="mb-4 flex items-center gap-2 font-semibold text-neutral-900">
-        <span className="flex size-6 items-center justify-center rounded-md bg-sky-600 text-xs font-bold text-white">{n}</span>
-        {title}
-      </h2>
-      {children}
+    <Card className={cn("p-0", className)}>
+      <div className="flex items-center gap-3 border-b border-neutral-100 px-5 py-4">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-600">
+          <Icon className="size-4.5" />
+        </span>
+        <div>
+          <h2 className="font-semibold text-neutral-900">{title}</h2>
+          {sub && <p className="text-xs text-neutral-500">{sub}</p>}
+        </div>
+      </div>
+      <div className="p-5">{children}</div>
     </Card>
   );
 }
 
-/** One form for a physical room and everything guests see about it. Rooms of the same kind share their details. */
+function Label({ text, hint, className, children }: { text: string; hint?: string; className?: string; children: React.ReactNode }) {
+  return (
+    <div className={className}>
+      <span className={labelClass}>{text}</span>
+      {children}
+      {hint && <span className="mt-1 block text-[11px] text-neutral-400">{hint}</span>}
+    </div>
+  );
+}
+
+const MAX_PHOTOS = 12;
+type Photo = File | string;
+
+/** The room's photos: upload, drag or use the arrows to reorder, and make any photo the main one. */
+function PhotoManager({ name }: { name: "images" }) {
+  const { field, fieldState } = useController<{ images: Photo[] }, "images">({ name });
+  const photos: Photo[] = useMemo(() => field.value ?? [], [field.value]);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+
+  const srcs = useMemo(() => photos.map((p) => (p instanceof File ? URL.createObjectURL(p) : p)), [photos]);
+  useEffect(() => () => srcs.forEach((s) => s.startsWith("blob:") && URL.revokeObjectURL(s)), [srcs]);
+
+  const move = (from: number, to: number) => {
+    if (from === to || to < 0 || to >= photos.length) return;
+    const list = [...photos];
+    const [item] = list.splice(from, 1);
+    list.splice(to, 0, item);
+    field.onChange(list);
+  };
+  const remove = (i: number) => field.onChange(photos.filter((_, j) => j !== i));
+  const full = photos.length >= MAX_PHOTOS;
+
+  return (
+    <div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {srcs.map((src, i) => (
+          <div
+            key={`${i}-${src}`}
+            draggable
+            onDragStart={() => setDragFrom(i)}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(i);
+            }}
+            onDragLeave={() => setDragOver((o) => (o === i ? null : o))}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (dragFrom !== null) move(dragFrom, i);
+              setDragFrom(null);
+              setDragOver(null);
+            }}
+            onDragEnd={() => {
+              setDragFrom(null);
+              setDragOver(null);
+            }}
+            className={cn(
+              "group relative aspect-4/3 cursor-grab overflow-hidden rounded-md bg-neutral-100 ring-2 ring-transparent transition active:cursor-grabbing",
+              i === 0 && "ring-sky-500",
+              dragOver === i && dragFrom !== i && "ring-sky-300 ring-offset-2",
+              dragFrom === i && "opacity-40"
+            )}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- admin preview */}
+            <img src={src} alt={`Photo ${i + 1}`} draggable={false} className="size-full object-cover" />
+            <span className="absolute left-2 top-2 flex items-center gap-1 rounded-md bg-black/55 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+              <GripVertical className="size-3" /> {i + 1}
+            </span>
+            {i === 0 && <span className="absolute bottom-10 left-2 rounded-md bg-sky-600 px-2 py-0.5 text-[11px] font-semibold text-white">Main photo</span>}
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              aria-label={`Remove photo ${i + 1}`}
+              className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-md bg-white/90 text-rose-600 shadow-sm transition hover:bg-white"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-linear-to-t from-black/70 to-transparent p-2">
+              <button
+                type="button"
+                onClick={() => move(i, i - 1)}
+                disabled={i === 0}
+                aria-label="Move left"
+                className="flex size-7 items-center justify-center rounded-md bg-white/90 text-neutral-700 transition hover:bg-white disabled:opacity-30"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              {i > 0 && (
+                <button type="button" onClick={() => move(i, 0)} className="flex h-7 items-center gap-1 rounded-md bg-white/90 px-2 text-[11px] font-semibold text-sky-700 transition hover:bg-white">
+                  <Star className="size-3" /> Make main
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => move(i, i + 1)}
+                disabled={i === photos.length - 1}
+                aria-label="Move right"
+                className="flex size-7 items-center justify-center rounded-md bg-white/90 text-neutral-700 transition hover:bg-white disabled:opacity-30"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+        {!full && (
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="flex aspect-4/3 flex-col items-center justify-center gap-1.5 rounded-md border-2 border-dashed border-neutral-200 text-sm font-medium text-neutral-500 transition hover:border-sky-300 hover:bg-sky-50/50 hover:text-sky-700"
+          >
+            <ImagePlus className="size-6" />
+            Upload photos
+            <span className="text-[11px] font-normal text-neutral-400">
+              {photos.length}/{MAX_PHOTOS}
+            </span>
+          </button>
+        )}
+      </div>
+      {photos.length > 1 && <p className="mt-2 text-xs text-neutral-400">Drag photos or use the arrows to change the order.</p>}
+      {fieldState.error && <p className="mt-1 text-xs text-rose-500">{fieldState.error.message}</p>}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []).slice(0, MAX_PHOTOS - photos.length);
+          e.target.value = "";
+          if (files.length) field.onChange([...photos, ...files]);
+        }}
+      />
+    </div>
+  );
+}
+
+/** Paste a link to add it to the photo list. */
+function PhotoLink({ onAdd }: { onAdd: (src: string) => void }) {
+  const [url, setUrl] = useState("");
+  const add = () => {
+    const v = url.trim();
+    if (!/^https?:\/\/\S+$/i.test(v)) return toast.error("Paste a full image link starting with https://");
+    onAdd(v);
+    setUrl("");
+  };
+  return (
+    <div className="flex gap-2">
+      <div className="relative flex-1">
+        <Link2 className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder="Or paste a photo link (https://…)"
+          className={cn(inputClass, "pl-9")}
+        />
+      </div>
+      <button type="button" onClick={add} className={hbtn.outline}>
+        <Plus className="size-4" /> Add
+      </button>
+    </div>
+  );
+}
+
+/** One form for a physical room and everything guests see about it. Rooms of the same kind share their listing. */
 export default function RoomForm({ id, kind }: { id?: string; kind?: string }) {
   const db = useHotelDB();
   const router = useRouter();
   const unit = id ? db.units.find((u) => u.id === id) : undefined;
   const floors = [...new Set(db.units.map((u) => u.floor))].sort((a, b) => a - b);
+  const [saving, setSaving] = useState(false);
 
-  const [form, setForm] = useState<RoomUnit>(() => {
-    if (unit) return unit;
-    const floor = floors[0] ?? 1;
-    return { id: newUnitId(), number: nextNumber(db, floor), floor, typeId: "", housekeeping: "clean", outOfService: false };
+  const methods = useForm<FormValues>({
+    resolver: yupResolver(schema) as Resolver<FormValues>,
+    defaultValues: (() => {
+      const floor = unit?.floor ?? floors[0] ?? 1;
+      return {
+        floor,
+        number: unit?.number ?? nextNumber(db, floor),
+        ...listingFields(db.roomTypes.find((t) => t.id === (unit?.typeId ?? kind))),
+      };
+    })(),
   });
-  const [newFloor, setNewFloor] = useState(false);
-  const [details, setDetails] = useState<RoomTypeRecord>(() => db.roomTypes.find((t) => t.id === (unit?.typeId ?? kind ?? db.roomTypes[0]?.id)) ?? blankDetails);
-  const [amenity, setAmenity] = useState("");
+  const { setValue, getValues, reset, handleSubmit, setError } = methods;
+  const v = methods.watch();
+
+  // A new room's floor follows its number (208 → floor 2) until staff set the floor themselves.
+  useEffect(() => {
+    const floor = floorFromNumber(v.number ?? "");
+    if (!unit && floor !== undefined && !methods.getFieldState("floor").isDirty) setValue("floor", floor);
+  }, [v.number, unit, methods, setValue]);
+
+  // Picking "Same as …" loads that listing; picking "New" clears it.
+  const lastCopy = useRef(v.copyFrom);
+  useEffect(() => {
+    if (v.copyFrom === lastCopy.current) return;
+    lastCopy.current = v.copyFrom;
+    reset({ ...getValues(), ...listingFields(db.roomTypes.find((t) => t.id === v.copyFrom)) });
+  }, [v.copyFrom, db.roomTypes, getValues, reset]);
+
 
   if (id && !unit) {
     return (
@@ -81,323 +339,173 @@ export default function RoomForm({ id, kind }: { id?: string; kind?: string }) {
     );
   }
 
-  const occupant = unit ? unitToday(db, unit.id).occupant : undefined;
-  const sharedWith = details.id ? db.units.filter((u) => u.typeId === details.id && u.id !== form.id) : [];
-  const set = <K extends keyof RoomTypeRecord>(k: K, v: RoomTypeRecord[K]) => setDetails((d) => ({ ...d, [k]: v }));
-  // A new room follows the chosen floor's numbering; an existing room keeps its number.
-  const pickFloor = (floor: number) => setForm((f) => ({ ...f, floor, number: unit ? f.number : nextNumber(db, floor) }));
-  const addAmenity = (a: string) => {
-    const v = a.trim();
-    if (v && !details.amenities.includes(v)) set("amenities", [...details.amenities, v]);
-    setAmenity("");
-  };
-  const moveImage = (i: number, dir: -1 | 1) => {
-    const list = [...details.images];
-    const j = i + dir;
-    if (j < 0 || j >= list.length) return;
-    [list[i], list[j]] = [list[j], list[i]];
-    set("images", list);
+
+  const onSubmit = async (data: FormValues) => {
+    if (db.units.some((u) => u.number === data.number && u.id !== unit?.id)) {
+      return setError("number", { message: `Room ${data.number} already exists` });
+    }
+    const typeId = data.copyFrom !== NEW ? data.copyFrom : newRoomTypeId(db, data.name);
+    if (unit && unit.typeId !== typeId && db.bookings.some((b) => ["pending", "confirmed", "checked-in"].includes(b.status) && b.unitIds.includes(unit.id))) {
+      return toast.error(`Room ${data.number} has upcoming bookings — move them before changing its listing.`);
+    }
+
+    setSaving(true);
+    try {
+      const images = await Promise.all(data.images.map((img) => (img instanceof File ? compressImage(img) : img)));
+      const t = saveRoomType({
+        id: typeId,
+        name: data.name,
+        highlight: data.highlight,
+        description: data.description,
+        beds: data.beds,
+        size: data.size,
+        capacity: data.capacity,
+        // Shown on the website from published guest reviews; kept here only for the record's shape.
+        ...roomRating(db, typeId),
+        price: data.price,
+        originalPrice: data.originalPrice || data.price,
+        amenities: data.amenities,
+        images,
+        active: data.active,
+      });
+      if (!t.ok) return toast.error(t.error);
+      const r = saveUnit({
+        id: unit?.id ?? newUnitId(),
+        number: data.number,
+        floor: data.floor,
+        typeId,
+        housekeeping: unit?.housekeeping ?? "clean",
+        // Maintenance is managed from the Rooms board.
+        outOfService: unit?.outOfService ?? false,
+        oosReason: unit?.oosReason,
+        note: unit?.note,
+      });
+      if (!r.ok) return toast.error(r.error);
+      toast.success(unit ? `Room ${data.number} saved — the website is updated` : `Room ${data.number} added to ${floorLabel(r.value.floor)}`);
+      router.push(`${ADMIN}/room-types/${r.value.id}`);
+    } catch {
+      toast.error("One of the photos couldn't be read.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const submit = () => {
-    const number = form.number.trim();
-    if (!number) return toast.error("Room number is required.");
-    if (db.units.some((u) => u.number === number && u.id !== form.id)) return toast.error(`Room ${number} already exists.`);
-    if (form.outOfService && !unit?.outOfService && occupant) return toast.error(`${occupant.guest.name} is staying in this room — move them first.`);
-    const record = { ...details, id: details.id || newRoomTypeId(db, details.name), originalPrice: details.originalPrice || details.price };
-    if (unit && unit.typeId !== record.id && db.bookings.some((b) => ["pending", "confirmed", "checked-in"].includes(b.status) && b.unitIds.includes(unit.id))) {
-      return toast.error(`Room ${number} has upcoming bookings — move them before changing what kind of room it is.`);
-    }
-    const t = saveRoomType(record);
-    if (!t.ok) return toast.error(t.error);
-    const r = saveUnit({ ...form, number, typeId: record.id, oosReason: form.outOfService ? form.oosReason : undefined });
+  const remove = () => {
+    if (!unit || !confirm(`Delete room ${unit.number}? Past bookings keep their history.`)) return;
+    const r = deleteUnit(unit.id);
     if (!r.ok) return toast.error(r.error);
-    toast.success(unit ? `Room ${number} saved — the website is updated` : `Room ${number} added to ${floorLabel(r.value.floor)}`);
+    toast.success("Room deleted");
     router.push(`${ADMIN}/room-types`);
   };
 
+  const saveLabel = unit ? "Save room" : "Add room";
+
   return (
-    <div>
-      <Link href={`${ADMIN}/room-types`} className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-sky-700">
-        <ArrowLeft className="size-4" /> Rooms
-      </Link>
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-neutral-900">{unit ? `Room ${unit.number}` : "Add a room"}</h1>
-        <div className="flex gap-2">
-          {unit && (
-            <button
-              onClick={() => {
-                if (!confirm(`Delete room ${unit.number}? Past bookings keep their history.`)) return;
-                const r = deleteUnit(unit.id);
-                if (!r.ok) return toast.error(r.error);
-                toast.success("Room deleted");
-                router.push(`${ADMIN}/room-types`);
-              }}
-              className={hbtn.danger}
+    <FormProvider {...methods}>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
+          <div className="flex items-center gap-4">
+            <Link
+              href={unit ? `${ADMIN}/room-types/${unit.id}` : `${ADMIN}/room-types`}
+              aria-label={unit ? "Back to room" : "Back to rooms"}
+              className="flex size-10 shrink-0 items-center justify-center rounded-md border border-neutral-200 text-neutral-500 transition hover:border-sky-300 hover:text-sky-700"
             >
-              <Trash2 className="size-4" /> Delete
-            </button>
-          )}
-          <button onClick={submit} className={hbtn.primary}>
-            {unit ? "Save room" : `Add room ${form.number}`.trim()}
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-6 grid items-start gap-6 xl:grid-cols-[1fr_340px]">
-        <div className="space-y-6">
-          <Step n={1} title="Where is the room?">
-            <p className="mb-2 text-xs font-medium text-neutral-600">Floor</p>
-            <div className="flex flex-wrap gap-2">
-              {floors.map((f) => {
-                const on = !newFloor && form.floor === f;
-                return (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => {
-                      setNewFloor(false);
-                      pickFloor(f);
-                    }}
-                    className={cn(
-                      "rounded-md border px-3.5 py-2 text-sm font-medium transition",
-                      on ? "border-sky-600 bg-sky-600 text-white" : "border-neutral-200 bg-white text-neutral-700 hover:border-sky-300"
-                    )}
-                  >
-                    {floorLabel(f)}
-                    <span className={cn("ml-1.5 text-xs", on ? "text-white/80" : "text-neutral-400")}>{db.units.filter((u) => u.floor === f).length}</span>
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                onClick={() => {
-                  setNewFloor(true);
-                  pickFloor((floors.at(-1) ?? 0) + 1);
-                }}
-                className={cn(
-                  "flex items-center gap-1 rounded-md border border-dashed px-3.5 py-2 text-sm font-medium transition",
-                  newFloor ? "border-sky-600 bg-sky-50 text-sky-700" : "border-neutral-300 text-neutral-500 hover:border-sky-300 hover:text-sky-700"
-                )}
-              >
-                <Plus className="size-3.5" /> New floor
+              <ArrowLeft className="size-4" />
+            </Link>
+            <div>
+              <h1 className="text-xl font-bold text-neutral-900">{unit ? `Room ${unit.number}` : "Add a room"}</h1>
+              <p className="mt-0.5 text-sm text-neutral-500">{unit ? `${floorLabel(unit.floor)} · ${v.name || "No listing"}` : "Set where it is, what guests see, and the price."}</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {unit && (
+              <button type="button" onClick={remove} className={hbtn.danger}>
+                <Trash2 className="size-4" /> Delete
               </button>
-            </div>
-
-            <div className="mt-4 grid gap-4 sm:grid-cols-[10rem_1fr]">
-              {newFloor ? (
-                <div className="grid grid-cols-2 gap-3 sm:col-span-2 sm:max-w-80">
-                  <Field label="Floor number">
-                    <input type="number" min={0} value={form.floor} onChange={(e) => pickFloor(Number(e.target.value))} className={inputClass} />
-                  </Field>
-                  <Field label="Room number">
-                    <input value={form.number} onChange={(e) => setForm({ ...form, number: e.target.value })} className={inputClass} placeholder="e.g. 601" />
-                  </Field>
-                </div>
-              ) : (
-                <Field label="Room number">
-                  <input value={form.number} onChange={(e) => setForm({ ...form, number: e.target.value })} className={inputClass} placeholder="e.g. 208" />
-                </Field>
-              )}
-              <div className={cn(newFloor && "sm:col-span-2")}>
-                <p className="mb-1 text-xs font-medium text-neutral-600">Condition</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {(Object.keys(housekeepingLabels) as Housekeeping[]).map((h) => (
-                    <button
-                      key={h}
-                      type="button"
-                      onClick={() => setForm({ ...form, housekeeping: h })}
-                      className={cn(
-                        "h-10 rounded-md border px-2 text-sm font-medium transition",
-                        form.housekeeping === h ? "border-sky-600 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-600 hover:border-sky-300"
-                      )}
-                    >
-                      {housekeepingLabels[h]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-md border border-neutral-200 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <span className="flex items-center gap-2 text-sm font-medium text-neutral-800">
-                  <Wrench className="size-4 text-neutral-500" /> Out of service
-                </span>
-                <Switch checked={form.outOfService} onChange={() => setForm({ ...form, outOfService: !form.outOfService })} label="Out of service" />
-              </div>
-              {form.outOfService && (
-                <input
-                  value={form.oosReason ?? ""}
-                  onChange={(e) => setForm({ ...form, oosReason: e.target.value })}
-                  className={cn(inputClass, "mt-3")}
-                  placeholder="Reason, e.g. Bathroom renovation"
-                />
-              )}
-            </div>
-            <Field label="Staff note (optional)" className="mt-4">
-              <input value={form.note ?? ""} onChange={(e) => setForm({ ...form, note: e.target.value })} className={inputClass} placeholder="e.g. Connecting door to 209" />
-            </Field>
-          </Step>
-
-          <Step n={2} title="What guests see">
-            <Field label="Same as another room?" hint="Pick one to copy its name, photos and price — or start fresh.">
-              <select
-                value={details.id || NEW}
-                onChange={(e) => setDetails(e.target.value === NEW ? blankDetails : (db.roomTypes.find((t) => t.id === e.target.value) ?? blankDetails))}
-                className={inputClass}
-              >
-                {db.roomTypes.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    Same as {t.name} ({db.units.filter((u) => u.typeId === t.id).map((u) => u.number).join(", ") || "no rooms yet"})
-                  </option>
-                ))}
-                <option value={NEW}>New — fill in the details below</option>
-              </select>
-            </Field>
-            {sharedWith.length > 0 && (
-              <p className="mt-3 flex items-start gap-2 rounded-md bg-sky-50 px-3 py-2 text-xs text-sky-800">
-                <Info className="mt-px size-3.5 shrink-0" />
-                Shared with room{sharedWith.length > 1 ? "s" : ""} {sharedWith.map((u) => u.number).join(", ")}. Changes below update {sharedWith.length > 1 ? "them all" : "both"} and the website listing.
-              </p>
             )}
+            <button type="submit" disabled={saving} className={hbtn.primary}>
+              {saving ? <Loader2 className="size-4 animate-spin" /> : !unit && <Plus className="size-4" />} {saveLabel}
+            </button>
+          </div>
+        </Card>
 
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <Field label="Name on website">
-                <input value={details.name} onChange={(e) => set("name", e.target.value)} className={inputClass} placeholder="e.g. Deluxe Sea View Room" />
-              </Field>
-              <Field label="Card label" hint="Short badge on the room card">
-                <input value={details.highlight} onChange={(e) => set("highlight", e.target.value)} className={inputClass} placeholder="e.g. Most popular" />
-              </Field>
-              <Field label="Description" className="sm:col-span-2">
-                <textarea value={details.description} onChange={(e) => set("description", e.target.value)} rows={3} className={textareaClass} />
-              </Field>
-              <Field label="Beds">
-                <input value={details.beds} onChange={(e) => set("beds", e.target.value)} className={inputClass} placeholder="e.g. 1 King Bed" />
-              </Field>
-              <Field label="Size">
-                <input value={details.size} onChange={(e) => set("size", e.target.value)} className={inputClass} placeholder="e.g. 350 sq ft" />
-              </Field>
-              <Field label="Sleeps (guests)">
-                <input type="number" min={1} value={details.capacity} onChange={(e) => set("capacity", Number(e.target.value))} className={inputClass} />
-              </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Rating">
-                  <input type="number" min={1} max={5} step={0.1} value={details.rating} onChange={(e) => set("rating", Number(e.target.value))} className={inputClass} />
-                </Field>
-                <Field label="Reviews">
-                  <input type="number" min={0} value={details.reviewsCount} onChange={(e) => set("reviewsCount", Number(e.target.value))} className={inputClass} />
-                </Field>
+        <div className="mt-6 grid items-start gap-6 xl:grid-cols-[1fr_360px]">
+          <div className="space-y-6">
+            <Section icon={DoorOpen} title="Room details" sub="The room number and where it is.">
+              <div className="grid gap-4 sm:grid-cols-[1fr_1fr_2fr]">
+                <Label text="Room number">
+                  <ControlledInputField name="number" placeholder="e.g. 208" className={inputClass} />
+                </Label>
+                <Label text="Floor" hint={unit ? undefined : "Filled in from the room number"}>
+                  <ControlledInputField name="floor" type="number" className={inputClass} />
+                </Label>
+                <Label text="Type of room" hint="Rooms of the same type share the name, photos and price.">
+                  <ControlledSelectField
+                    name="copyFrom"
+                    className={inputClass}
+                    options={[
+                      ...db.roomTypes.map((t) => ({ label: t.name, value: t.id })),
+                      { label: "+ New type of room", value: NEW },
+                    ]}
+                  />
+                </Label>
               </div>
-            </div>
-          </Step>
+            </Section>
 
-          <Step n={3} title="Photos">
-            <p className="-mt-2 mb-4 text-xs text-neutral-500">The first photo is the cover. Uploads are resized to keep the demo fast.</p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {details.images.map((src, i) => (
-                <div key={`${i}-${src.slice(-24)}`} className="group relative aspect-[4/3] overflow-hidden rounded-md bg-neutral-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- admin preview */}
-                  <img src={src} alt="" className="size-full object-cover" />
-                  {i === 0 && <span className="absolute left-2 top-2 rounded-md bg-sky-600 px-2 py-0.5 text-[10px] font-semibold text-white">Cover</span>}
-                  <div className="absolute inset-x-0 bottom-0 flex justify-between bg-gradient-to-t from-black/60 p-1.5 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
-                    <button onClick={() => moveImage(i, -1)} disabled={i === 0} aria-label="Move earlier" className="rounded-md bg-white/90 p-1 text-neutral-700 disabled:opacity-40">
-                      <ArrowLeftRight className="size-3.5" />
-                    </button>
-                    <button onClick={() => set("images", details.images.filter((_, j) => j !== i))} aria-label="Remove photo" className="rounded-md bg-white/90 p-1 text-rose-600">
-                      <Trash2 className="size-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4">
-              <ImageInput onAdd={(src) => setDetails((d) => ({ ...d, images: [...d.images, src] }))} />
-            </div>
-          </Step>
+            <Section icon={Sparkles} title="Room info for guests" sub="This is what guests see on the website.">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Label text="Room name">
+                  <ControlledInputField name="name" placeholder="e.g. Deluxe Sea View Room" className={inputClass} />
+                </Label>
+                <Label text="Tag (optional)" hint="Small label on the room photo">
+                  <ControlledInputField name="highlight" placeholder="e.g. Best value" className={inputClass} />
+                </Label>
+                <Label text="About this room" className="sm:col-span-2">
+                  <ControlledTextareaField name="description" placeholder="e.g. A cosy room facing the garden, great for couples." className={cn(textareaClass, "h-28")} />
+                </Label>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <Label text="Bed type" className="col-span-2">
+                  <ControlledInputField name="beds" placeholder="e.g. 1 King Bed" className={inputClass} />
+                </Label>
+                <Label text="Room size">
+                  <ControlledInputField name="size" placeholder="e.g. 350 sq ft" className={inputClass} />
+                </Label>
+                <Label text="Max guests">
+                  <ControlledInputField name="capacity" type="number" className={inputClass} />
+                </Label>
+              </div>
+            </Section>
 
-          <Step n={4} title="In the room">
-            <div className="flex flex-wrap gap-2">
-              {details.amenities.map((a) => (
-                <span key={a} className="flex items-center gap-1 rounded-md bg-sky-50 px-3 py-1 text-xs font-medium text-sky-800">
-                  {a}
-                  <button onClick={() => set("amenities", details.amenities.filter((x) => x !== a))} aria-label={`Remove ${a}`}>
-                    <X className="size-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="mt-3 flex gap-2">
-              <input
-                value={amenity}
-                onChange={(e) => setAmenity(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addAmenity(amenity);
-                  }
-                }}
-                placeholder="Add an amenity"
-                className={inputClass}
-              />
-              <button onClick={() => addAmenity(amenity)} className={hbtn.outline} aria-label="Add amenity">
-                <Plus className="size-4" />
-              </button>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {suggestedAmenities
-                .filter((a) => !details.amenities.includes(a))
-                .slice(0, 16)
-                .map((a) => (
-                  <button key={a} onClick={() => addAmenity(a)} className="rounded-md border border-dashed border-neutral-300 px-2.5 py-0.5 text-xs text-neutral-500 hover:border-sky-400 hover:text-sky-700">
-                    + {a}
-                  </button>
-                ))}
-            </div>
-          </Step>
+            <Section icon={Images} title="Photos" sub="The first photo is the main one guests see.">
+              <PhotoManager name="images" />
+              <div className="mt-4 border-t border-dashed border-neutral-200 pt-4">
+                <PhotoLink onAdd={(src) => setValue("images", [...(getValues("images") ?? []), src], { shouldDirty: true })} />
+              </div>
+            </Section>
+
+            <Section icon={ListChecks} title="Facilities" sub="Type to search. Not in the list? Type it and press Enter to add it.">
+              <ControlledMultiSelectField name="amenities" valueType="string" options={amenityOptions} styles={selectStyles} placeholder="Search facilities, e.g. WiFi, TV, Sea View…" />
+            </Section>
+          </div>
+
+          <div className="space-y-6 xl:sticky xl:top-24">
+            <Section icon={BadgeDollarSign} title="Price">
+              <div className="space-y-4">
+                <Label text="Price per night (৳)">
+                  <ControlledInputField name="price" type="number" placeholder="0" className={inputClass} />
+                </Label>
+                <Label text="Regular price (৳, optional)" hint="Add a higher price to show a discount.">
+                  <ControlledInputField name="originalPrice" type="number" placeholder="0" className={inputClass} />
+                </Label>
+              </div>
+              <div className="-mx-5 mt-5 border-t border-neutral-100 px-5 pt-4">
+                <ControlledSwitchField name="active" label="Show on website" description="Turn off to hide it from guests. Staff can still book it." />
+              </div>
+            </Section>
+          </div>
         </div>
-
-        <div className="space-y-6 xl:sticky xl:top-24">
-          <Card>
-            <h2 className="font-semibold text-neutral-900">Price</h2>
-            <div className="mt-4 space-y-3">
-              <Field label="Price per night (BDT)">
-                <input type="number" min={0} value={details.price || ""} onChange={(e) => set("price", Number(e.target.value))} className={inputClass} />
-              </Field>
-              <Field label="Was price (BDT)" hint="Shown struck through; leave equal for no discount">
-                <input type="number" min={0} value={details.originalPrice || ""} onChange={(e) => set("originalPrice", Number(e.target.value))} className={inputClass} />
-              </Field>
-              {roomDiscount(details) > 0 && (
-                <p className="rounded-md bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600">
-                  Website shows −{roomDiscount(details)}% · saves {taka(details.originalPrice - details.price)}
-                </p>
-              )}
-            </div>
-          </Card>
-          <Card>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="font-semibold text-neutral-900">Show on website</h2>
-                <p className="text-xs text-neutral-500">Hidden rooms can still be booked by staff.</p>
-              </div>
-              <Switch checked={details.active} onChange={() => set("active", !details.active)} label="Show on website" />
-            </div>
-          </Card>
-          {details.images[0] && (
-            <Card className="overflow-hidden p-0">
-              {/* eslint-disable-next-line @next/next/no-img-element -- preview */}
-              <img src={details.images[0]} alt="" className="aspect-[4/3] w-full object-cover" />
-              <div className="p-4">
-                <p className="font-bold text-neutral-900">{details.name || "Room name"}</p>
-                <p className="mt-1 line-clamp-2 text-sm text-neutral-600">{details.description || "Description"}</p>
-                <p className="mt-3 text-lg font-semibold">
-                  {taka(details.price)} <span className="text-xs font-normal text-neutral-500">/night</span>
-                </p>
-              </div>
-            </Card>
-          )}
-        </div>
-      </div>
-    </div>
+      </form>
+    </FormProvider>
   );
 }

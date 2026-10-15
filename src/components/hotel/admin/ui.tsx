@@ -84,24 +84,30 @@ export function StatCard({
   return (
     <section
       className={cn(
-        "group/card relative isolate flex min-h-36 min-w-0 flex-col overflow-hidden rounded-md border border-neutral-200 bg-white p-4 transition duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-neutral-900/5 motion-reduce:hover:translate-y-0",
+        "group/card relative isolate flex min-h-32 min-w-0 flex-col overflow-hidden rounded-md border border-neutral-200 bg-white p-3.5 transition sm:min-h-36 sm:p-4 duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-neutral-900/5 motion-reduce:hover:translate-y-0",
         className
       )}
     >
       <CardArt className={t.art} />
-      <div className="flex items-center gap-2.5">
-        <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-md transition-transform duration-300 group-hover/card:scale-110", t.icon)}>
-          <Icon className="size-4.5" />
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 truncate pt-1 text-xs font-medium text-neutral-500 sm:text-sm" title={label}>
+          {label}
+        </p>
+        <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-md transition-transform duration-300 group-hover/card:scale-110 sm:size-9", t.icon)}>
+          <Icon className="size-4 sm:size-4.5" />
         </span>
-        <p className="text-sm font-medium leading-tight text-neutral-600">{label}</p>
       </div>
-      <p className="mt-auto pt-4 text-2xl font-bold tabular-nums tracking-tight text-neutral-900">{value}</p>
+      <p className="mt-auto truncate pt-3 text-xl font-bold tabular-nums tracking-tight text-neutral-900 sm:text-2xl">{value}</p>
       {meter !== undefined && (
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-neutral-100">
           <div className={cn("h-full rounded-full", t.bar)} style={{ width: `${Math.min(100, Math.max(0, meter))}%` }} />
         </div>
       )}
-      {hint && <p className="mt-1.5 truncate text-xs text-neutral-500">{hint}</p>}
+      {hint && (
+        <p className="mt-1.5 truncate text-xs text-neutral-500" title={hint}>
+          {hint}
+        </p>
+      )}
     </section>
   );
 }
@@ -323,17 +329,31 @@ export const toolbarClass = "flex flex-wrap items-center gap-2 border-b border-n
 export const tableCardClass = "overflow-hidden rounded-md border border-neutral-200 bg-white";
 export const linkClass = "font-medium text-sky-700 hover:underline";
 
-export function Pills<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string; count?: number }[]; onChange: (v: T) => void }) {
+export function Pills<T extends string>({
+  value,
+  options,
+  onChange,
+  size = "sm",
+}: {
+  value: T;
+  options: { value: T; label: string; count?: number }[];
+  onChange: (v: T) => void;
+  /** "md" matches the 36px search box and selects in a toolbar. */
+  size?: "sm" | "md";
+}) {
   return (
     <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none]">
       {options.map((o) => (
         <button
           key={o.value}
+          type="button"
           onClick={() => onChange(o.value)}
           aria-pressed={value === o.value}
           className={cn(
-            "shrink-0 rounded-md px-3.5 py-1.5 text-xs font-medium transition",
-            value === o.value ? "bg-sky-950 text-white" : "bg-white text-neutral-600 ring-1 ring-neutral-200 hover:ring-sky-300"
+            // A border, not a ring: rings draw outside the box and get clipped by the scroll container.
+            "flex shrink-0 items-center rounded-md border font-medium transition",
+            size === "md" ? "h-9 px-4 text-sm" : "px-3.5 py-1.5 text-xs",
+            value === o.value ? "border-sky-950 bg-sky-950 text-white" : "border-neutral-200 bg-white text-neutral-600 hover:border-sky-300"
           )}
         >
           {o.label}

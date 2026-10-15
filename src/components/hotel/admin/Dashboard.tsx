@@ -28,7 +28,6 @@ import {
   creditOf,
   dueOf,
   unitNumbers,
-  useCurrentStaff,
   useHotelDB,
   useNow,
 } from "@/src/lib/hotel-store/store";
@@ -69,12 +68,9 @@ function GuestLine({ b, right }: { b: Booking; right: React.ReactNode }) {
 
 export default function Dashboard() {
   const db = useHotelDB();
-  const staff = useCurrentStaff();
   const router = useRouter();
   const now = useNow(60_000);
   const today = todayKey();
-  // The admin only renders after hydration, so `now` is always the real clock here.
-  const hour = new Date(now).getHours();
 
   const live = db.bookings;
   const inHouse = live.filter((b) => b.status === "checked-in");
@@ -92,14 +88,6 @@ export default function Dashboard() {
   const total = roomsInService(db);
   const soldTonight = roomsSoldOn(db, today);
   const occupancy = total ? Math.round((soldTonight / total) * 100) : 0;
-  const occupiedIds = new Set(inHouse.flatMap((b) => b.unitIds));
-  const idle = db.units.filter((u) => !occupiedIds.has(u.id));
-  const roomMix = [
-    { label: "Occupied", n: db.units.length - idle.length, dot: "bg-sky-600" },
-    { label: "Ready", n: idle.filter((u) => !u.outOfService && u.housekeeping !== "dirty").length, dot: "bg-emerald-500" },
-    { label: "To clean", n: idle.filter((u) => !u.outOfService && u.housekeeping === "dirty").length, dot: "bg-amber-400" },
-    { label: "Out of service", n: idle.filter((u) => u.outOfService).length, dot: "bg-neutral-300" },
-  ];
   const rows = ledger(db);
   const byDay = collectedByDay(rows);
   const collectedToday = byDay.get(today) ?? 0;
@@ -159,25 +147,8 @@ export default function Dashboard() {
   const activity = db.notices.filter((n) => n.to === "staff").slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">
-            Good {hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening"}, {staff?.name.split(" ")[0]}
-          </h1>
-          <p className="mt-1 text-sm text-neutral-500">{dateLabel(today, "EEEE, dd MMMM yyyy")} · {db.content.hotel.name}</p>
-        </div>
-        <div className="flex gap-2">
-          <Link href={`${ADMIN}/rooms`} className={hbtn.outline}>
-            Rooms board
-          </Link>
-          <Link href={`${ADMIN}/calendar`} className={hbtn.dark}>
-            Calendar <ArrowRight className="size-4" />
-          </Link>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+    <div className="mx-auto max-w-[1600px] space-y-4 md:space-y-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 2xl:grid-cols-6">
         <StatCard label="Occupancy tonight" value={`${occupancy}%`} meter={occupancy} hint={`${soldTonight} of ${total} rooms sold`} icon={Gauge} tone="sky" />
         <StatCard label="In house" value={inHouse.reduce((s, b) => s + b.adults + b.children, 0)} hint={`guests in ${inHouse.reduce((s, b) => s + b.rooms, 0)} rooms`} icon={BedDouble} tone="violet" />
         <StatCard label="Arrivals today" value={arrivals.length} hint={`${live.filter((b) => b.checkIn === today && b.status === "checked-in").length} already checked in`} icon={LogIn} tone="green" />
@@ -186,19 +157,14 @@ export default function Dashboard() {
         <StatCard label="Outstanding" value={taka(outstanding)} hint="Due from in-house & departed" icon={Receipt} tone={outstanding ? "orange" : "neutral"} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
         <Panel>
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
-              <LogIn className="size-4 text-sky-600" /> Arrivals today
-            </h2>
-            <span className="rounded-md bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">{arrivals.length}</span>
-          </div>
+          <PanelHead icon={LogIn} title="Arrivals today" count={arrivals.length} />
           {arrivals.length === 0 ? (
-            <p className="py-8 text-center text-sm text-neutral-500">No more arrivals today.</p>
+            <PanelEmpty text="No more arrivals today." />
           ) : (
             <ul className="divide-y divide-neutral-100">
-              {arrivals.slice(0, 7).map((b) => (
+              {arrivals.slice(0, 5).map((b) => (
                 <GuestLine
                   key={b.id}
                   b={b}
@@ -217,29 +183,24 @@ export default function Dashboard() {
               ))}
             </ul>
           )}
-          <MoreLink href={`${ADMIN}/bookings`} label={arrivals.length > 7 ? `View all ${arrivals.length} arrivals` : "All bookings"} />
+          <MoreLink href={`${ADMIN}/bookings`} label={arrivals.length > 5 ? `View all ${arrivals.length} arrivals` : "All bookings"} />
         </Panel>
 
         <Panel>
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
-              <DoorOpen className="size-4 text-sky-600" /> Departures
-            </h2>
-            <span className="rounded-md bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">{departures.length}</span>
-          </div>
+          <PanelHead icon={DoorOpen} title="Departures today" count={departures.length} />
           {departures.length === 0 ? (
-            <p className="py-8 text-center text-sm text-neutral-500">Everyone due out has checked out.</p>
+            <PanelEmpty text="Everyone due out has checked out." />
           ) : (
             <ul className="divide-y divide-neutral-100">
-              {departures.slice(0, 7).map((b) => {
+              {departures.slice(0, 5).map((b) => {
                 const due = dueOf(b);
                 return (
                   <GuestLine
                     key={b.id}
                     b={b}
                     right={
-                      <span className="flex shrink-0 items-center gap-2">
-                        {due > 0 && <span className="text-xs font-semibold text-rose-600">{taka(due)}</span>}
+                      <span className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
+                        {due > 0 && <span className="text-xs font-semibold tabular-nums text-rose-600">{taka(due)}</span>}
                         <button onClick={() => quickCheckOut(b)} className={hbtn.small}>
                           {due > 0 ? "Settle" : "Check out"}
                         </button>
@@ -250,66 +211,62 @@ export default function Dashboard() {
               })}
             </ul>
           )}
-          <MoreLink href={`${ADMIN}/bookings?status=checked-in`} label={departures.length > 7 ? `View all ${departures.length} departures` : "Guests in house"} />
+          <MoreLink href={`${ADMIN}/bookings?status=checked-in`} label={departures.length > 5 ? `View all ${departures.length} departures` : "Guests in house"} />
         </Panel>
 
-        <Panel>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
-              <AlertTriangle className="size-4 text-amber-500" /> Needs attention
-            </h2>
-            {attention.length > 0 && <span className="rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">{attention.length}</span>}
-          </div>
+        <Panel className="md:col-span-2 xl:col-span-1">
+          <PanelHead icon={AlertTriangle} title="Needs attention" count={attention.length || undefined} tone="amber" />
           {attention.length === 0 ? (
-            <p className="py-8 text-center text-sm text-neutral-500">All caught up.</p>
+            <PanelEmpty text="All caught up." />
           ) : (
-            <ul className="space-y-2">
+            <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-1">
               {attention.map((a) => (
                 <li key={a.text}>
-                  <Link href={a.href} className="flex items-center gap-3 rounded-md border border-neutral-100 p-2.5 text-sm text-neutral-700 transition hover:border-sky-200 hover:bg-sky-50/40">
+                  <Link
+                    href={a.href}
+                    className="group flex items-center gap-3 rounded-md border border-neutral-100 bg-white/80 p-2.5 text-sm text-neutral-700 transition hover:border-sky-200 hover:bg-sky-50/60"
+                  >
                     <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-md", a.tone)}>
                       <a.icon className="size-4" />
                     </span>
-                    <span className="flex-1">{a.text}</span>
-                    <ArrowRight className="size-4 text-neutral-300" />
+                    <span className="min-w-0 flex-1 leading-snug">{a.text}</span>
+                    <ArrowRight className="size-4 shrink-0 text-neutral-300 transition group-hover:translate-x-0.5 group-hover:text-sky-600" />
                   </Link>
                 </li>
               ))}
             </ul>
           )}
-          <RoomMix mix={roomMix} total={db.units.length} />
         </Panel>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-4 md:gap-6 xl:grid-cols-2">
         <Card>
-          <div className="flex items-baseline justify-between">
-            <h2 className="font-semibold text-neutral-900">Money collected · last 30 days</h2>
-            <span className="text-sm font-semibold tabular-nums text-neutral-900">{taka(last30.reduce((s, d) => s + d.value, 0))}</span>
-          </div>
-          <p className="text-xs text-neutral-500">Deposits, balances and extras, after refunds</p>
-          <div className="mt-4">
+          <ChartHead
+            title="Money collected"
+            sub="Last 30 days · deposits, balances and extras, after refunds"
+            value={taka(last30.reduce((s, d) => s + d.value, 0))}
+            valueLabel="Total"
+          />
+          <div className="-mx-2 mt-4 sm:mx-0">
             <ValueBars data={last30} kind="money" label="Money collected per day over the last 30 days" />
           </div>
         </Card>
         <Card>
-          <div className="flex items-baseline justify-between">
-            <h2 className="font-semibold text-neutral-900">Occupancy forecast · next 14 nights</h2>
-            <span className="text-sm font-semibold tabular-nums text-neutral-900">
-              {Math.round(next14.reduce((s, d) => s + d.value, 0) / next14.length)}% avg
-            </span>
-          </div>
-          <p className="text-xs text-neutral-500">Confirmed, pending and in-house bookings · {total} rooms in service</p>
-          <div className="mt-4">
+          <ChartHead
+            title="Occupancy forecast"
+            sub={`Next 14 nights · confirmed, pending and in-house · ${total} rooms`}
+            value={`${Math.round(next14.reduce((s, d) => s + d.value, 0) / next14.length)}%`}
+            valueLabel="Average"
+          />
+          <div className="-mx-2 mt-4 sm:mx-0">
             <ValueBars data={next14} kind="percent" label="Forecast occupancy for the next 14 nights" />
           </div>
         </Card>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
         <Panel>
-          <h2 className="font-semibold text-neutral-900">Room revenue this month</h2>
-          <p className="mb-4 text-xs text-neutral-500">Revenue by room type, month to date</p>
+          <PanelHead title="Room revenue this month" sub="Revenue by room type, month to date" />
           <RankBars rows={typeRows} />
           <TileRow
             tiles={[
@@ -320,8 +277,7 @@ export default function Dashboard() {
           />
         </Panel>
         <Panel>
-          <h2 className="font-semibold text-neutral-900">Where bookings come from</h2>
-          <p className="mb-4 text-xs text-neutral-500">Bookings made in the last 30 days</p>
+          <PanelHead title="Where bookings come from" sub="Bookings made in the last 30 days" />
           <RankBars rows={sourceRows} format={(n) => `${n} booking${n === 1 ? "" : "s"}`} />
           <TileRow
             tiles={[
@@ -331,8 +287,8 @@ export default function Dashboard() {
             ]}
           />
         </Panel>
-        <Panel>
-          <div className="mb-3 flex items-center justify-between">
+        <Panel className="md:col-span-2 xl:col-span-1">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
               <LiveDot /> Latest activity
             </h2>
@@ -341,33 +297,35 @@ export default function Dashboard() {
             </Link>
           </div>
           {activity.length === 0 ? (
-            <p className="py-8 text-center text-sm text-neutral-500">Nothing yet.</p>
+            <PanelEmpty text="Nothing yet." />
           ) : (
-            <ul className="space-y-3">
+            <ol className="relative space-y-4 before:absolute before:inset-y-2 before:left-[15px] before:w-px before:bg-neutral-100">
               {activity.map((n) => {
                 const b = db.bookings.find((x) => x.id === n.bookingId);
                 return (
-                  <li key={n.id} className="flex gap-3">
-                    <CalendarClock className={cn("mt-0.5 size-4 shrink-0", n.read ? "text-neutral-300" : "text-sky-600")} />
-                    <div className="min-w-0 text-sm">
+                  <li key={n.id} className="relative flex gap-3">
+                    <span
+                      className={cn(
+                        "z-10 flex size-8 shrink-0 items-center justify-center rounded-full ring-4 ring-white",
+                        n.read ? "bg-neutral-100 text-neutral-400" : "bg-sky-50 text-sky-600"
+                      )}
+                    >
+                      <CalendarClock className="size-4" />
+                    </span>
+                    <div className="min-w-0 flex-1 text-sm">
                       <Link href={b ? `${ADMIN}/bookings/${b.id}` : `${ADMIN}/notifications`} className="block truncate font-medium text-neutral-900 hover:text-sky-700">
                         {n.title}
                       </Link>
                       <p className="line-clamp-1 text-xs text-neutral-500">{n.body}</p>
-                      <p className="text-[11px] text-neutral-400">
+                      <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-neutral-400">
                         {timeAgo(n.at, now || undefined)}
-                        {b && (
-                          <>
-                            {" · "}
-                            <StatusBadge status={b.status} className="px-1.5 py-0 text-[10px]" />
-                          </>
-                        )}
+                        {b && <StatusBadge status={b.status} className="px-1.5 py-0 text-[10px]" />}
                       </p>
                     </div>
                   </li>
                 );
               })}
-            </ul>
+            </ol>
           )}
         </Panel>
       </div>
@@ -377,6 +335,58 @@ export default function Dashboard() {
 
 const i0 = (d: string, today: string) => (d === today ? "Tonight" : relativeDay(d) === "Tomorrow" ? "Tmrw" : dateLabel(d, "dd"));
 
+const headTones = { sky: "bg-sky-50 text-sky-600", amber: "bg-amber-50 text-amber-600" };
+
+function PanelHead({
+  icon: Icon,
+  title,
+  sub,
+  count,
+  tone = "sky",
+}: {
+  icon?: React.ComponentType<{ className?: string }>;
+  title: string;
+  sub?: string;
+  count?: number;
+  tone?: keyof typeof headTones;
+}) {
+  return (
+    <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-2.5">
+        {Icon && (
+          <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-md", headTones[tone])}>
+            <Icon className="size-4" />
+          </span>
+        )}
+        <div className="min-w-0">
+          <h2 className="truncate font-semibold text-neutral-900">{title}</h2>
+          {sub && <p className="truncate text-xs text-neutral-500">{sub}</p>}
+        </div>
+      </div>
+      {count !== undefined && <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums", headTones[tone])}>{count}</span>}
+    </div>
+  );
+}
+
+function PanelEmpty({ text }: { text: string }) {
+  return <p className="py-10 text-center text-sm text-neutral-500">{text}</p>;
+}
+
+function ChartHead({ title, sub, value, valueLabel }: { title: string; sub: string; value: string; valueLabel: string }) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+      <div className="min-w-0">
+        <h2 className="font-semibold text-neutral-900">{title}</h2>
+        <p className="text-xs text-neutral-500">{sub}</p>
+      </div>
+      <div className="text-right">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-400">{valueLabel}</p>
+        <p className="text-lg font-bold tabular-nums text-neutral-900">{value}</p>
+      </div>
+    </div>
+  );
+}
+
 function MoreLink({ href, label }: { href: string; label: string }) {
   return (
     <Link href={href} className="mt-auto flex items-center justify-center gap-1 border-t border-neutral-100 pt-3 text-xs font-medium text-sky-700 hover:underline">
@@ -385,40 +395,12 @@ function MoreLink({ href, label }: { href: string; label: string }) {
   );
 }
 
-/** Where every physical room stands right now, as one stacked bar plus a legend. */
-function RoomMix({ mix, total }: { mix: { label: string; n: number; dot: string }[]; total: number }) {
-  return (
-    <div className="mt-auto pt-4">
-      <div className="rounded-md border border-neutral-100 bg-neutral-50/70 p-3">
-        <div className="mb-2.5 flex items-center justify-between text-xs">
-          <span className="font-semibold text-neutral-800">Rooms right now</span>
-          <Link href={`${ADMIN}/rooms`} className="font-medium text-sky-700 hover:underline">
-            Rooms board
-          </Link>
-        </div>
-        <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-neutral-100">
-          {mix.map((m) => m.n > 0 && <div key={m.label} className={m.dot} style={{ width: `${(m.n / Math.max(1, total)) * 100}%` }} />)}
-        </div>
-        <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-neutral-600">
-          {mix.map((m) => (
-            <li key={m.label} className="flex items-center gap-1.5">
-              <span className={cn("size-2 shrink-0 rounded-full", m.dot)} />
-              {m.label}
-              <span className="ml-auto font-semibold tabular-nums text-neutral-900">{m.n}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
 function TileRow({ tiles }: { tiles: { label: string; value: string }[] }) {
   return (
     <div className="mt-auto grid grid-cols-3 gap-2 pt-5">
       {tiles.map((t) => (
-        <div key={t.label} className="min-w-0 rounded-md bg-neutral-50 px-3 py-2.5">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-500">{t.label}</p>
+        <div key={t.label} className="min-w-0 rounded-md bg-neutral-50 px-2.5 py-2 sm:px-3 sm:py-2.5">
+          <p className="truncate text-[10px] font-medium uppercase tracking-wide text-neutral-500 sm:text-[11px]">{t.label}</p>
           <p className="mt-0.5 truncate text-sm font-semibold tabular-nums text-neutral-900">{t.value}</p>
         </div>
       ))}
@@ -427,9 +409,9 @@ function TileRow({ tiles }: { tiles: { label: string; value: string }[] }) {
 }
 
 /** A dashboard card that grows to its row's height, with a soft wave filling the space below short lists. */
-function Panel({ children }: { children: React.ReactNode }) {
+function Panel({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <Card className="group/card relative isolate flex flex-col overflow-hidden transition-shadow duration-300 hover:shadow-lg hover:shadow-neutral-900/5">
+    <Card className={cn("group/card relative isolate flex min-w-0 flex-col overflow-hidden pb-6 transition-shadow duration-300 hover:shadow-lg hover:shadow-neutral-900/5", className)}>
       <CardArt rings={false} className="text-sky-500" />
       {children}
     </Card>

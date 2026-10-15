@@ -246,6 +246,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     notices: db.notices.filter((n) => n.to === "staff" && !n.read).length,
   };
   const current = [...allItems].sort((a, b) => b.href.length - a.href.length).find((i) => isActive(i.href, pathname));
+  // Rooms pages carry their own header and actions, so the top bar stays bare there.
+  const bareTopBar = pathname.startsWith(`${ADMIN}/room-types`);
   const allowed = !current?.perm || can(staff.role, current.perm);
 
   const sidebar = (
@@ -333,12 +335,17 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         </div>
       )}
       <div className="min-w-0 lg:pl-64 print:pl-0">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-neutral-200 bg-white/90 px-4 backdrop-blur md:px-8 print:hidden">
-          <button onClick={() => setOpen(true)} aria-label="Open menu" className="lg:hidden">
-            <Menu className="size-6" />
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-neutral-200 bg-white/90 px-4 backdrop-blur sm:px-6 xl:px-8 print:hidden">
+          <button
+            onClick={() => setOpen(true)}
+            aria-label="Open menu"
+            className="flex size-10 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-700 lg:hidden"
+          >
+            <Menu className="size-5" />
           </button>
+          {current && !bareTopBar && <p className="min-w-0 truncate text-sm font-semibold text-neutral-900 md:text-base">{current.label}</p>}
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            {can(staff.role, "bookings.manage") && (
+            {can(staff.role, "bookings.manage") && !bareTopBar && (
               <Link
                 href={`${ADMIN}/bookings/new`}
                 className="inline-flex h-10 items-center gap-1.5 rounded-md bg-sky-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
@@ -349,7 +356,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <NotificationBell />
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-sky-200">
-                <span className="hidden text-right sm:block">
+                <span className="hidden text-right md:block">
                   <span className="block text-sm font-semibold text-neutral-900">{staff.name}</span>
                   <span className="block text-xs text-neutral-500">{roleLabels[staff.role]}</span>
                 </span>
@@ -381,7 +388,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           </div>
         </header>
         {/* The root layout already provides <main>. */}
-        <div className="p-4 md:p-8 print:p-0">{allowed ? children : <NoAccess />}</div>
+        <div className="p-4 sm:p-6 xl:p-8 print:p-0">{allowed ? children : <NoAccess />}</div>
       </div>
     </div>
   );

@@ -306,6 +306,13 @@ export const sitePolicies = (db: HotelDB) => [
 
 const siteCache = new WeakMap<HotelDB, Hotel>();
 
+/** A room type's rating and review count, from the published guest reviews. */
+export function roomRating(db: HotelDB, typeId: string) {
+  const list = db.reviews.filter((r) => r.roomId === typeId && r.status === "published");
+  const avg = list.length ? list.reduce((sum, r) => sum + r.rating, 0) / list.length : 0;
+  return { rating: Math.round(avg * 10) / 10, reviewsCount: list.length };
+}
+
 /** The store in the shape the guest-facing components were built for. */
 export function siteHotel(db: HotelDB): Hotel {
   const cached = siteCache.get(db);
@@ -315,6 +322,7 @@ export function siteHotel(db: HotelDB): Hotel {
     .filter((t) => t.active)
     .map((t) => ({
       ...t,
+      ...roomRating(db, t.id),
       totalRooms: bookableUnits(db, t.id).length,
       reservations: db.bookings
         .filter((b) => b.roomTypeId === t.id && holdsRooms(b))

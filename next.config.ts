@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
         hostname: "192.168.0.202",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
     ],
   },
   output: "standalone",
