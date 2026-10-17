@@ -89,6 +89,18 @@ export type GuestInfo = {
 
 export type BookingEvent = { at: string; text: string; by: string };
 
+/** Paid by the hotel to whoever brought the booking; never added to the guest's bill. */
+export type Commission = {
+  to: "agency" | "person";
+  name: string;
+  phone?: string;
+  kind: "percent" | "amount";
+  /** As entered: a percent of the room charge after discount, or a flat BDT amount. */
+  value: number;
+  /** BDT owed for this booking. */
+  amount: number;
+};
+
 export type DiscountKind = "percent" | "amount";
 
 /** Taken off the room charge before service charge and VAT, so both are worked out on the discounted price. */
@@ -105,6 +117,8 @@ export type StayDiscount = {
 export type Booking = {
   id: string;
   code: string;
+  /** Shared by bookings made together for one guest (e.g. a twin and a suite on the same stay). */
+  groupId?: string;
   /** Account that owns the booking — a registered guest, or a guest profile created at booking time. */
   userId?: string;
   roomTypeId: string;
@@ -123,6 +137,7 @@ export type Booking = {
   /** Room charge before any discount: pricePerNight × nights × rooms. */
   subtotal: number;
   discount?: StayDiscount;
+  commission?: Commission;
   serviceFee: number;
   tax: number;
   /** Room charge less discount, plus service fee and VAT. Extras live in `charges`. */

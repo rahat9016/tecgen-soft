@@ -10,6 +10,7 @@ import type {
   BookingSource,
   BookingStatus,
   Charge,
+  Commission,
   Content,
   DiscountKind,
   GalleryImage,
@@ -615,12 +616,20 @@ export type OnlineBookingInput = {
   method: OnlineMethod;
 };
 
-function validateStay(s: HotelDB, type: RoomTypeRecord | undefined, i: { checkIn: string; checkOut: string; rooms: number; adults: number; children: number }, ignoreId?: string, allowPast = false): string | null {
+function validateStay(
+  s: HotelDB,
+  type: RoomTypeRecord | undefined,
+  i: { checkIn: string; checkOut: string; rooms: number; adults: number; children: number },
+  ignoreId?: string,
+  allowPast = false,
+  /** Part of a group whose adults are booked on another linked booking. */
+  allowNoAdults = false
+): string | null {
   if (!type) return "This room type no longer exists.";
   if (!allowPast && i.checkIn < todayKey()) return "Check-in can't be in the past.";
   if (nightsBetween(i.checkIn, i.checkOut) < 1) return "Check-out must be after check-in.";
   if (i.rooms < 1) return "Book at least one room.";
-  if (i.adults < 1) return "At least one adult is required.";
+  if (i.adults < 1 && !allowNoAdults) return "At least one adult is required.";
   if (Math.ceil((i.adults + i.children) / i.rooms) > type.capacity) return `${type.name} sleeps up to ${type.capacity} — add a room or pick a larger room.`;
   const free = freeRooms(s, type.id, i.checkIn, i.checkOut, ignoreId);
   if (free < i.rooms) return free === 0 ? `${type.name} is fully booked for these dates.` : `Only ${free} ${type.name} ${free === 1 ? "is" : "are"} free for these dates.`;
@@ -729,6 +738,7 @@ export type StaffBookingInput = {
   discount?: DiscountInput & { reason: string };
   /** Travel agent or company that made the booking. */
   agentName?: string;
+  commission?: Omit<Commission, "amount">;
   unitIds?: string[];
   payment?: { amount: number; method: PayMethod; ref?: string };
   checkInNow?: boolean;
@@ -750,106 +760,145 @@ function validateUnits(s: HotelDB, typeId: string, unitIds: string[], checkIn: s
   return null;
 }
 
-export function createStaffBooking(input: StaffBookingInput): Result<Booking> {
-  let result: Result<Booking> = fail("Booking failed.");
-  update((s) => {
-    const type = s.roomTypes.find((t) => t.id === input.roomTypeId);
-    const problem = validateStay(s, type, input);
-    if (problem || !type) {
-      result = fail(problem ?? "Room unavailable.");
-      return s;
+/** Adds one staff booking to `s`, or explains why it can't be made. */
+function addStaffBooking(s: HotelDB, input: StaffBookingInput, groupId?: string): string | { state: HotelDB; booking: Booking } {
+  const type = s.roomTypes.find((t) => t.id === input.roomTypeId);
+  const problem = validateStay(s, type, input, undefined, false, !!groupId);
+  if (problem || !type) {
+    return problem ?? "Room unavailable.";
+  }
+  if (!input.guest.name.trim()) {
+    return "Guest name is required.";
+  }
+  if (!input.guest.phone.trim() && !input.guest.email.trim()) {
+    return "Add a phone number or email for the guest.";
+  }
+  const today = todayKey();
+  if (input.checkInNow && input.checkIn !== today) {
+    return "Only a stay starting today can be checked in now.";
+  }
+  const chosen = input.unitIds?.length ? input.unitIds.slice(0, input.rooms) : suggestUnits(s, type.id, input.checkIn, input.checkOut, input.rooms);
+  const unitProblem = validateUnits(s, type.id, chosen, input.checkIn, input.checkOut);
+  if (unitProblem) {
+    return unitProblem;
+  }
+  if (input.checkInNow && chosen.length < input.rooms) {
+    return "Assign a room for every room booked before checking in.";
+  }
+  const by = actor();
+  const { users, user } = ensureGuest(s, input.guest, input.userId);
+  const nights = nightsBetween(input.checkIn, input.checkOut);
+  const rate = input.pricePerNight && input.pricePerNight > 0 ? Math.round(input.pricePerNight) : type.price;
+  const q = quoteStay(s.settings, rate, nights, input.rooms, input.discount);
+  let discount: StayDiscount | undefined;
+  if (q.discount > 0 && input.discount) {
+    const reason = input.discount.reason.trim();
+    if (!reason) {
+      return "Give a reason for the discount.";
     }
-    if (!input.guest.name.trim()) {
-      result = fail("Guest name is required.");
-      return s;
+    const limit = discountLimit(s.users.find((u) => u.id === getSession().staffId)?.role);
+    // ৳1 slack: a flat discount split over linked bookings rounds each share.
+    if (q.discount > Math.round((q.subtotal * limit) / 100) + 1) {
+      return `Your discount limit is ${limit}% of the room charge — ask a manager for more.`;
     }
-    if (!input.guest.phone.trim() && !input.guest.email.trim()) {
-      result = fail("Add a phone number or email for the guest.");
-      return s;
-    }
-    const today = todayKey();
-    if (input.checkInNow && input.checkIn !== today) {
-      result = fail("Only a stay starting today can be checked in now.");
-      return s;
-    }
-    const chosen = input.unitIds?.length ? input.unitIds.slice(0, input.rooms) : suggestUnits(s, type.id, input.checkIn, input.checkOut, input.rooms);
-    const unitProblem = validateUnits(s, type.id, chosen, input.checkIn, input.checkOut);
-    if (unitProblem) {
-      result = fail(unitProblem);
-      return s;
-    }
-    if (input.checkInNow && chosen.length < input.rooms) {
-      result = fail("Assign a room for every room booked before checking in.");
-      return s;
-    }
-    const by = actor();
-    const { users, user } = ensureGuest(s, input.guest, input.userId);
-    const nights = nightsBetween(input.checkIn, input.checkOut);
-    const rate = input.pricePerNight && input.pricePerNight > 0 ? Math.round(input.pricePerNight) : type.price;
-    const q = quoteStay(s.settings, rate, nights, input.rooms, input.discount);
-    let discount: StayDiscount | undefined;
-    if (q.discount > 0 && input.discount) {
-      const reason = input.discount.reason.trim();
-      if (!reason) {
-        result = fail("Give a reason for the discount.");
-        return s;
-      }
-      const limit = discountLimit(s.users.find((u) => u.id === getSession().staffId)?.role);
-      if (discountRate(q.subtotal, q.discount) > limit + 0.001) {
-        result = fail(`Your discount limit is ${limit}% of the room charge — ask a manager for more.`);
-        return s;
-      }
-      discount = { kind: input.discount.kind, value: input.discount.value, amount: q.discount, reason, by };
-    }
-    const pay = input.payment && input.payment.amount > 0 ? Math.min(Math.round(input.payment.amount), q.total) : 0;
-    const at = nowIso();
-    const seq = s.seq.booking + 1;
-    const status: BookingStatus = input.checkInNow ? "checked-in" : input.tentative ? "pending" : "confirmed";
-    const numbers = unitNumbers(s, chosen).join(", ");
-    const booking: Booking = {
-      id: uid("bk"),
-      code: `TW-${seq}`,
-      userId: user.id,
-      roomTypeId: type.id,
-      roomName: type.name,
-      rooms: input.rooms,
-      unitIds: chosen,
-      checkIn: input.checkIn,
-      checkOut: input.checkOut,
-      nights,
-      adults: input.adults,
-      children: input.children,
-      pricePerNight: rate,
-      subtotal: q.subtotal,
-      discount,
-      serviceFee: q.serviceFee,
-      tax: q.tax,
-      total: q.total,
-      charges: [],
-      payments: pay ? [{ id: uid("p"), amount: pay, method: input.payment!.method, kind: input.checkInNow ? "payment" : "deposit", ref: input.payment!.ref || undefined, at, by }] : [],
-      guest: { ...input.guest, email: normEmail(input.guest.email) },
-      status,
-      source: input.source,
-      internalNote: [input.agentName?.trim() && `Agent: ${input.agentName.trim()}`, input.internalNote?.trim()].filter(Boolean).join("\n") || undefined,
-      createdAt: at,
-      updatedAt: at,
-      checkedInAt: input.checkInNow ? at : undefined,
-      log: [
-        { at, text: `Booking taken (${input.source}${input.agentName?.trim() ? ` · ${input.agentName.trim()}` : ""})${rate !== type.price ? ` at ${money(rate)}/night` : ""}`, by },
-        ...(discount ? [{ at, text: `Discount ${discount.kind === "percent" ? `${discount.value}% ` : ""}${money(discount.amount)} — ${discount.reason}`, by }] : []),
-        ...(pay ? [{ at, text: `Received ${money(pay)} via ${input.payment!.method}`, by }] : []),
-        ...(input.checkInNow ? [{ at, text: `Checked in to room ${numbers}`, by }] : []),
-      ],
-    };
-    result = { ok: true, value: booking };
-    const next = { ...s, users, bookings: [...s.bookings, booking], seq: { ...s.seq, booking: seq } };
-    return withNotices(
+    discount = { kind: input.discount.kind, value: input.discount.value, amount: q.discount, reason, by };
+  }
+  const commission: Commission | undefined =
+    input.commission && input.commission.value > 0 && input.commission.name.trim()
+      ? {
+          ...input.commission,
+          name: input.commission.name.trim(),
+          phone: input.commission.phone?.trim() || undefined,
+          amount: input.commission.kind === "percent" ? Math.round((q.net * Math.min(input.commission.value, 100)) / 100) : Math.min(Math.round(input.commission.value), q.net),
+        }
+      : undefined;
+  const pay = input.payment && input.payment.amount > 0 ? Math.min(Math.round(input.payment.amount), q.total) : 0;
+  const at = nowIso();
+  const seq = s.seq.booking + 1;
+  const status: BookingStatus = input.checkInNow ? "checked-in" : input.tentative ? "pending" : "confirmed";
+  const numbers = unitNumbers(s, chosen).join(", ");
+  const booking: Booking = {
+    id: uid("bk"),
+    code: `TW-${seq}`,
+    userId: user.id,
+    groupId,
+    roomTypeId: type.id,
+    roomName: type.name,
+    rooms: input.rooms,
+    unitIds: chosen,
+    checkIn: input.checkIn,
+    checkOut: input.checkOut,
+    nights,
+    adults: input.adults,
+    children: input.children,
+    pricePerNight: rate,
+    subtotal: q.subtotal,
+    discount,
+    commission,
+    serviceFee: q.serviceFee,
+    tax: q.tax,
+    total: q.total,
+    charges: [],
+    payments: pay ? [{ id: uid("p"), amount: pay, method: input.payment!.method, kind: input.checkInNow ? "payment" : "deposit", ref: input.payment!.ref || undefined, at, by }] : [],
+    guest: { ...input.guest, email: normEmail(input.guest.email) },
+    status,
+    source: input.source,
+    internalNote: [input.agentName?.trim() && `Agent: ${input.agentName.trim()}`, input.internalNote?.trim()].filter(Boolean).join("\n") || undefined,
+    createdAt: at,
+    updatedAt: at,
+    checkedInAt: input.checkInNow ? at : undefined,
+    log: [
+      { at, text: `Booking taken (${input.source}${input.agentName?.trim() ? ` · ${input.agentName.trim()}` : ""})${rate !== type.price ? ` at ${money(rate)}/night` : ""}`, by },
+      ...(discount ? [{ at, text: `Discount ${discount.kind === "percent" ? `${discount.value}% ` : ""}${money(discount.amount)} — ${discount.reason}`, by }] : []),
+      ...(commission ? [{ at, text: `Commission ${money(commission.amount)} to ${commission.name} (${commission.to})`, by }] : []),
+      ...(pay ? [{ at, text: `Received ${money(pay)} via ${input.payment!.method}`, by }] : []),
+      ...(input.checkInNow ? [{ at, text: `Checked in to room ${numbers}`, by }] : []),
+    ],
+  };
+  const next = { ...s, users, bookings: [...s.bookings, booking], seq: { ...s.seq, booking: seq } };
+  return {
+    booking,
+    state: withNotices(
       next,
       ...guestNotice(next, booking, "booking", `Booking confirmed · ${booking.code}`, `${type.name}, ${nights} night${nights > 1 ? "s" : ""} from ${input.checkIn}.`)
-    );
+    ),
+  };
+}
+
+export function createStaffBooking(input: StaffBookingInput): Result<Booking> {
+  const r = createStaffBookings([input]);
+  return r.ok ? { ok: true, value: r.value[0] } : r;
+}
+
+/**
+ * Several room types for one guest, made together: one linked booking per room type, sharing a `groupId`.
+ * All or nothing — if any part can't be booked, none are.
+ */
+export function createStaffBookings(inputs: StaffBookingInput[]): Result<Booking[]> {
+  let result: Result<Booking[]> = fail("Booking failed.");
+  if (!inputs.length) return fail("Pick at least one room.");
+  update((s) => {
+    const groupId = inputs.length > 1 ? uid("grp") : undefined;
+    let state = s;
+    const made: Booking[] = [];
+    for (const input of inputs) {
+      // Later parts reuse the guest profile the first part found or created.
+      const out = addStaffBooking(state, made.length ? { ...input, userId: made[0].userId } : input, groupId);
+      if (typeof out === "string") {
+        result = fail(inputs.length > 1 ? `${s.roomTypes.find((t) => t.id === input.roomTypeId)?.name ?? "Room"}: ${out}` : out);
+        return s;
+      }
+      state = out.state;
+      made.push(out.booking);
+    }
+    result = { ok: true, value: made };
+    return state;
   });
   return result;
 }
+
+/** Other bookings made together with this one. */
+export const groupOf = (db: HotelDB, b: Booking) => (b.groupId ? db.bookings.filter((x) => x.groupId === b.groupId && x.id !== b.id) : []);
 
 function patchBooking(id: string, fn: (b: Booking, s: HotelDB) => Booking | string, extra?: (b: Booking, s: HotelDB) => Partial<HotelDB> | Notice[]): Result<Booking> {
   let result: Result<Booking> = fail("Booking not found.");
@@ -986,7 +1035,7 @@ export function changeStay(id: string, change: StayChange) {
     if (b.status === "checked-in" && (change.checkIn !== b.checkIn || change.roomTypeId !== b.roomTypeId || change.rooms !== b.rooms))
       return "For in-house guests only the check-out date and party can change. Use Move room to switch rooms.";
     const type = s.roomTypes.find((t) => t.id === change.roomTypeId);
-    const problem = validateStay(s, type, change, b.id, b.status === "checked-in");
+    const problem = validateStay(s, type, change, b.id, b.status === "checked-in", !!b.groupId);
     if (problem || !type) return problem ?? "Room unavailable.";
     const nights = nightsBetween(change.checkIn, change.checkOut);
     const rate = Math.max(1, Math.round(change.pricePerNight));
@@ -1006,6 +1055,10 @@ export function changeStay(id: string, change: StayChange) {
       nights,
       subtotal: q.subtotal,
       discount: b.discount && (q.discount ? { ...b.discount, amount: q.discount } : undefined),
+      commission: b.commission && {
+        ...b.commission,
+        amount: b.commission.kind === "percent" ? Math.round((q.net * b.commission.value) / 100) : Math.min(b.commission.value, q.net),
+      },
       serviceFee: q.serviceFee,
       tax: q.tax,
       total: q.total,

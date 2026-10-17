@@ -289,7 +289,10 @@ export default function BookingsList() {
                           <Avatar name={b.guest.name} />
                           <div className="min-w-0">
                             <p className="truncate font-medium text-neutral-900">{b.guest.name}</p>
-                            <p className="font-mono text-xs font-semibold text-sky-700">{b.code}</p>
+                            <p className="font-mono text-xs font-semibold text-sky-700">
+                              {b.code}
+                              {b.groupId && <span className="ml-1.5 rounded bg-violet-50 px-1 py-px font-sans text-[10px] font-semibold text-violet-700">Group</span>}
+                            </p>
                           </div>
                         </div>
                         <StatusBadge status={b.status} />
@@ -354,6 +357,7 @@ export default function BookingsList() {
                                 >
                                   {b.code}
                                 </Link>
+                                {b.groupId && <span className="ml-1.5 rounded bg-violet-50 px-1 py-px font-sans text-[10px] font-semibold text-violet-700">Group</span>}
                                 {" · "}
                                 {sourceLabels[b.source]} · {format(new Date(b.createdAt), "dd MMM")}
                               </p>

@@ -37,6 +37,7 @@ import {
   creditOf,
   dueOf,
   folioTotal,
+  groupOf,
   isLive,
   markNoShow,
   paidOf,
@@ -51,6 +52,7 @@ import type { PaymentKind } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
 import PrintableInvoice, { invoiceNumber, printWithTitle } from "@/src/components/hotel/Booking/PrintableInvoice";
 import { CancelModal, ChangeStayModal, ChargeModal, CheckoutModal, GuestModal, PaymentModal, RoomsModal } from "./BookingModals";
+import ExtendStayModal from "./ExtendStayModal";
 import { ADMIN, Card, Empty, hbtn, PayBadge, StatusBadge, textareaClass } from "./ui";
 
 export default function BookingDetail({ id }: { id: string }) {
@@ -77,6 +79,7 @@ export default function BookingDetail({ id }: { id: string }) {
   const role = staff?.role;
   const today = todayKey();
   const user = db.users.find((u) => u.id === b.userId);
+  const linked = groupOf(db, b);
   const otherStays = user ? db.bookings.filter((x) => x.userId === user.id && x.id !== b.id) : [];
   const unitList = unitNumbers(db, b.unitIds);
   const due = dueOf(b);
@@ -184,6 +187,26 @@ export default function BookingDetail({ id }: { id: string }) {
                 {b.roomName}
                 {b.rooms > 1 ? ` ×${b.rooms}` : ""} · {dateLabel(b.checkIn, "EEE dd MMM")} → {dateLabel(b.checkOut, "EEE dd MMM yyyy")} · {b.nights} night{b.nights > 1 ? "s" : ""}
               </p>
+              {b.commission && (
+                <p className="mt-2 inline-flex flex-wrap items-center gap-1.5 rounded-md bg-violet-50 px-2.5 py-1 text-xs text-violet-800">
+                  Commission <b className="tabular-nums">{taka(b.commission.amount)}</b>
+                  {b.commission.kind === "percent" && ` (${b.commission.value}%)`} to {b.commission.name}
+                  <span className="text-violet-600">· {b.commission.to === "agency" ? "Agency" : "Person"}</span>
+                  {b.commission.phone && <span className="text-violet-600">· {b.commission.phone}</span>}
+                </p>
+              )}
+              {linked.length > 0 && (
+                <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-neutral-500">
+                  <span className="rounded-md bg-violet-50 px-2 py-0.5 font-semibold text-violet-700">Group booking</span>
+                  Booked together with
+                  {linked.map((x) => (
+                    <Link key={x.id} href={`${ADMIN}/bookings/${x.id}`} className="rounded-md border border-neutral-200 bg-white px-2 py-0.5 font-medium text-sky-700 hover:border-sky-300">
+                      {x.code} · {x.roomName}
+                      {x.rooms > 1 ? ` ×${x.rooms}` : ""}
+                    </Link>
+                  ))}
+                </p>
+              )}
             </div>
             {actions}
           </div>
@@ -492,7 +515,8 @@ export default function BookingDetail({ id }: { id: string }) {
       {payKind && <PaymentModal booking={b} kind={payKind} onClose={() => setPayKind(null)} />}
       {rooms && <RoomsModal booking={b} mode={rooms} onClose={() => setRooms(null)} />}
       {modal === "charge" && <ChargeModal booking={b} open onClose={() => setModal(null)} />}
-      {modal === "stay" && <ChangeStayModal booking={b} open onClose={() => setModal(null)} />}
+      {modal === "stay" &&
+        (b.status === "checked-in" ? <ExtendStayModal booking={b} onClose={() => setModal(null)} /> : <ChangeStayModal booking={b} open onClose={() => setModal(null)} />)}
       {modal === "cancel" && <CancelModal booking={b} open onClose={() => setModal(null)} />}
       {modal === "guest" && <GuestModal booking={b} open onClose={() => setModal(null)} />}
       {modal === "checkout" && (

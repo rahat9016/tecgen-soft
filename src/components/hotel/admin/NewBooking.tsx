@@ -9,21 +9,27 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { discountLimit } from "@/src/lib/hotel-store/auth";
 import { shiftDay, taka, todayKey } from "@/src/lib/hotel-store/format";
-import { createStaffBooking, findGuestMatch, freeUnits, guestStats, suggestUnits, updateGuestProfile, useCurrentStaff, useHotelDB, useHydrated } from "@/src/lib/hotel-store/store";
+import { createStaffBookings, findGuestMatch, freeUnits, guestStats, suggestUnits, updateGuestProfile, useCurrentStaff, useHotelDB, useHydrated } from "@/src/lib/hotel-store/store";
 import type { HotelDB } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
 import GuestSection from "./booking-form/GuestSection";
-import { PaymentSection, PricingSection } from "./booking-form/PricingSection";
-import { RoomsSection, StaySection } from "./booking-form/StaySection";
+import PaymentSection from "./booking-form/PaymentSection";
+import { StaySection } from "./booking-form/StaySection";
 import SummaryPanel, { submitLabel } from "./booking-form/SummaryPanel";
 import {
   bookingSchema,
   computeStay,
+  composeGuest,
+  emptyCommission,
   emptyGuest,
+  guestFromUser,
   fieldForStoreError,
+  newLine,
   OTHER_REASON,
+  payNowOf,
   sectionOf,
   sectionOrder,
+  splitPayment,
   toNum,
   type BookingFormValues,
 } from "./booking-form/schema";
@@ -44,32 +50,28 @@ const scrollToSection = (section: string, field?: string) => {
 
 function initialValues(db: HotelDB, params: URLSearchParams): BookingFormValues {
   const today = todayKey();
-  const typeId = params.get("type") ?? db.roomTypes.find((t) => t.active)?.id ?? db.roomTypes[0]?.id ?? "";
+  const type = db.roomTypes.find((t) => t.id === params.get("type")) ?? db.roomTypes.find((t) => t.active) ?? db.roomTypes[0];
   const checkIn = params.get("checkIn") ?? today;
   const checkOut = params.get("checkOut") ?? shiftDay(checkIn, 1);
   const user = db.users.find((u) => u.id === params.get("guest") && u.role === "guest");
   const lastId = user ? guestStats(db, user.id).lastId : undefined;
   return {
     source: "walk-in",
-    agentName: "",
-    typeId,
+    commission: emptyCommission,
     checkIn,
     checkOut,
-    rooms: 1,
+    lines: type ? [newLine(type, params.get("unit") ? [params.get("unit")!] : [])] : [],
     adults: 2,
     children: 0,
-    rate: db.roomTypes.find((t) => t.id === typeId)?.price ?? "",
-    unitIds: params.get("unit") ? [params.get("unit")!] : [],
     guestMode: user ? "returning" : "new",
     userId: user?.id ?? "",
-    guest: user
-      ? { ...emptyGuest, name: user.name, phone: user.phone, email: user.email, country: user.country ?? "Bangladesh", idType: lastId?.idType ?? "nid", idNumber: lastId?.idNumber ?? "" }
-      : emptyGuest,
+    guest: user ? guestFromUser(user, lastId) : emptyGuest,
     updateProfile: false,
     discountKind: "percent",
     discountValue: "",
     discountReason: "",
     discountNote: "",
+    payPlan: "none",
     payAmount: "",
     payMethod: "cash",
     payRef: "",
@@ -104,31 +106,27 @@ function NewBookingForm() {
   const methods = useForm<BookingFormValues>({ resolver, defaultValues: initialValues(db, params), mode: "onTouched", shouldFocusError: false });
   const { control, getValues, setValue, setError, handleSubmit, formState } = methods;
   const { isDirty, isSubmitted } = formState;
-  const [typeId, checkIn, checkOut, rooms, status] = useWatch({ control, name: ["typeId", "checkIn", "checkOut", "rooms", "status"] });
+  const [checkIn, checkOut, lines, status] = useWatch({ control, name: ["checkIn", "checkOut", "lines", "status"] });
   const v = useWatch({ control }) as BookingFormValues;
   const { quote } = computeStay(db, v);
-  const due = Math.max(0, quote.total - Math.min(toNum(v.payAmount), quote.total));
+  const due = quote.total - payNowOf(v, quote);
 
-  // A new room type starts at its own rack rate.
-  const lastType = useRef(typeId);
+  // For each room type keep picked rooms that are still free and top up with the best free ones (clean first).
+  const lineKey = (lines ?? []).map((l) => `${l.typeId}:${l.rooms}`).join("|");
   useEffect(() => {
-    if (lastType.current === typeId) return;
-    lastType.current = typeId;
-    const t = db.roomTypes.find((x) => x.id === typeId);
-    if (t) setValue("rate", t.price, { shouldDirty: true });
-  }, [typeId, db.roomTypes, setValue]);
-
-  // Keep picked rooms that are still free for the stay and top up with the best free ones.
-  useEffect(() => {
-    const count = Math.max(1, toNum(rooms));
-    if (!typeId || !checkIn || !checkOut || checkOut <= checkIn) return setValue("unitIds", []);
-    const free = new Set(freeUnits(db, typeId, checkIn, checkOut).map((u) => u.id));
-    const keep = getValues("unitIds").filter((id) => free.has(id)).slice(0, count);
-    const extra = suggestUnits(db, typeId, checkIn, checkOut, count)
-      .filter((id) => !keep.includes(id))
-      .slice(0, count - keep.length);
-    setValue("unitIds", [...keep, ...extra], { shouldValidate: isSubmitted });
-  }, [db, typeId, checkIn, checkOut, rooms, getValues, setValue, isSubmitted]);
+    const valid = !!checkIn && !!checkOut && checkOut > checkIn;
+    getValues("lines").forEach((l, i) => {
+      const count = Math.max(1, toNum(l.rooms));
+      if (!valid) return setValue(`lines.${i}.unitIds`, []);
+      const free = new Set(freeUnits(db, l.typeId, checkIn, checkOut).map((u) => u.id));
+      const keep = l.unitIds.filter((id) => free.has(id)).slice(0, count);
+      const extra = suggestUnits(db, l.typeId, checkIn, checkOut, count)
+        .filter((id) => !keep.includes(id))
+        .slice(0, count - keep.length);
+      const next = [...keep, ...extra];
+      if (next.join() !== l.unitIds.join()) setValue(`lines.${i}.unitIds`, next, { shouldValidate: isSubmitted });
+    });
+  }, [db, lineKey, checkIn, checkOut, getValues, setValue, isSubmitted]);
 
   // Check-in now only makes sense for a stay starting today.
   useEffect(() => {
@@ -165,57 +163,63 @@ function NewBookingForm() {
 
     let userId = user?.id;
     if (!user) {
-      const match = findGuestMatch(db, values.guest);
+      const match = findGuestMatch(db, composeGuest(values.guest));
       if (match && confirm(`${match.name} already has a guest profile with this phone or email.\n\nOK — add this booking to their profile\nCancel — keep as a new guest`)) userId = match.id;
     }
     if (values.status === "check-in") {
-      const dirty = values.unitIds.map((id) => db.units.find((u) => u.id === id)).filter((u) => u?.housekeeping === "dirty");
+      const dirty = values.lines.flatMap((l) => l.unitIds).map((id) => db.units.find((u) => u.id === id)).filter((u) => u?.housekeeping === "dirty");
       if (dirty.length && !confirm(`Room ${dirty.map((u) => u!.number).join(", ")} is not cleaned yet. Check the guest in anyway?`)) return;
     }
 
     setSaving(true);
-    const discountValue = toNum(values.discountValue);
+    const stay = computeStay(db, values);
+    const pays = splitPayment(values, stay.lines);
     const note = values.discountNote.trim();
-    const r = createStaffBooking({
-      roomTypeId: values.typeId,
-      checkIn: values.checkIn,
-      checkOut: values.checkOut,
-      rooms: toNum(values.rooms),
-      adults: toNum(values.adults),
-      children: toNum(values.children),
-      guest: {
-        name: values.guest.name.trim(),
-        phone: values.guest.phone.trim(),
-        email: values.guest.email.trim(),
-        country: values.guest.country.trim() || undefined,
-        idType: values.guest.idType,
-        idNumber: values.guest.idNumber.trim() || undefined,
-        note: values.guest.note.trim() || undefined,
-      },
-      userId,
-      source: values.source,
-      agentName: values.source === "agent" ? values.agentName : undefined,
-      pricePerNight: toNum(values.rate),
-      discount: discountValue > 0 ? { kind: values.discountKind, value: discountValue, reason: values.discountReason === OTHER_REASON ? note : [values.discountReason, note].filter(Boolean).join(" — ") } : undefined,
-      unitIds: values.unitIds,
-      payment: toNum(values.payAmount) > 0 ? { amount: toNum(values.payAmount), method: values.payMethod, ref: values.payRef.trim() } : undefined,
-      checkInNow: values.status === "check-in",
-      tentative: values.status === "tentative",
-      internalNote: values.internalNote.trim() || undefined,
-    });
+    const reason = values.discountReason === OTHER_REASON ? note : [values.discountReason, note].filter(Boolean).join(" — ");
+    const guest = composeGuest(values.guest);
+    const c = values.commission;
+    // One linked booking per room type; the party, discount and payment are shared out between them.
+    const r = createStaffBookings(
+      stay.lines.map((l, i) => ({
+        roomTypeId: l.line.typeId,
+        checkIn: values.checkIn,
+        checkOut: values.checkOut,
+        rooms: l.rooms,
+        adults: l.adults,
+        children: l.children,
+        guest,
+        userId,
+        source: values.source,
+        agentName: values.source === "agent" ? c.name : undefined,
+        commission: l.commission > 0 ? { to: values.source === "agent" ? "agency" : c.to, name: c.name, phone: c.phone, kind: c.kind, value: c.kind === "percent" ? toNum(c.value) : l.commission } : undefined,
+        pricePerNight: l.rate,
+        discount: l.discount && l.discount.value > 0 ? { ...l.discount, reason } : undefined,
+        unitIds: l.line.unitIds,
+        payment: pays[i] > 0 ? { amount: pays[i], method: values.payMethod, ref: values.payRef.trim() } : undefined,
+        checkInNow: values.status === "check-in",
+        tentative: values.status === "tentative",
+        internalNote: values.internalNote.trim() || undefined,
+      }))
+    );
 
     if (!r.ok) {
       setSaving(false);
       const field = fieldForStoreError(r.error);
-      if (!field) return toast.error(r.error);
+      if (!field) {
+        toast.error(r.error);
+        return scrollToSection("stay");
+      }
       setError(field, { type: "store", message: r.error });
       scrollToSection(sectionOf(field), field);
       return;
     }
-    if (user && values.updateProfile) updateGuestProfile(user.id, { name: values.guest.name.trim(), phone: values.guest.phone.trim(), country: values.guest.country.trim() || undefined });
+    if (user && values.updateProfile) updateGuestProfile(user.id, { name: guest.name, phone: guest.phone, country: guest.country });
 
-    toast.success(`${r.value.code} created${r.value.status === "checked-in" ? " — guest checked in" : r.value.status === "pending" ? " — on hold until deposit" : ""}`);
-    router.push(`${ADMIN}/bookings/${r.value.id}`);
+    const [first] = r.value;
+    toast.success(
+      `${r.value.map((b) => b.code).join(", ")} created${first.status === "checked-in" ? " — guest checked in" : first.status === "pending" ? " — on hold until deposit" : ""}`
+    );
+    router.push(`${ADMIN}/bookings/${first.id}`);
   };
 
   return (
@@ -257,12 +261,10 @@ function NewBookingForm() {
         <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
           <div className="min-w-0 space-y-6">
             <StaySection step={1} />
-            <RoomsSection step={2} />
-            <GuestSection step={3} />
-            <PricingSection step={4} />
-            <PaymentSection step={5} />
+            <GuestSection step={2} />
+            <PaymentSection step={3} />
           </div>
-          <div className="xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
+          <div className="xl:sticky xl:top-24">
             <SummaryPanel saving={saving} />
           </div>
         </div>
