@@ -1,10 +1,5 @@
-import { Suspense } from "react";
-import RoomsBoard from "@/src/components/hotel/admin/RoomsBoard";
+import RoomTypes from "@/src/components/hotel/admin/RoomTypes";
 
 export default function Page() {
-  return (
-    <Suspense>
-      <RoomsBoard />
-    </Suspense>
-  );
+  return <RoomTypes />;
 }
