@@ -1,68 +1,62 @@
 "use client";
 
+import { useState } from "react";
+import { useFormContext, useFormState, useWatch } from "react-hook-form";
+import { format, startOfToday } from "date-fns";
 import {
-  useFieldArray,
-  useFormContext,
-  useFormState,
-  useWatch,
-} from "react-hook-form";
-import {
-  BedDouble,
   Building2,
+  CalendarClock,
   CalendarDays,
-  Check,
   Footprints,
+  LogIn,
   Phone,
-  Plus,
-  Trash2,
-  Users,
 } from "lucide-react";
-import DateRangeField from "@/src/components/hotel/shared/DateRangeField";
+import { Calendar } from "@/src/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/src/components/ui/popover";
 import { parseDayKey, toDayKey } from "@/src/lib/hotelDates";
-import { shiftDay, taka } from "@/src/lib/hotel-store/format";
-import { freeRooms, useHotelDB } from "@/src/lib/hotel-store/store";
+import { nightsBetween, todayKey } from "@/src/lib/hotel-store/format";
 import { cn } from "@/src/lib/utils";
-import { hbtn, inputClass } from "../ui";
+import CommissionPanel from "./CommissionPanel";
 import {
   FieldError,
+  fieldLabel,
+  focusRing,
   FormField,
   Section,
   Segmented,
   Stepper,
 } from "./parts";
-import CommissionPanel from "./CommissionPanel";
-import { computeStay, newLine, type BookingFormValues } from "./schema";
+import type { BookingFormValues } from "./schema";
 
-const quickNights = [1, 2, 3, 7];
+const longDate = (d: Date) => format(d, "EEE, d MMM yyyy");
+const fieldDate = (d: Date) => format(d, "d MMM yyyy");
 
 export function StaySection({ step }: { step: number }) {
-  const db = useHotelDB();
-  const { control, register, setValue } = useFormContext<BookingFormValues>();
+  const { control, setValue } = useFormContext<BookingFormValues>();
   const { isSubmitted } = useFormState({ control });
-  const v = useWatch({ control }) as BookingFormValues;
-  const stay = computeStay(db, v);
-  const { nights } = stay;
-  const { fields, append, remove } = useFieldArray({ control, name: "lines" });
+  const [source, checkIn, checkOut, status] = useWatch({
+    control,
+    name: ["source", "checkIn", "checkOut", "status"],
+  });
   const opts = { shouldDirty: true, shouldValidate: isSubmitted };
-
-  const indexOf = (typeId: string) =>
-    (v.lines ?? []).findIndex((l) => l.typeId === typeId);
-  const toggleType = (typeId: string) => {
-    const i = indexOf(typeId);
-    if (i >= 0) return remove(i);
-    const t = db.roomTypes.find((x) => x.id === typeId);
-    if (t) append(newLine(t));
-  };
+  const nights =
+    checkIn && checkOut ? Math.max(0, nightsBetween(checkIn, checkOut)) : 0;
+  const isToday = checkIn === todayKey();
+  const checkingIn = status === "check-in";
 
   return (
     <Section
       id="stay"
       step={step}
-      icon={CalendarDays}
-      title="Stay"
+      title="Stay details"
       aside={
         <Segmented
-          value={v.source}
+          label="Booking source"
+          value={source}
           onChange={(s) => setValue("source", s, opts)}
           options={[
             { value: "walk-in", label: "Walk-in", icon: Footprints },
@@ -72,223 +66,234 @@ export function StaySection({ step }: { step: number }) {
         />
       }
     >
-      <div>
-        <span className="mb-1 block text-xs font-medium text-neutral-600">
-          Check-in &amp; check-out
-        </span>
-        <DateRangeField
-          checkIn={parseDayKey(v.checkIn)}
-          checkOut={parseDayKey(v.checkOut)}
-          onChange={(ci, co) => {
-            const o = { ...opts, shouldTouch: true };
-            setValue("checkIn", ci ? toDayKey(ci) : "", o);
-            setValue("checkOut", co ? toDayKey(co) : "", o);
-          }}
-        />
-        <FieldError name="checkIn" />
-        <FieldError name="checkOut" />
-      </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-        <span className="text-neutral-500">Quick stay:</span>
-        {quickNights.map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() =>
-              v.checkIn && setValue("checkOut", shiftDay(v.checkIn, n), opts)
-            }
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="sm:col-span-2 lg:col-span-1">
+          <StayDates
+            checkIn={checkIn}
+            checkOut={checkOut}
+            onChange={(ci, co) => {
+              const o = { ...opts, shouldTouch: true };
+              setValue("checkIn", ci, o);
+              setValue("checkOut", co, o);
+            }}
+          />
+          <FieldError name="checkIn" />
+          <FieldError name="checkOut" />
+        </div>
+        <div>
+          <span className={fieldLabel}>Nights</span>
+          <p
+            aria-live="polite"
             className={cn(
-              "rounded-md border px-2 py-0.5 transition",
-              nights === n
-                ? "border-sky-500 bg-sky-50 text-sky-700"
-                : "border-neutral-200 text-neutral-600 hover:border-sky-300"
+              "flex h-10 items-center rounded-md border px-3 text-sm font-semibold tabular-nums",
+              nights
+                ? "border-sky-200 bg-sky-50 text-sky-900"
+                : "border-neutral-200 bg-neutral-50 text-neutral-500"
             )}
           >
-            {n === 7 ? "1 week" : `${n} night${n > 1 ? "s" : ""}`}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-6">
-        <span className="mb-2 block text-xs font-medium text-neutral-600">
-          Room types
-        </span>
-        <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
-          {db.roomTypes.map((t) => {
-            const left =
-              nights > 0 ? freeRooms(db, t.id, v.checkIn, v.checkOut) : null;
-            const on = indexOf(t.id) >= 0;
-            const full = left === 0;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                disabled={full && !on}
-                onClick={() => toggleType(t.id)}
-                aria-pressed={on}
-                className={cn(
-                  "group flex gap-3 rounded-md border p-2.5 text-left transition disabled:cursor-not-allowed",
-                  on
-                    ? "border-sky-500 bg-sky-50/60 ring-2 ring-sky-100"
-                    : "border-neutral-200 hover:border-sky-300",
-                  full && !on && "opacity-50"
-                )}
-              >
-                {t.images[0] ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- admin thumbnail
-                  <img
-                    src={t.images[0]}
-                    alt=""
-                    className="size-16 shrink-0 rounded object-cover"
-                  />
-                ) : (
-                  <span className="flex size-16 shrink-0 items-center justify-center rounded bg-neutral-100">
-                    <BedDouble className="size-5 text-neutral-400" />
-                  </span>
-                )}
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-start justify-between gap-2">
-                    <span className="truncate text-sm font-semibold text-neutral-900">
-                      {t.name}
-                    </span>
-                    {on ? (
-                      <span className="flex shrink-0 items-center gap-0.5 rounded bg-sky-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                        <Check className="size-3" />{" "}
-                        {stay.lines.find((l) => l.line.typeId === t.id)
-                          ?.rooms ?? 1}
-                      </span>
-                    ) : (
-                      !full && (
-                        <Plus className="size-4 shrink-0 text-neutral-300 transition group-hover:text-sky-500" />
-                      )
-                    )}
-                  </span>
-                  <span className="mt-0.5 block text-xs text-neutral-500">
-                    <Users className="mr-1 inline size-3" />
-                    Sleeps {t.capacity}
-                    {t.beds && ` · ${t.beds}`}
-                  </span>
-                  <span className="mt-1 flex items-center justify-between gap-2 text-xs">
-                    <span className="font-semibold tabular-nums text-neutral-800">
-                      {taka(t.price)}
-                      <span className="font-normal text-neutral-400">
-                        /night
-                      </span>
-                    </span>
-                    {left !== null && (
-                      <span
-                        className={cn(
-                          "rounded px-1.5 py-0.5 font-medium",
-                          full
-                            ? "bg-rose-50 text-rose-600"
-                            : left <= 2
-                              ? "bg-amber-50 text-amber-700"
-                              : "bg-emerald-50 text-emerald-700"
-                        )}
-                      >
-                        {full ? "Full" : `${left} free`}
-                      </span>
-                    )}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
+            {nights ? `${nights} night${nights > 1 ? "s" : ""}` : "—"}
+          </p>
         </div>
-        <FieldError name="lines" />
-        <FieldError name="lines.root" />
-      </div>
-
-      {fields.length > 0 && (
-        <div className="mt-5 overflow-hidden rounded-md border border-neutral-200">
-          <div className="hidden grid-cols-[minmax(0,1fr)_140px_140px_110px_36px] gap-3 border-b border-neutral-200 bg-neutral-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500 md:grid">
-            <span>Selected rooms</span>
-            <span>Rooms</span>
-            <span>Rate / night</span>
-            <span className="text-right">Room charge</span>
-            <span />
-          </div>
-          <ul className="divide-y divide-neutral-100">
-            {fields.map((f, i) => {
-              const l = stay.lines[i];
-              if (!l) return null;
-              return (
-                <li
-                  key={f.id}
-                  className="grid grid-cols-2 items-start gap-3 px-4 py-3 md:grid-cols-[minmax(0,1fr)_140px_140px_110px_36px] md:items-center"
-                >
-                  <div className="col-span-2 min-w-0 md:col-span-1">
-                    <p className="truncate text-sm font-semibold text-neutral-900">
-                      {l.type?.name ?? "Unknown room"}
-                    </p>
-                    <p className="text-xs text-neutral-500">
-                      {nights > 0 ? `${l.free} free` : "Pick dates"} · sleeps{" "}
-                      {(l.type?.capacity ?? 0) * l.rooms}
-                    </p>
-                    <FieldError name={`lines.${i}.unitIds`} />
-                  </div>
-                  <div>
-                    <Stepper
-                      name={`lines.${i}.rooms`}
-                      label={`${l.type?.name ?? ""} rooms`}
-                      min={1}
-                      max={Math.max(1, l.free || 20)}
-                    />
-                    <FieldError name={`lines.${i}.rooms`} />
-                  </div>
-                  <div>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">
-                        ৳
-                      </span>
-                      <input
-                        type="number"
-                        min={1}
-                        {...register(`lines.${i}.rate`)}
-                        aria-label={`${l.type?.name ?? ""} rate per night`}
-                        className={cn(inputClass, "pl-7 tabular-nums")}
-                      />
-                    </div>
-                    <FieldError name={`lines.${i}.rate`} />
-                    {l.type && l.rate !== l.type.price && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setValue(`lines.${i}.rate`, l.type!.price, opts)
-                        }
-                        className="mt-1 text-[11px] text-sky-700 hover:underline"
-                      >
-                        Reset to {taka(l.type.price)}
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-right text-sm font-semibold tabular-nums text-neutral-900 md:self-center">
-                    {taka(l.quote.subtotal)}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => remove(i)}
-                    aria-label={`Remove ${l.type?.name ?? "room"}`}
-                    className={cn(hbtn.iconDanger, "justify-self-end")}
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-
-      <div className="mt-6 grid max-w-md grid-cols-2 gap-4">
         <FormField label="Adults" name="adults">
           <Stepper name="adults" label="adults" min={1} max={60} />
         </FormField>
-        <FormField label="Children" name="children">
+        <FormField label="Children" name="children" hint="Under 12">
           <Stepper name="children" label="children" min={0} max={30} />
         </FormField>
       </div>
-      <CommissionPanel />
+
+      <div className="mt-5">
+        <span className={fieldLabel}>Arrival</span>
+        <div
+          role="radiogroup"
+          aria-label="Arrival"
+          className="grid gap-2 sm:grid-cols-2"
+        >
+          <ArrivalOption
+            on={!checkingIn}
+            icon={CalendarClock}
+            title="Reserve for later"
+            text="Hold the rooms. The guest checks in on arrival."
+            onClick={() => checkingIn && setValue("status", "confirmed", opts)}
+          />
+          <ArrivalOption
+            on={checkingIn}
+            icon={LogIn}
+            title="Check in now"
+            text={
+              isToday
+                ? "Guest is at the desk. Needs ready rooms and ID."
+                : "Only for stays starting today."
+            }
+            disabled={!isToday}
+            onClick={() => setValue("status", "check-in", opts)}
+          />
+        </div>
+        <FieldError name="status" />
+      </div>
+
+      {source === "agent" && <CommissionPanel />}
     </Section>
+  );
+}
+
+function ArrivalOption({
+  on,
+  icon: Icon,
+  title,
+  text,
+  disabled,
+  onClick,
+}: {
+  on: boolean;
+  icon: typeof LogIn;
+  title: string;
+  text: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={on}
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "flex items-start gap-3 rounded-md border px-3.5 py-3 text-left transition disabled:cursor-not-allowed disabled:bg-neutral-50",
+        on
+          ? "border-sky-500 bg-sky-50 ring-1 ring-sky-500"
+          : "border-neutral-200 bg-white hover:border-sky-300",
+        focusRing
+      )}
+    >
+      <span
+        className={cn(
+          "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border-2",
+          on ? "border-sky-600" : "border-neutral-300"
+        )}
+      >
+        {on && <span className="size-2 rounded-full bg-sky-600" />}
+      </span>
+      <span className="min-w-0">
+        <span
+          className={cn(
+            "flex items-center gap-1.5 text-sm font-semibold",
+            disabled ? "text-neutral-500" : "text-neutral-900"
+          )}
+        >
+          <Icon className="size-4" /> {title}
+        </span>
+        <span className="mt-0.5 block text-xs text-neutral-600">{text}</span>
+      </span>
+    </button>
+  );
+}
+
+/** Check-in and check-out as two input-height fields over one range calendar; check-out can't fall on or before check-in. */
+function StayDates({
+  checkIn,
+  checkOut,
+  onChange,
+}: {
+  checkIn: string;
+  checkOut: string;
+  onChange: (checkIn: string, checkOut: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const { errors } = useFormState<BookingFormValues>();
+  const from = parseDayKey(checkIn);
+  const to = parseDayKey(checkOut);
+
+  const pick = (day: Date) => {
+    // A finished stay, or a click on/before check-in, starts a new selection.
+    if (!from || to || day <= from) return onChange(toDayKey(day), "");
+    onChange(checkIn, toDayKey(day));
+    setOpen(false);
+  };
+
+  const half = (
+    label: string,
+    date: Date | null,
+    error: boolean,
+    active: boolean
+  ) => (
+    <span className="min-w-0">
+      <span className={fieldLabel}>{label}</span>
+      <span
+        className={cn(
+          "flex h-10 items-center gap-2 rounded-md border bg-white px-3 text-sm transition group-hover:border-sky-300",
+          error
+            ? "border-rose-400"
+            : active
+              ? "border-sky-500 ring-2 ring-sky-100"
+              : "border-neutral-200"
+        )}
+      >
+        <CalendarDays className="size-4 shrink-0 text-neutral-500" />
+        <span
+          className={cn(
+            "truncate",
+            date ? "font-medium text-neutral-900" : "text-neutral-500"
+          )}
+        >
+          {date ? fieldDate(date) : "Select date"}
+        </span>
+      </span>
+    </span>
+  );
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={
+            from && to
+              ? `Stay dates: ${longDate(from)} to ${longDate(to)}. Change dates`
+              : "Choose stay dates"
+          }
+          className={cn(
+            "group grid w-full grid-cols-2 gap-2 rounded-md text-left",
+            focusRing
+          )}
+        >
+          {half("Check-in", from, !!errors.checkIn, open && !from)}
+          {half("Check-out", to, !!errors.checkOut, open && !!from && !to)}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={8}
+        className="w-auto rounded-md p-0 shadow-xl"
+      >
+        <Calendar
+          mode="range"
+          numberOfMonths={2}
+          selected={{ from: from ?? undefined, to: to ?? undefined }}
+          onDayClick={pick}
+          disabled={{ before: startOfToday() }}
+          defaultMonth={from ?? undefined}
+          autoFocus
+        />
+        <div className="flex items-center justify-between gap-3 border-t border-neutral-100 px-4 py-2.5 text-sm text-neutral-700">
+          {!from
+            ? "Select the check-in date"
+            : !to
+              ? "Now select the check-out date"
+              : `${longDate(from)} → ${longDate(to)}`}
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className={cn(
+              "rounded-md bg-sky-600 px-3 py-1.5 font-semibold text-white hover:bg-sky-700",
+              focusRing
+            )}
+          >
+            Done
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

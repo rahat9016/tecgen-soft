@@ -18,7 +18,6 @@ import {
   LayoutTemplate,
   LogOut,
   Menu,
-  Plus,
   RotateCcw,
   Settings,
   Star,
@@ -60,7 +59,7 @@ const groups: { title: string; items: NavItem[] }[] = [
     items: [
       { href: ADMIN, label: "Dashboard", icon: LayoutDashboard },
       { href: `${ADMIN}/bookings`, label: "Bookings", icon: ClipboardList, perm: "bookings.manage", badge: "pending" },
-      { href: `${ADMIN}/rooms`, label: "Rooms board", icon: BedDouble, perm: "rooms.housekeeping" },
+      { href: `${ADMIN}/housekeeping`, label: "Rooms board", icon: BedDouble, perm: "rooms.housekeeping" },
       { href: `${ADMIN}/calendar`, label: "Calendar", icon: CalendarRange, perm: "bookings.manage" },
       { href: `${ADMIN}/payments`, label: "Payments", icon: Wallet, perm: "payments.record", badge: "refunds" },
       { href: `${ADMIN}/users`, label: "Guests & staff", icon: Users, perm: "guests.view" },
@@ -69,7 +68,7 @@ const groups: { title: string; items: NavItem[] }[] = [
   {
     title: "Website",
     items: [
-      { href: `${ADMIN}/room-types`, label: "Rooms", icon: DoorOpen, perm: "rooms.manage" },
+      { href: `${ADMIN}/rooms`, label: "Rooms", icon: DoorOpen, perm: "rooms.manage" },
       { href: `${ADMIN}/content`, label: "Content", icon: LayoutTemplate, perm: "content.manage" },
       { href: `${ADMIN}/gallery`, label: "Gallery", icon: ImageIcon, perm: "content.manage" },
       { href: `${ADMIN}/reviews`, label: "Reviews", icon: Star, perm: "reviews.manage", badge: "reviews" },
@@ -246,8 +245,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     notices: db.notices.filter((n) => n.to === "staff" && !n.read).length,
   };
   const current = [...allItems].sort((a, b) => b.href.length - a.href.length).find((i) => isActive(i.href, pathname));
-  // Rooms pages carry their own header and actions, so the top bar stays bare there.
-  const bareTopBar = pathname.startsWith(`${ADMIN}/room-types`);
   const allowed = !current?.perm || can(staff.role, current.perm);
 
   const sidebar = (
@@ -343,16 +340,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           >
             <Menu className="size-5" />
           </button>
-          {current && !bareTopBar && <p className="min-w-0 truncate text-sm font-semibold text-neutral-900 md:text-base">{current.label}</p>}
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            {can(staff.role, "bookings.manage") && !bareTopBar && (
-              <Link
-                href={`${ADMIN}/bookings/new`}
-                className="inline-flex h-10 items-center gap-1.5 rounded-md bg-sky-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
-              >
-                <Plus className="size-4" /> <span className="hidden sm:inline">New booking</span>
-              </Link>
-            )}
             <NotificationBell />
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-sky-200">

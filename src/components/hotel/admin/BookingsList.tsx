@@ -4,18 +4,20 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
-import { ArrowUpDown, ChevronDown, ChevronRight, ClipboardList, Download, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { toast } from "react-toastify";
+import { ArrowUpDown, BadgeCheck, BedDouble, ChevronDown, ChevronRight, ClipboardList, Download, LogIn, LogOut, Plus, Search, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { downloadCsv, formatDateTime, initials, rangeLabel, sourceLabels, statusLabels, taka, todayKey } from "@/src/lib/hotel-store/format";
-import { creditOf, dueOf, folioTotal, paidOf, paymentStatus, unitNumbers, useHotelDB } from "@/src/lib/hotel-store/store";
+import { confirmBooking, creditOf, dueOf, folioTotal, isLive, paidOf, paymentStatus, unitNumbers, useHotelDB } from "@/src/lib/hotel-store/store";
 import type { Booking, BookingSource } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
-import { ADMIN, AdminHeader, Empty, Field, hbtn, inputClass, Pager, PayBadge, StatusBadge, tableCardClass, Tabs, usePagination } from "./ui";
+import { ADMIN, AdminHeader, Empty, Field, hbtn, inputClass, Pager, StatusBadge, tableCardClass, Tabs, usePagination } from "./ui";
 
-type Tab = "all" | "arrivals" | "in-house" | "upcoming" | "pending" | "checked-out" | "cancelled";
+type Tab = "all" | "arrivals" | "departures" | "in-house" | "upcoming" | "pending" | "checked-out" | "cancelled";
 
 const tabTest: Record<Tab, (b: Booking, today: string) => boolean> = {
   all: () => true,
   arrivals: (b, t) => (b.status === "confirmed" || b.status === "pending") && b.checkIn <= t && t < b.checkOut,
+  departures: (b, t) => b.status === "checked-in" && b.checkOut <= t,
   "in-house": (b) => b.status === "checked-in",
   upcoming: (b, t) => (b.status === "confirmed" || b.status === "pending") && b.checkIn > t,
   pending: (b) => b.status === "pending",
@@ -23,12 +25,18 @@ const tabTest: Record<Tab, (b: Booking, today: string) => boolean> = {
   cancelled: (b) => b.status === "cancelled" || b.status === "no-show",
 };
 
-const tabLabels: Record<Tab, string> = {
-  all: "All",
-  arrivals: "Arriving today",
-  "in-house": "In house",
+/** Today's front-desk work, shown as big cards above the list. */
+const todayCards: { tab: Tab; label: string; icon: typeof LogIn; tone: string }[] = [
+  { tab: "arrivals", label: "Arriving today", icon: LogIn, tone: "text-sky-600 bg-sky-50" },
+  { tab: "departures", label: "Departing today", icon: LogOut, tone: "text-orange-600 bg-orange-50" },
+  { tab: "in-house", label: "In house", icon: BedDouble, tone: "text-emerald-600 bg-emerald-50" },
+  { tab: "pending", label: "To confirm", icon: BadgeCheck, tone: "text-amber-600 bg-amber-50" },
+];
+
+/** The remaining views live in the tab strip. */
+const tabLabels: Partial<Record<Tab, string>> = {
+  all: "All bookings",
   upcoming: "Upcoming",
-  pending: "To confirm",
   "checked-out": "Checked out",
   cancelled: "Cancelled",
 };
@@ -48,7 +56,7 @@ export default function BookingsList() {
   const router = useRouter();
   const params = useSearchParams();
   const initial = params.get("status");
-  const [tab, setTab] = useState<Tab>(initial === "pending" ? "pending" : initial === "checked-in" ? "in-house" : initial && initial in tabTest ? (initial as Tab) : "all");
+  const [tab, setTab] = useState<Tab>(initial === "checked-in" ? "in-house" : initial && initial in tabTest ? (initial as Tab) : "all");
   const [q, setQ] = useState("");
   const [type, setType] = useState("any");
   const [source, setSource] = useState<"any" | BookingSource>("any");
@@ -147,15 +155,52 @@ export default function BookingsList() {
         }
       />
 
+      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {todayCards.map((c) => {
+          const on = tab === c.tab;
+          return (
+            <button
+              key={c.tab}
+              type="button"
+              onClick={() => {
+                setTab(on ? "all" : c.tab);
+                resetPage();
+              }}
+              aria-pressed={on}
+              className={cn(
+                "flex items-center gap-3 rounded-md border bg-white p-4 text-left transition",
+                on ? "border-sky-500 ring-2 ring-sky-100" : "border-neutral-200 hover:border-sky-300"
+              )}
+            >
+              <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-md", c.tone)}>
+                <c.icon className="size-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-2xl font-bold tabular-nums leading-none text-neutral-900">{counts[c.tab]}</span>
+                <span className="mt-1 block truncate text-sm text-neutral-500">{c.label}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className={tableCardClass}>
         <Tabs
-          value={tab}
+          value={tab in tabLabels ? tab : ("" as Tab)}
           onChange={(t) => {
             setTab(t);
             resetPage();
           }}
-          tabs={(Object.keys(tabLabels) as Tab[]).map((t) => ({ value: t, label: tabLabels[t], count: counts[t], dot: t === "pending" && counts.pending ? "bg-amber-400" : undefined }))}
+          tabs={(Object.keys(tabLabels) as Tab[]).map((t) => ({ value: t, label: tabLabels[t]!, count: counts[t] }))}
         />
+        {!(tab in tabLabels) && (
+          <div className="flex items-center justify-between gap-2 border-b border-neutral-100 bg-sky-50/50 px-4 py-2.5 text-sm">
+            <span className="font-medium text-sky-900">Showing: {todayCards.find((c) => c.tab === tab)?.label}</span>
+            <button type="button" onClick={() => setTab("all")} className="inline-flex items-center gap-1 text-xs font-medium text-sky-700 hover:underline">
+              <X className="size-3.5" /> Show all
+            </button>
+          </div>
+        )}
 
         <div className="space-y-3 border-b border-neutral-100 p-3 sm:p-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -280,7 +325,6 @@ export default function BookingsList() {
             <ul className="divide-y divide-neutral-100 md:hidden">
               {page.rows.map((b) => {
                 const rooms = unitNumbers(db, b.unitIds);
-                const due = dueOf(b);
                 return (
                   <li key={b.id}>
                     <Link href={`${ADMIN}/bookings/${b.id}`} className="block space-y-2.5 p-4 transition active:bg-sky-50/60">
@@ -310,11 +354,8 @@ export default function BookingsList() {
                         </div>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <PayBadge booking={b} />
-                        <p className="text-right text-sm">
-                          <span className="font-semibold tabular-nums text-neutral-900">{taka(folioTotal(b))}</span>
-                          {due > 0 && <span className="ml-1.5 text-xs font-medium tabular-nums text-rose-600">{taka(due)} due</span>}
-                        </p>
+                        <PayLine b={b} />
+                        <RowAction b={b} today={today} />
                       </div>
                     </Link>
                   </li>
@@ -331,15 +372,12 @@ export default function BookingsList() {
                     <th className="px-3 py-3">Room</th>
                     <th className="px-3 py-3">Status</th>
                     <th className="px-3 py-3">Payment</th>
-                    <th className="w-10 py-3 pr-4" aria-label="Open" />
+                    <th className="py-3 pr-4 text-right" aria-label="Actions" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {page.rows.map((b) => {
                     const rooms = unitNumbers(db, b.unitIds);
-                    const total = folioTotal(b);
-                    const due = dueOf(b);
-                    const paidPct = total > 0 ? Math.min(100, (paidOf(b) / total) * 100) : 0;
                     const arrivesToday = b.checkIn === today;
                     const leavesToday = b.checkOut === today && b.status === "checked-in";
                     return (
@@ -359,7 +397,7 @@ export default function BookingsList() {
                                 </Link>
                                 {b.groupId && <span className="ml-1.5 rounded bg-violet-50 px-1 py-px font-sans text-[10px] font-semibold text-violet-700">Group</span>}
                                 {" · "}
-                                {sourceLabels[b.source]} · {format(new Date(b.createdAt), "dd MMM")}
+                                {sourceLabels[b.source]}
                               </p>
                             </div>
                           </div>
@@ -382,18 +420,14 @@ export default function BookingsList() {
                         <td className="px-3 py-3">
                           <StatusBadge status={b.status} />
                         </td>
-                        <td className="w-52 px-3 py-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-semibold tabular-nums text-neutral-900">{taka(total)}</span>
-                            <PayBadge booking={b} />
-                          </div>
-                          <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-neutral-100">
-                            <div className={cn("h-full rounded-full", due > 0 ? "bg-sky-500" : "bg-emerald-500")} style={{ width: `${paidPct}%` }} />
-                          </div>
-                          {due > 0 && <p className="mt-1 text-xs font-medium tabular-nums text-rose-600">{taka(due)} due</p>}
+                        <td className="px-3 py-3">
+                          <PayLine b={b} />
                         </td>
-                        <td className="py-3 pr-4 text-right">
-                          <ChevronRight className="ml-auto size-4 text-neutral-300 transition group-hover:translate-x-0.5 group-hover:text-sky-600" />
+                        <td className="py-3 pr-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <RowAction b={b} today={today} />
+                            <ChevronRight className="size-4 text-neutral-300 transition group-hover:translate-x-0.5 group-hover:text-sky-600" />
+                          </div>
                         </td>
                       </tr>
                     );
@@ -419,6 +453,76 @@ function RoomNo({ b, rooms }: { b: Booking; rooms: string[] }) {
       {rooms.length ? `Room ${rooms.join(", ")}` : "Not assigned"}
     </p>
   );
+}
+
+/** Total and one plain line on what's owed — no badge, no bar. */
+function PayLine({ b }: { b: Booking }) {
+  const due = dueOf(b);
+  const credit = creditOf(b);
+  const live = isLive(b);
+  const paid = paidOf(b);
+  const [text, tone] =
+    credit > 0
+      ? [`${taka(credit)} to refund`, "text-violet-700"]
+      : !live
+        ? [paid > 0 ? `${taka(paid)} kept` : "No charge", "text-neutral-400"]
+        : due === 0
+          ? ["Paid in full", "text-emerald-600"]
+          : paid > 0
+            ? [`${taka(due)} due`, "text-amber-700"]
+            : ["Not paid", "text-rose-600"];
+  return (
+    <div className="whitespace-nowrap">
+      <p className="font-semibold tabular-nums text-neutral-900">{taka(folioTotal(b))}</p>
+      <p className={cn("text-xs font-medium tabular-nums", tone)}>{text}</p>
+    </div>
+  );
+}
+
+/** The one thing the desk most likely wants to do with this booking next. */
+function RowAction({ b, today }: { b: Booking; today: string }) {
+  const router = useRouter();
+  const go = (e: React.MouseEvent, action: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`${ADMIN}/bookings/${b.id}?do=${action}`);
+  };
+  const btn = "inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-xs font-semibold transition";
+  if (b.status === "pending")
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const r = confirmBooking(b.id);
+          if (r.ok) toast.success(`${b.code} confirmed`);
+          else toast.error(r.error);
+        }}
+        className={cn(btn, "bg-amber-500 text-white hover:bg-amber-600")}
+      >
+        <BadgeCheck className="size-3.5" /> Confirm
+      </button>
+    );
+  if (b.status === "confirmed" && b.checkIn <= today && today < b.checkOut)
+    return (
+      <button type="button" onClick={(e) => go(e, "checkin")} className={cn(btn, "bg-emerald-600 text-white hover:bg-emerald-700")}>
+        <LogIn className="size-3.5" /> Check in
+      </button>
+    );
+  if (b.status === "checked-in" && b.checkOut <= today)
+    return (
+      <button type="button" onClick={(e) => go(e, "checkout")} className={cn(btn, "bg-orange-500 text-white hover:bg-orange-600")}>
+        <LogOut className="size-3.5" /> Check out
+      </button>
+    );
+  if (isLive(b) && dueOf(b) > 0)
+    return (
+      <button type="button" onClick={(e) => go(e, "pay")} className={cn(btn, "border border-neutral-200 bg-white text-neutral-700 hover:border-sky-400 hover:text-sky-700")}>
+        <Wallet className="size-3.5" /> Collect
+      </button>
+    );
+  return null;
 }
 
 function TodayTag({ children }: { children: React.ReactNode }) {

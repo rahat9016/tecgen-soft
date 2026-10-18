@@ -44,7 +44,7 @@ export default function RoomDetail({ id }: { id: string }) {
     return (
       <Card>
         <Empty icon={X} title="Room not found">
-          <Link href={`${ADMIN}/room-types`} className={hbtn.outline}>
+          <Link href={`${ADMIN}/rooms`} className={hbtn.outline}>
             Back
           </Link>
         </Empty>
@@ -75,7 +75,7 @@ export default function RoomDetail({ id }: { id: string }) {
       <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
         <div className="flex items-center gap-4">
           <Link
-            href={`${ADMIN}/room-types`}
+            href={`${ADMIN}/rooms`}
             aria-label="Back to rooms"
             className="flex size-10 shrink-0 items-center justify-center rounded-md border border-neutral-200 text-neutral-500 transition hover:border-sky-300 hover:text-sky-700"
           >
@@ -89,11 +89,12 @@ export default function RoomDetail({ id }: { id: string }) {
               </span>
             </div>
             <p className="mt-0.5 text-sm text-neutral-500">
-              {floorLabel(unit.floor)} · {t?.name ?? "No details yet"}
+              {floorLabel(unit.floor)}
+              {t && ` · ${[t.beds, `sleeps ${t.capacity}`].filter(Boolean).join(" · ")}`}
             </p>
           </div>
         </div>
-        <Link href={`${ADMIN}/room-types/${unit.id}/edit`} className={hbtn.primary}>
+        <Link href={`${ADMIN}/rooms/${unit.id}/edit`} className={hbtn.primary}>
           <Pencil className="size-4" /> Edit room
         </Link>
       </Card>
@@ -236,12 +237,12 @@ export default function RoomDetail({ id }: { id: string }) {
           </Panel>
 
           {sameType.length > 0 && (
-            <Panel title="Same type of room">
+            <Panel title="Rooms with the same details">
               <div className="flex flex-wrap gap-1.5">
                 {sameType.map((u) => (
                   <Link
                     key={u.id}
-                    href={`${ADMIN}/room-types/${u.id}`}
+                    href={`${ADMIN}/rooms/${u.id}`}
                     className="flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold text-neutral-700 ring-1 ring-inset ring-neutral-200 transition hover:text-sky-700 hover:ring-sky-400"
                   >
                     <Building2 className="size-3 text-neutral-400" /> {u.number}

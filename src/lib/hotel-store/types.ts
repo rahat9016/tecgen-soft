@@ -15,6 +15,8 @@ export type RoomTypeRecord = {
   images: string[];
   /** Inactive types are hidden from the website and can't be booked online. */
   active: boolean;
+  /** Saved before it was complete: never on the website and can't be booked until it's finished. */
+  draft?: boolean;
 };
 
 export type Housekeeping = "clean" | "dirty" | "inspected";

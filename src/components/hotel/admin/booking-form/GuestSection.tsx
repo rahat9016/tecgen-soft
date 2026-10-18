@@ -2,16 +2,22 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useFormContext, useFormState, useWatch } from "react-hook-form";
+import {
+  useController,
+  useFormContext,
+  useFormState,
+  useWatch,
+} from "react-hook-form";
 import {
   AlertTriangle,
   Ban,
-  Search,
+  Check,
+  ExternalLink,
+  IdCard,
   UserCheck,
-  UserPlus,
-  UserRound,
   X,
 } from "lucide-react";
+import { countries } from "@/src/data/countries";
 import { dateLabel, initials, taka } from "@/src/lib/hotel-store/format";
 import {
   findGuestMatch,
@@ -20,273 +26,565 @@ import {
 } from "@/src/lib/hotel-store/store";
 import type { User } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
-import { ADMIN, hbtn, inputClass } from "../ui";
-import { FieldError, Section, Segmented } from "./parts";
-import GuestFields from "./GuestFields";
+import { ADMIN, hbtn, inputClass, textareaClass } from "../ui";
 import {
+  Disclosure,
+  FieldError,
+  fieldLabel,
+  focusRing,
+  FormField,
+  Section,
+  Segmented,
+  Stepper,
+  useErrorClass,
+} from "./parts";
+import {
+  arrivalOptions,
   composeGuest,
+  computeStay,
+  EXTRA_BED_RATE,
   emptyGuest,
   guestFromUser,
+  MAX_EXTRA_BEDS,
+  requestOptions,
+  titles,
   type BookingFormValues,
-  type GuestMode,
 } from "./schema";
 
-const looksLikePhone = (q: string) => /^[+\d][\d\s-]{4,}$/.test(q.trim());
+/** Digits after the country code and trunk 0, so "01712…", "+880 1712…" and "8801712…" compare equal. */
+const localDigits = (p: string) =>
+  p.replace(/\D/g, "").replace(/^880/, "").replace(/^0/, "");
 
 export default function GuestSection({ step }: { step: number }) {
   const db = useHotelDB();
-  const { control, setValue, register } = useFormContext<BookingFormValues>();
-  const { isSubmitted } = useFormState({ control });
-  const [mode, userId, guest] = useWatch({
-    control,
-    name: ["guestMode", "userId", "guest"],
-  });
-  const [query, setQuery] = useState("");
+  const { control, register, setValue, getValues } =
+    useFormContext<BookingFormValues>();
+  const { isSubmitted, errors } = useFormState({ control });
+  const v = useWatch({ control }) as BookingFormValues;
+  const { guest, userId, status } = v;
+  const [dismissed, setDismissed] = useState<string[]>([]);
   const user = userId ? db.users.find((u) => u.id === userId) : undefined;
-
+  const checkingIn = status === "check-in";
   const opts = { shouldDirty: true, shouldValidate: isSubmitted };
-
-  const matches = useMemo(() => {
-    const n = query.trim().toLowerCase();
-    if (n.length < 2) return [];
-    const digits = n.replace(/\D/g, "");
-    const byCode = db.bookings.find((b) => b.code.toLowerCase() === n)?.userId;
-    return db.users
-      .filter((u) => u.role === "guest")
-      .filter(
-        (u) =>
-          u.id === byCode ||
-          u.name.toLowerCase().includes(n) ||
-          u.email.includes(n) ||
-          (digits.length >= 3 && u.phone.replace(/\D/g, "").includes(digits))
-      )
-      .slice(0, 6);
-  }, [db.users, db.bookings, query]);
-
-  // A "new" guest whose phone or email is already on file.
-  const composed = composeGuest(guest);
-  const duplicate = mode === "new" ? findGuestMatch(db, composed) : undefined;
-  const duplicateVia =
-    duplicate &&
-    guest.email.trim() &&
-    duplicate.email === guest.email.trim().toLowerCase()
-      ? "email"
-      : "phone number";
-
-  const pick = (u: User) => {
-    const last = guestStats(db, u.id).lastId;
-    setValue("guestMode", "returning", opts);
-    setValue("userId", u.id, opts);
-    setValue("guest", guestFromUser(u, last), opts);
-    setValue("updateProfile", false);
-    setQuery("");
+  const err = {
+    fullName: useErrorClass("guest.fullName"),
+    phone: useErrorClass("guest.phone"),
+    customDial: useErrorClass("guest.customDial"),
+    email: useErrorClass("guest.email"),
   };
 
-  const switchMode = (m: GuestMode) => {
-    if (m === mode) return;
-    setValue("guestMode", m, opts);
-    setValue("userId", "", opts);
+  // Returning guests surface as the number is typed; a typed email that's on file counts too.
+  const typed = localDigits(guest.phone);
+  const matches = useMemo(() => {
+    if (user) return [];
+    const byPhone =
+      typed.length >= 4
+        ? db.users.filter(
+            (u) => u.role === "guest" && localDigits(u.phone).startsWith(typed)
+          )
+        : [];
+    const byEmail = guest.email.trim()
+      ? findGuestMatch(db, { email: guest.email, phone: "" })
+      : undefined;
+    return [
+      ...byPhone,
+      ...(byEmail && !byPhone.includes(byEmail) ? [byEmail] : []),
+    ]
+      .filter((u) => !dismissed.includes(u.id))
+      .slice(0, 3);
+  }, [db, typed, guest.email, user, dismissed]);
+
+  const pick = (u: User) => {
+    const { arrivalTime, requests, note } = getValues("guest");
+    setValue("guestMode", "returning", opts);
+    setValue("userId", u.id, opts);
+    // Keep what was already noted about this stay; fill the rest from their profile.
+    setValue(
+      "guest",
+      {
+        ...guestFromUser(u, guestStats(db, u.id).lastId),
+        arrivalTime,
+        requests,
+        note,
+      },
+      opts
+    );
     setValue("updateProfile", false);
-    if (m === "new") {
-      // Carry over what staff typed into the search box.
-      const q = query.trim();
-      setValue(
-        "guest",
-        {
-          ...emptyGuest,
-          ...(q &&
-            (looksLikePhone(q)
-              ? { phone: q }
-              : {
-                  firstName: q.split(" ")[0],
-                  lastName: q.split(" ").slice(1).join(" "),
-                })),
-        },
-        opts
-      );
-    } else {
-      setQuery(guest.phone || `${guest.firstName} ${guest.lastName}`.trim());
-      setValue("guest", emptyGuest, opts);
-    }
   };
 
   const clearPick = () => {
+    const { phone, phoneCountry, arrivalTime, requests, note } =
+      getValues("guest");
+    if (user) setDismissed((d) => [...d, user.id]);
+    setValue("guestMode", "new", opts);
     setValue("userId", "", opts);
-    setValue("guest", emptyGuest, opts);
+    setValue(
+      "guest",
+      { ...emptyGuest, phone, phoneCountry, arrivalTime, requests, note },
+      opts
+    );
   };
 
-  const digitsOf = (p: string) =>
-    p
-      .replace(/\D/g, "")
-      .replace(/^880/, "0")
-      .replace(/^(?=1)/, "0");
+  const composed = composeGuest(guest);
   const changed = user
     ? [
         composed.name !== user.name.trim() && "name",
-        digitsOf(composed.phone) !== digitsOf(user.phone) && "phone",
+        localDigits(composed.phone) !== localDigits(user.phone) && "phone",
         (composed.country ?? "") !== (user.country ?? "") && "country",
       ].filter((x): x is string => !!x)
     : [];
+
+  const guestErrors = (errors.guest ?? {}) as Record<string, unknown>;
+  const extraHasError =
+    ["country", "otherCountry", "idNumber"].some((k) => k in guestErrors) &&
+    !checkingIn;
 
   return (
     <Section
       id="guest"
       step={step}
-      icon={UserRound}
-      title="Guest"
-      aside={
-        <Segmented
-          value={mode}
-          onChange={switchMode}
-          options={[
-            { value: "new", label: "New guest", icon: UserPlus },
-            { value: "returning", label: "Returning guest", icon: UserCheck },
-          ]}
-        />
+      title="Guest details"
+      sub={
+        user
+          ? undefined
+          : "Type the mobile number first — returning guests appear automatically"
       }
     >
-      {mode === "returning" && !user && (
-        <div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+      <div className="grid gap-4 md:grid-cols-2">
+        <FormField label="Mobile number" name="guest.phone">
+          <div className="flex gap-2">
+            <select
+              {...register("guest.phoneCountry")}
+              aria-label="Country code"
+              className={cn(inputClass, "w-[92px] shrink-0 px-2")}
+            >
+              {countries.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} +{c.dial}
+                </option>
+              ))}
+              <option value="OTHER">Other</option>
+            </select>
+            {guest.phoneCountry === "OTHER" && (
+              <input
+                {...register("guest.customDial")}
+                placeholder="+971"
+                aria-label="Dial code"
+                className={cn(inputClass, "w-20 shrink-0", err.customDial)}
+              />
+            )}
             <input
+              {...register("guest.phone")}
+              type="tel"
+              inputMode="tel"
+              placeholder={
+                guest.phoneCountry === "BD" ? "01712 345678" : "Phone number"
+              }
+              autoComplete="off"
               autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name, phone, email or booking code (e.g. TW-1024)"
-              className={cn(inputClass, "h-11 pl-9")}
+              className={cn(inputClass, "min-w-0 tabular-nums", err.phone)}
             />
           </div>
-          <FieldError name="userId" />
+          <FieldError name="guest.customDial" />
+        </FormField>
 
-          {query.trim().length >= 2 && (
-            <div className="mt-3 overflow-hidden rounded-md border border-neutral-200">
-              {matches.length ? (
-                <ul className="divide-y divide-neutral-100">
-                  {matches.map((u) => {
-                    const s = guestStats(db, u.id);
-                    return (
-                      <li key={u.id}>
-                        <button
-                          type="button"
-                          onClick={() => pick(u)}
-                          className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-sky-50"
-                        >
-                          <Avatar
-                            name={u.name}
-                            blocked={u.status === "blocked"}
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span className="flex items-center gap-2 font-medium text-neutral-900">
-                              {u.name}
-                              {u.status === "blocked" && (
-                                <span className="rounded bg-rose-50 px-1.5 text-[10px] font-semibold text-rose-600">
-                                  Blocked
-                                </span>
-                              )}
-                              {s.inHouse && (
-                                <span className="rounded bg-emerald-50 px-1.5 text-[10px] font-semibold text-emerald-700">
-                                  In house
-                                </span>
-                              )}
-                            </span>
-                            <span className="block truncate text-xs text-neutral-500">
-                              {u.phone}
-                              {u.email && ` · ${u.email}`}
-                            </span>
-                          </span>
-                          <span className="hidden shrink-0 text-right text-xs text-neutral-500 sm:block">
-                            <b className="text-neutral-800">{s.stays}</b> stay
-                            {s.stays !== 1 ? "s" : ""}
-                            <span className="block">
-                              {s.last
-                                ? `Last ${dateLabel(s.last, "dd MMM yyyy")}`
-                                : "No stays yet"}
-                            </span>
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 text-sm">
-                  <span className="text-neutral-500">
-                    No guest matches &ldquo;{query.trim()}&rdquo;.
+        <FormField label="Full name" name="guest.fullName">
+          <div className="flex gap-2">
+            <select
+              {...register("guest.title")}
+              aria-label="Title"
+              className={cn(inputClass, "w-[72px] shrink-0 px-2")}
+            >
+              {titles.map((t) => (
+                <option key={t}>{t}</option>
+              ))}
+            </select>
+            <input
+              {...register("guest.fullName")}
+              placeholder="e.g. Tamim Rahman"
+              autoComplete="off"
+              className={cn(inputClass, "min-w-0", err.fullName)}
+            />
+          </div>
+        </FormField>
+      </div>
+
+      {matches.length > 0 && (
+        <div
+          aria-live="polite"
+          className="mt-3 overflow-hidden rounded-md border border-sky-200 bg-sky-50/50"
+        >
+          <p className="border-b border-sky-100 px-3.5 py-2 text-xs font-semibold text-sky-900">
+            {matches.length === 1
+              ? "Existing guest found"
+              : `${matches.length} existing guests found`}
+          </p>
+          <ul className="divide-y divide-sky-100">
+            {matches.map((u) => {
+              const s = guestStats(db, u.id);
+              return (
+                <li
+                  key={u.id}
+                  className="flex flex-wrap items-center gap-3 px-3.5 py-2.5"
+                >
+                  <Avatar name={u.name} blocked={u.status === "blocked"} />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-neutral-900">
+                      {u.name}
+                      {u.status === "blocked" && <Tag tone="rose">Blocked</Tag>}
+                      {s.inHouse && <Tag tone="emerald">In house</Tag>}
+                    </span>
+                    <span className="block truncate text-xs text-neutral-600">
+                      {u.phone}
+                      {u.email && ` · ${u.email}`} ·{" "}
+                      {s.stays
+                        ? `${s.stays} stay${s.stays > 1 ? "s" : ""}, last ${dateLabel(s.last!, "d MMM yyyy")}`
+                        : "No stays yet"}
+                    </span>
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => switchMode("new")}
-                    className={hbtn.small}
-                  >
-                    <UserPlus className="size-3.5" /> Add as new guest
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+                  <span className="flex gap-1.5">
+                    {/* Keep focus in the phone field: a blur would validate it and shift this button mid-click. */}
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => pick(u)}
+                      className={cn(
+                        hbtn.small,
+                        "border-sky-300 text-sky-800",
+                        focusRing
+                      )}
+                    >
+                      <UserCheck className="size-3.5" /> Use this guest
+                    </button>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setDismissed((d) => [...d, u.id])}
+                      aria-label={`Not ${u.name}`}
+                      className={cn(hbtn.icon, focusRing)}
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
 
       {user && <GuestCard user={user} onClear={clearPick} />}
 
-      {duplicate && (
-        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
-          <AlertTriangle className="size-4 shrink-0 text-amber-600" />
-          <span className="min-w-0 flex-1 text-amber-900">
-            <b>{duplicate.name}</b> already has a profile with this{" "}
-            {duplicateVia}. Use it to keep their stays together.
-          </span>
-          <button
-            type="button"
-            onClick={() => pick(duplicate)}
-            className={cn(
-              hbtn.small,
-              "border-amber-300 bg-white text-amber-800"
-            )}
-          >
-            Use existing profile
-          </button>
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <FormField
+          label={
+            <>
+              Email{" "}
+              <span className="font-normal text-neutral-500">(optional)</span>
+            </>
+          }
+          name="guest.email"
+        >
+          <input
+            {...register("guest.email")}
+            type="email"
+            placeholder="guest@example.com"
+            autoComplete="off"
+            className={cn(inputClass, err.email)}
+          />
+        </FormField>
+        {user && changed.length > 0 && (
+          <label className="flex items-start gap-2 self-end rounded-md bg-sky-50 px-3 py-2.5 text-sm text-sky-900">
+            <input
+              type="checkbox"
+              {...register("updateProfile")}
+              className="mt-0.5 size-4 accent-sky-600"
+            />
+            <span>
+              Also update {user.name.split(" ").slice(-1)[0]}&rsquo;s profile
+              with the new {changed.join(" and ")}
+            </span>
+          </label>
+        )}
+      </div>
+
+      {checkingIn && (
+        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50/50 p-3.5">
+          <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-neutral-900">
+            <IdCard className="size-4 text-amber-700" /> Identification{" "}
+            <span className="text-xs font-medium text-amber-800">
+              · Required for check-in
+            </span>
+          </p>
+          <IdFields />
         </div>
       )}
 
-      {(mode === "new" || user) && (
-        <div className={cn(user && "mt-5")}>
-          <GuestFields />
-          {user && changed.length > 0 && (
-            <label className="mt-4 flex items-start gap-2 rounded-md bg-sky-50 px-3 py-2.5 text-sm text-sky-900">
-              <input
-                type="checkbox"
-                {...register("updateProfile")}
-                className="mt-0.5 size-4 accent-sky-600"
-              />
-              <span>
-                Also update {user.name.split(" ")[0]}&rsquo;s profile with the
-                new {changed.join(" and ")}
-              </span>
-            </label>
+      <div className="mt-4 space-y-2.5">
+        <Disclosure
+          title="Additional guest details"
+          summary={[
+            countryName(guest.country, guest.otherCountry),
+            !checkingIn && guest.idNumber && `ID ${guest.idNumber}`,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          forceOpen={extraHasError}
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField label="Country of residence" name="guest.country">
+              <select
+                {...register("guest.country", {
+                  // Picking a country pre-fills its dialling code.
+                  onChange: (e) =>
+                    e.target.value !== "OTHER" &&
+                    setValue("guest.phoneCountry", e.target.value),
+                })}
+                className={inputClass}
+              >
+                {countries.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
+                <option value="OTHER">Other country…</option>
+              </select>
+            </FormField>
+            {guest.country === "OTHER" && (
+              <FormField label="Country name" name="guest.otherCountry">
+                <input
+                  {...register("guest.otherCountry")}
+                  placeholder="e.g. Brazil"
+                  className={inputClass}
+                />
+              </FormField>
+            )}
+          </div>
+          {!checkingIn && (
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-medium text-neutral-600">
+                Identification (optional now, needed at check-in)
+              </p>
+              <IdFields />
+            </div>
           )}
-        </div>
-      )}
+        </Disclosure>
+
+        <ArrivalAndRequests />
+      </div>
     </Section>
   );
 }
 
-function Avatar({
-  name,
-  blocked,
-  large,
+const countryName = (code: string, other: string) =>
+  code === "OTHER"
+    ? other.trim()
+    : countries.find((c) => c.code === code)?.name;
+
+function IdFields() {
+  const { control, register, setValue } = useFormContext<BookingFormValues>();
+  const [country, idType] = useWatch({
+    control,
+    name: ["guest.country", "guest.idType"],
+  });
+  const local = country === "BD";
+  const idKind = local ? idType : "passport";
+  const errId = useErrorClass("guest.idNumber");
+  return (
+    <div className="grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+      {local && (
+        <FormField label="Document">
+          <Segmented
+            label="ID document"
+            value={idType}
+            onChange={(t) => setValue("guest.idType", t, { shouldDirty: true })}
+            options={[
+              { value: "nid", label: "NID" },
+              { value: "passport", label: "Passport" },
+            ]}
+            className="h-10"
+          />
+        </FormField>
+      )}
+      <FormField
+        label={idKind === "nid" ? "NID number" : "Passport number"}
+        name="guest.idNumber"
+        className="sm:max-w-xs"
+      >
+        <input
+          {...register("guest.idNumber")}
+          placeholder={
+            idKind === "nid" ? "10, 13 or 17 digits" : "e.g. A01234567"
+          }
+          autoComplete="off"
+          className={cn(
+            inputClass,
+            "uppercase tabular-nums placeholder:normal-case",
+            errId
+          )}
+        />
+      </FormField>
+    </div>
+  );
+}
+
+/** Wishes the desk will try to meet, kept apart from paid extras that go on the bill. */
+function ArrivalAndRequests() {
+  const db = useHotelDB();
+  const { control, register } = useFormContext<BookingFormValues>();
+  const v = useWatch({ control }) as BookingFormValues;
+  const requests = useController({ control, name: "guest.requests" }).field;
+  const picked: string[] = requests.value ?? [];
+  const { extraBeds, extras, nights } = computeStay(db, v);
+  const summary = [
+    v.guest.arrivalTime && `Arrives ${v.guest.arrivalTime.split(" (")[0]}`,
+    picked.length > 0 &&
+      `${picked.length} request${picked.length > 1 ? "s" : ""}`,
+    extraBeds > 0 && `${extraBeds} extra bed${extraBeds > 1 ? "s" : ""}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <Disclosure title="Arrival, requests & extras" summary={summary}>
+      {v.status !== "check-in" && (
+        <FormField label="Estimated arrival" className="mb-4 sm:max-w-xs">
+          <select {...register("guest.arrivalTime")} className={inputClass}>
+            <option value="">Not sure yet</option>
+            {arrivalOptions.map((a) => (
+              <option key={a}>{a}</option>
+            ))}
+          </select>
+        </FormField>
+      )}
+
+      <p className={fieldLabel}>
+        Requests{" "}
+        <span className="font-normal text-neutral-500">
+          — noted for the team, not guaranteed
+        </span>
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {requestOptions.map((r) => {
+          const on = picked.includes(r);
+          return (
+            <button
+              key={r}
+              type="button"
+              role="checkbox"
+              aria-checked={on}
+              onClick={() =>
+                requests.onChange(
+                  on ? picked.filter((x) => x !== r) : [...picked, r]
+                )
+              }
+              className={cn(
+                "inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[13px] transition",
+                on
+                  ? "border-sky-500 bg-sky-50 text-sky-900"
+                  : "border-neutral-200 text-neutral-700 hover:border-sky-300",
+                focusRing
+              )}
+            >
+              <span
+                className={cn(
+                  "flex size-3.5 items-center justify-center rounded-sm border",
+                  on
+                    ? "border-sky-600 bg-sky-600 text-white"
+                    : "border-neutral-400"
+                )}
+              >
+                {on && <Check className="size-3" />}
+              </span>
+              {r}
+            </button>
+          );
+        })}
+      </div>
+      <textarea
+        {...register("guest.note")}
+        rows={2}
+        placeholder="Other requests, e.g. anniversary, allergies"
+        className={cn(textareaClass, "mt-2.5")}
+      />
+
+      <div className="mt-4 rounded-md border border-neutral-200 p-3">
+        <p className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-[13px] font-medium text-neutral-800">
+          Paid extras{" "}
+          <span className="text-xs font-normal text-neutral-600">
+            Added to the bill
+          </span>
+        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="text-sm text-neutral-800">
+            Extra bed
+            <span className="block text-xs text-neutral-600">
+              {taka(EXTRA_BED_RATE)} per bed per night
+            </span>
+          </span>
+          <span className="flex items-center gap-3">
+            <span className="w-28">
+              <Stepper
+                name="extraBeds"
+                label="extra beds"
+                min={0}
+                max={MAX_EXTRA_BEDS}
+                size="sm"
+              />
+            </span>
+            <span
+              className={cn(
+                "w-20 text-right text-sm font-semibold tabular-nums",
+                extras ? "text-neutral-900" : "text-neutral-400"
+              )}
+            >
+              {taka(extras)}
+            </span>
+          </span>
+        </div>
+        {extraBeds > 0 && nights > 0 && (
+          <p className="mt-1.5 text-xs text-neutral-600">
+            {extraBeds} × {taka(EXTRA_BED_RATE)} × {nights} night
+            {nights > 1 ? "s" : ""} = {taka(extras)}
+          </p>
+        )}
+        <FieldError name="extraBeds" />
+      </div>
+    </Disclosure>
+  );
+}
+
+function Tag({
+  tone,
+  children,
 }: {
-  name: string;
-  blocked?: boolean;
-  large?: boolean;
+  tone: "rose" | "emerald" | "sky" | "neutral";
+  children: React.ReactNode;
 }) {
+  const tones = {
+    rose: "bg-rose-100 text-rose-800",
+    emerald: "bg-emerald-100 text-emerald-800",
+    sky: "bg-sky-100 text-sky-800",
+    neutral: "bg-neutral-100 text-neutral-700",
+  };
   return (
     <span
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-full font-semibold",
-        large ? "size-12 text-base" : "size-9 text-xs",
-        blocked ? "bg-rose-100 text-rose-700" : "bg-sky-100 text-sky-700"
+        "rounded px-1.5 py-0.5 text-[11px] font-semibold",
+        tones[tone]
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function Avatar({ name, blocked }: { name: string; blocked?: boolean }) {
+  return (
+    <span
+      className={cn(
+        "flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+        blocked ? "bg-rose-100 text-rose-800" : "bg-sky-100 text-sky-800"
       )}
     >
       {initials(name)}
@@ -294,7 +592,7 @@ function Avatar({
   );
 }
 
-/** The selected returning guest: who they are and their history with the hotel. */
+/** The guest picked from their profile: history and anything the desk should know before booking. */
 function GuestCard({ user, onClear }: { user: User; onClear: () => void }) {
   const db = useHotelDB();
   const s = guestStats(db, user.id);
@@ -302,84 +600,61 @@ function GuestCard({ user, onClear }: { user: User; onClear: () => void }) {
   return (
     <div
       className={cn(
-        "rounded-md border p-4",
+        "mt-3 rounded-md border px-3.5 py-3",
         blocked
-          ? "border-rose-200 bg-rose-50/50"
-          : "border-sky-200 bg-sky-50/40"
+          ? "border-rose-200 bg-rose-50/60"
+          : "border-emerald-200 bg-emerald-50/40"
       )}
     >
-      <div className="flex flex-wrap items-start gap-3">
-        <Avatar name={user.name} blocked={blocked} large />
+      <div className="flex flex-wrap items-center gap-3">
+        <Avatar name={user.name} blocked={blocked} />
         <div className="min-w-0 flex-1">
-          <p className="flex flex-wrap items-center gap-2 font-semibold text-neutral-900">
+          <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-neutral-900">
+            <Check className="size-4 text-emerald-700" /> Using profile:{" "}
             {user.name}
-            <span className="rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-sky-700 ring-1 ring-sky-200">
-              {s.stays ? "Returning" : "Has profile"}
-            </span>
-            {user.passwordHash && (
-              <span className="rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600 ring-1 ring-neutral-200">
-                Registered
-              </span>
-            )}
-            {s.inHouse && (
-              <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-                In house now
-              </span>
-            )}
+            <Tag tone="sky">{s.stays ? "Returning" : "Has profile"}</Tag>
+            {s.inHouse && <Tag tone="emerald">In house now</Tag>}
           </p>
-          <p className="truncate text-sm text-neutral-500">
-            {user.phone}
-            {user.email && ` · ${user.email}`}
-            {user.country && ` · ${user.country}`}
+          <p className="text-xs text-neutral-600">
+            {s.stays} stay{s.stays !== 1 ? "s" : ""} · {s.nights} night
+            {s.nights !== 1 ? "s" : ""} · {taka(s.spent)} paid
+            {s.last && ` · last ${dateLabel(s.last, "d MMM yyyy")}`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           <Link
             href={`${ADMIN}/users?guest=${user.id}`}
             target="_blank"
-            className={hbtn.small}
+            className={cn(hbtn.small, focusRing)}
           >
-            Profile
+            Profile <ExternalLink className="size-3" />
           </Link>
-          <button type="button" onClick={onClear} className={hbtn.small}>
-            <X className="size-3.5" /> Change
+          <button
+            type="button"
+            onClick={onClear}
+            className={cn(hbtn.small, focusRing)}
+          >
+            Not this guest
           </button>
         </div>
       </div>
 
-      <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {[
-          ["Stays", s.stays],
-          ["Nights", s.nights],
-          ["Paid to date", taka(s.spent)],
-          ["Last stay", s.last ? dateLabel(s.last, "dd MMM yyyy") : "—"],
-        ].map(([k, v]) => (
-          <div
-            key={k}
-            className="rounded-md bg-white px-3 py-2 ring-1 ring-neutral-100"
-          >
-            <dt className="text-[11px] text-neutral-500">{k}</dt>
-            <dd className="font-semibold tabular-nums text-neutral-900">{v}</dd>
-          </div>
-        ))}
-      </dl>
-
       {(blocked || s.noShows > 0 || s.upcoming.length > 0 || user.note) && (
-        <div className="mt-3 space-y-1.5 text-xs">
+        <div className="mt-2.5 space-y-1 border-t border-neutral-200/70 pt-2.5 text-xs">
           {blocked && (
-            <p className="flex items-center gap-1.5 font-medium text-rose-700">
-              <Ban className="size-3.5" /> This guest is blocked. You&rsquo;ll
-              be asked to confirm before booking.
+            <p className="flex items-center gap-1.5 font-medium text-rose-800">
+              <Ban className="size-3.5" /> Blocked guest — you&rsquo;ll be asked
+              to confirm before booking.
             </p>
           )}
           {s.noShows > 0 && (
-            <p className="flex items-center gap-1.5 text-amber-700">
+            <p className="flex items-center gap-1.5 text-amber-800">
               <AlertTriangle className="size-3.5" /> {s.noShows} no-show
-              {s.noShows > 1 ? "s" : ""} — consider taking a deposit.
+              {s.noShows > 1 ? "s" : ""} — consider collecting a deposit.
             </p>
           )}
           {s.upcoming.length > 0 && (
-            <p className="text-neutral-600">
+            <p className="text-neutral-700">
               Already booked:{" "}
               {s.upcoming.slice(0, 3).map((b, i) => (
                 <span key={b.id}>
@@ -391,14 +666,14 @@ function GuestCard({ user, onClear }: { user: User; onClear: () => void }) {
                   >
                     {b.code}
                   </Link>{" "}
-                  ({dateLabel(b.checkIn, "dd MMM")})
+                  ({dateLabel(b.checkIn, "d MMM yyyy")})
                 </span>
               ))}{" "}
               — check this isn&rsquo;t a double booking.
             </p>
           )}
           {user.note && (
-            <p className="rounded bg-white px-2 py-1.5 text-neutral-700 ring-1 ring-neutral-100">
+            <p className="rounded bg-white px-2 py-1.5 text-neutral-700 ring-1 ring-neutral-200">
               Staff note: {user.note}
             </p>
           )}

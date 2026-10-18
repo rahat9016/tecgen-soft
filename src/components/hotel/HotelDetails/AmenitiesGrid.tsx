@@ -50,6 +50,8 @@ export const amenityIcons: Record<string, React.ComponentType<{ className?: stri
   "Free Breakfast": Utensils,
   "AC Rooms": Wind,
   AC: Wind,
+  TV: Tv,
+  "Attached Bathroom": Bath,
   "Breakfast Included": Utensils,
   "Free Parking": ParkingCircle,
   "Couple Friendly": Heart,

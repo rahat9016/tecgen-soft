@@ -140,7 +140,7 @@ export default function Dashboard() {
     refunds.length && { icon: Undo2, tone: "text-violet-600 bg-violet-50", text: `${refunds.length} refund${refunds.length > 1 ? "s" : ""} to process (${taka(refunds.reduce((s, b) => s + creditOf(b), 0))})`, href: `${ADMIN}/payments?tab=refunds` },
     overdue.length && { icon: AlertTriangle, tone: "text-rose-600 bg-rose-50", text: `${overdue.length} guest${overdue.length > 1 ? "s" : ""} past check-out date`, href: `${ADMIN}/bookings?status=checked-in` },
     unassigned.length && { icon: BedDouble, tone: "text-sky-600 bg-sky-50", text: `${unassigned.length} arrival${unassigned.length > 1 ? "s" : ""} in the next 3 days without a room`, href: `${ADMIN}/calendar` },
-    dirty.length && { icon: Sparkles, tone: "text-amber-600 bg-amber-50", text: `${dirty.length} room${dirty.length > 1 ? "s" : ""} need cleaning`, href: `${ADMIN}/rooms?filter=dirty` },
+    dirty.length && { icon: Sparkles, tone: "text-amber-600 bg-amber-50", text: `${dirty.length} room${dirty.length > 1 ? "s" : ""} need cleaning`, href: `${ADMIN}/housekeeping?filter=dirty` },
     pendingReviews.length && { icon: Star, tone: "text-amber-600 bg-amber-50", text: `${pendingReviews.length} review${pendingReviews.length > 1 ? "s" : ""} to moderate`, href: `${ADMIN}/reviews` },
   ].filter(Boolean) as { icon: typeof Star; tone: string; text: string; href: string }[];
 

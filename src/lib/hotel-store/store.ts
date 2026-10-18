@@ -336,8 +336,9 @@ export function siteHotel(db: HotelDB): Hotel {
   const cached = siteCache.get(db);
   if (cached) return cached;
   const { hotel, gallery, facilities, nearby } = db.content;
+  // A listing with no rooms left (every room moved to other details) has nothing to sell.
   const rooms: RoomType[] = db.roomTypes
-    .filter((t) => t.active)
+    .filter((t) => t.active && !t.draft && db.units.some((u) => u.typeId === t.id))
     .map((t) => ({
       ...t,
       ...roomRating(db, t.id),
@@ -626,6 +627,7 @@ function validateStay(
   allowNoAdults = false
 ): string | null {
   if (!type) return "This room type no longer exists.";
+  if (type.draft) return `${type.name || "This room"} is still a draft — finish and save it before booking.`;
   if (!allowPast && i.checkIn < todayKey()) return "Check-in can't be in the past.";
   if (nightsBetween(i.checkIn, i.checkOut) < 1) return "Check-out must be after check-in.";
   if (i.rooms < 1) return "Book at least one room.";
@@ -740,6 +742,10 @@ export type StaffBookingInput = {
   agentName?: string;
   commission?: Omit<Commission, "amount">;
   unitIds?: string[];
+  /** Keep only the rooms given in `unitIds`; the rest are assigned later instead of picked automatically. */
+  assignLater?: boolean;
+  /** Paid extras (e.g. an extra bed) added to the folio when the booking is made. */
+  charges?: Pick<Charge, "category" | "description" | "amount">[];
   payment?: { amount: number; method: PayMethod; ref?: string };
   checkInNow?: boolean;
   tentative?: boolean;
@@ -777,7 +783,8 @@ function addStaffBooking(s: HotelDB, input: StaffBookingInput, groupId?: string)
   if (input.checkInNow && input.checkIn !== today) {
     return "Only a stay starting today can be checked in now.";
   }
-  const chosen = input.unitIds?.length ? input.unitIds.slice(0, input.rooms) : suggestUnits(s, type.id, input.checkIn, input.checkOut, input.rooms);
+  const chosen =
+    input.unitIds?.length || input.assignLater ? (input.unitIds ?? []).slice(0, input.rooms) : suggestUnits(s, type.id, input.checkIn, input.checkOut, input.rooms);
   const unitProblem = validateUnits(s, type.id, chosen, input.checkIn, input.checkOut);
   if (unitProblem) {
     return unitProblem;
@@ -812,8 +819,12 @@ function addStaffBooking(s: HotelDB, input: StaffBookingInput, groupId?: string)
           amount: input.commission.kind === "percent" ? Math.round((q.net * Math.min(input.commission.value, 100)) / 100) : Math.min(Math.round(input.commission.value), q.net),
         }
       : undefined;
-  const pay = input.payment && input.payment.amount > 0 ? Math.min(Math.round(input.payment.amount), q.total) : 0;
   const at = nowIso();
+  const charges: Charge[] = (input.charges ?? [])
+    .filter((c) => c.amount > 0)
+    .map((c) => ({ id: uid("c"), category: c.category, description: c.description, amount: Math.round(c.amount), at, by }));
+  const extras = charges.reduce((sum, c) => sum + c.amount, 0);
+  const pay = input.payment && input.payment.amount > 0 ? Math.min(Math.round(input.payment.amount), q.total + extras) : 0;
   const seq = s.seq.booking + 1;
   const status: BookingStatus = input.checkInNow ? "checked-in" : input.tentative ? "pending" : "confirmed";
   const numbers = unitNumbers(s, chosen).join(", ");
@@ -838,7 +849,7 @@ function addStaffBooking(s: HotelDB, input: StaffBookingInput, groupId?: string)
     serviceFee: q.serviceFee,
     tax: q.tax,
     total: q.total,
-    charges: [],
+    charges,
     payments: pay ? [{ id: uid("p"), amount: pay, method: input.payment!.method, kind: input.checkInNow ? "payment" : "deposit", ref: input.payment!.ref || undefined, at, by }] : [],
     guest: { ...input.guest, email: normEmail(input.guest.email) },
     status,
@@ -851,6 +862,7 @@ function addStaffBooking(s: HotelDB, input: StaffBookingInput, groupId?: string)
       { at, text: `Booking taken (${input.source}${input.agentName?.trim() ? ` · ${input.agentName.trim()}` : ""})${rate !== type.price ? ` at ${money(rate)}/night` : ""}`, by },
       ...(discount ? [{ at, text: `Discount ${discount.kind === "percent" ? `${discount.value}% ` : ""}${money(discount.amount)} — ${discount.reason}`, by }] : []),
       ...(commission ? [{ at, text: `Commission ${money(commission.amount)} to ${commission.name} (${commission.to})`, by }] : []),
+      ...charges.map((c) => ({ at, text: `Charge ${money(c.amount)} — ${c.description}`, by })),
       ...(pay ? [{ at, text: `Received ${money(pay)} via ${input.payment!.method}`, by }] : []),
       ...(input.checkInNow ? [{ at, text: `Checked in to room ${numbers}`, by }] : []),
     ],
@@ -1146,6 +1158,10 @@ export function removeCharge(id: string, chargeId: string) {
 /* ───────────── room types & rooms ───────────── */
 
 export function saveRoomType(type: RoomTypeRecord): Result<RoomTypeRecord> {
+  if (type.draft) {
+    update((s) => ({ ...s, roomTypes: s.roomTypes.some((t) => t.id === type.id) ? s.roomTypes.map((t) => (t.id === type.id ? type : t)) : [...s.roomTypes, type] }));
+    return { ok: true, value: type };
+  }
   if (!type.name.trim()) return fail("Name is required.");
   if (!(type.price > 0)) return fail("Set a nightly price.");
   if (!(type.capacity > 0)) return fail("Set how many guests the room sleeps.");

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { toast } from "react-toastify";
 import {
@@ -58,9 +59,11 @@ import { ADMIN, Card, Empty, hbtn, PayBadge, StatusBadge, textareaClass } from "
 export default function BookingDetail({ id }: { id: string }) {
   const db = useHotelDB();
   const staff = useCurrentStaff();
-  const [payKind, setPayKind] = useState<PaymentKind | null>(null);
-  const [rooms, setRooms] = useState<"assign" | "checkin" | null>(null);
-  const [modal, setModal] = useState<"charge" | "stay" | "cancel" | "checkout" | "guest" | null>(null);
+  // The bookings list links here with ?do=… to open the matching dialog straight away.
+  const action = useSearchParams().get("do");
+  const [payKind, setPayKind] = useState<PaymentKind | null>(action === "pay" ? "payment" : null);
+  const [rooms, setRooms] = useState<"assign" | "checkin" | null>(action === "checkin" ? "checkin" : null);
+  const [modal, setModal] = useState<"charge" | "stay" | "cancel" | "checkout" | "guest" | null>(action === "checkout" ? "checkout" : null);
   const b = db.bookings.find((x) => x.id === id) ?? db.bookings.find((x) => x.code === id);
   const [note, setNote] = useState<string | null>(null);
 

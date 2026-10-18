@@ -106,7 +106,7 @@ export default function RoomsBoard() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <p className="text-2xl font-bold leading-none text-neutral-900">{u.number}</p>
-                          <p className="mt-1 truncate text-xs text-neutral-500">{type?.name ?? "Unknown type"}</p>
+                          <p className="mt-1 truncate text-xs text-neutral-500">{type ? `${type.beds || `Sleeps ${type.capacity}`}` : "No details yet"}</p>
                         </div>
                         <span className={cn("rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide", st.chip)}>{st.label}</span>
                       </div>
@@ -192,7 +192,7 @@ export default function RoomsBoard() {
                           </Link>
                         )}
                         {s === "vacant" && can(staff?.role, "bookings.manage") && (
-                          <Link href={`${ADMIN}/bookings/new?type=${u.typeId}&unit=${u.id}`} className={hbtn.small}>
+                          <Link href={`${ADMIN}/bookings/new?unit=${u.id}`} className={hbtn.small}>
                             <BedDouble className="size-3.5" /> Walk-in
                           </Link>
                         )}

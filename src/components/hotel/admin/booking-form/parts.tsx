@@ -1,21 +1,29 @@
 "use client";
 
+import { useId, useState } from "react";
 import {
   get,
   useController,
   useFormContext,
   useFormState,
 } from "react-hook-form";
-import { Minus, Plus } from "lucide-react";
+import { ChevronDown, Minus, Plus } from "lucide-react";
 import { cn } from "@/src/lib/utils";
-import { Card, labelClass } from "../ui";
+import { Card } from "../ui";
 import type { BookingFormValues } from "./schema";
 
-/** Numbered card with an icon header; `id` lets a failed submit scroll to it. */
+/** Keyboard focus ring shared by the form's custom controls. */
+export const focusRing =
+  "outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-1";
+
+/** Field label: darker and heavier than hint text so labels scan quickly. */
+export const fieldLabel =
+  "mb-1.5 block text-[13px] font-medium text-neutral-800";
+
+/** Numbered form section; `id` lets a failed submit scroll to it. */
 export function Section({
   id,
   step,
-  icon: Icon,
   title,
   sub,
   aside,
@@ -23,33 +31,96 @@ export function Section({
 }: {
   id: string;
   step: number;
-  icon: React.ComponentType<{ className?: string }>;
   title: string;
-  sub?: string;
+  sub?: React.ReactNode;
   aside?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section id={`bf-${id}`} className="scroll-mt-24">
+    <section
+      id={`bf-${id}`}
+      aria-labelledby={`bf-${id}-title`}
+      className="scroll-mt-24"
+    >
       <Card className="p-0">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4">
-          <div className="flex items-center gap-3">
-            <span className="relative flex size-9 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-600">
-              <Icon className="size-4.5" />
-              <span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-sky-600 text-[10px] font-bold text-white">
-                {step}
-              </span>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-neutral-100 px-4 py-3 sm:px-5">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white">
+              {step}
             </span>
-            <div>
-              <h2 className="font-semibold text-neutral-900">{title}</h2>
-              {sub && <p className="text-xs text-neutral-500">{sub}</p>}
-            </div>
+            <h2
+              id={`bf-${id}-title`}
+              className="text-[15px] font-semibold text-neutral-900"
+            >
+              {title}
+            </h2>
+            {sub && (
+              <span className="hidden truncate text-xs text-neutral-500 sm:inline">
+                {sub}
+              </span>
+            )}
           </div>
           {aside}
         </div>
-        <div className="p-5">{children}</div>
+        <div className="p-4 sm:p-5">{children}</div>
       </Card>
     </section>
+  );
+}
+
+/** Collapsed-by-default area for optional details; `forceOpen` reveals it when its fields become required or invalid. */
+export function Disclosure({
+  title,
+  summary,
+  defaultOpen = false,
+  forceOpen = false,
+  className,
+  children,
+}: {
+  title: string;
+  /** Short note of what's filled in, shown while collapsed. */
+  summary?: React.ReactNode;
+  defaultOpen?: boolean;
+  forceOpen?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const id = useId();
+  const shown = open || forceOpen;
+  return (
+    <div className={cn("rounded-md border border-neutral-200", className)}>
+      <button
+        type="button"
+        aria-expanded={shown}
+        aria-controls={id}
+        onClick={() => setOpen(!shown)}
+        className={cn(
+          "flex w-full items-center justify-between gap-3 rounded-md px-3.5 py-2.5 text-left text-sm font-medium text-neutral-800 transition hover:bg-neutral-50",
+          focusRing
+        )}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          {title}
+          {!shown && summary && (
+            <span className="truncate text-xs font-normal text-neutral-500">
+              {summary}
+            </span>
+          )}
+        </span>
+        <ChevronDown
+          className={cn(
+            "size-4 shrink-0 text-neutral-500 transition",
+            shown && "rotate-180"
+          )}
+        />
+      </button>
+      {shown && (
+        <div id={id} className="border-t border-neutral-100 px-3.5 py-4">
+          {children}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -57,7 +128,7 @@ export function FieldError({ name }: { name: string }) {
   const { errors } = useFormState();
   const message = get(errors, name)?.message as string | undefined;
   return message ? (
-    <p role="alert" className="mt-1 text-xs text-rose-600">
+    <p role="alert" className="mt-1 text-xs font-medium text-rose-600">
       {message}
     </p>
   ) : null;
@@ -71,7 +142,7 @@ export function FormField({
   className,
   children,
 }: {
-  label: string;
+  label: React.ReactNode;
   name?: string;
   hint?: React.ReactNode;
   className?: string;
@@ -81,11 +152,11 @@ export function FormField({
   const hasError = !!(name && get(errors, name));
   return (
     <div className={className}>
-      <span className={labelClass}>{label}</span>
+      <span className={fieldLabel}>{label}</span>
       {children}
       {name && <FieldError name={name} />}
       {hint && !hasError && (
-        <span className="mt-1 block text-[11px] text-neutral-400">{hint}</span>
+        <span className="mt-1 block text-xs text-neutral-500">{hint}</span>
       )}
     </div>
   );
@@ -105,11 +176,19 @@ export function Stepper({
   min = 0,
   max = 99,
   label,
+  size = "md",
 }: {
-  name: "adults" | "children" | `lines.${number}.rooms`;
+  name:
+    | "adults"
+    | "children"
+    | "extraBeds"
+    | `lines.${number}.rooms`
+    | `lines.${number}.party.adults`
+    | `lines.${number}.party.children`;
   min?: number;
   max?: number;
   label: string;
+  size?: "sm" | "md";
 }) {
   const { control } = useFormContext<BookingFormValues>();
   const {
@@ -118,12 +197,16 @@ export function Stepper({
   } = useController({ control, name });
   const value = Number(raw) || 0;
   const set = (n: number) => onChange(Math.min(max, Math.max(min, n)));
-  const btn =
-    "flex size-10 shrink-0 items-center justify-center text-neutral-500 transition hover:bg-neutral-50 hover:text-sky-700 disabled:opacity-30 disabled:hover:bg-transparent";
+  const btn = cn(
+    "flex shrink-0 items-center justify-center text-neutral-600 transition hover:bg-neutral-50 hover:text-sky-700 disabled:opacity-30 disabled:hover:bg-transparent",
+    size === "sm" ? "size-8" : "size-10",
+    focusRing
+  );
   return (
     <div
       className={cn(
-        "flex h-10 items-center overflow-hidden rounded-md border bg-white",
+        "flex items-center overflow-hidden rounded-md border bg-white",
+        size === "sm" ? "h-8" : "h-10",
         fieldState.error ? "border-rose-400" : "border-neutral-200"
       )}
     >
@@ -134,7 +217,7 @@ export function Stepper({
         aria-label={`Fewer ${label}`}
         className={btn}
       >
-        <Minus className="size-4" />
+        <Minus className="size-3.5" />
       </button>
       <input
         ref={ref}
@@ -144,7 +227,7 @@ export function Stepper({
         onChange={(e) => set(Number(e.target.value.replace(/\D/g, "")) || 0)}
         onBlur={onBlur}
         aria-label={label}
-        className="h-full w-full min-w-0 border-x border-neutral-100 text-center text-sm font-semibold tabular-nums outline-none"
+        className="h-full w-full min-w-0 border-x border-neutral-100 text-center text-sm font-semibold tabular-nums outline-none focus-visible:bg-sky-50"
       />
       <button
         type="button"
@@ -153,17 +236,18 @@ export function Stepper({
         aria-label={`More ${label}`}
         className={btn}
       >
-        <Plus className="size-4" />
+        <Plus className="size-3.5" />
       </button>
     </div>
   );
 }
 
-/** Pill toggle for a handful of options. */
+/** Compact segmented control for a handful of options; arrow keys move the choice. */
 export function Segmented<T extends string>({
   value,
   onChange,
   options,
+  label,
   className,
 }: {
   value: T;
@@ -172,35 +256,59 @@ export function Segmented<T extends string>({
     value: T;
     label: React.ReactNode;
     icon?: React.ComponentType<{ className?: string }>;
+    disabled?: boolean;
   }[];
+  label?: string;
   className?: string;
 }) {
+  const enabled = options.filter((o) => !o.disabled);
+  const move = (dir: 1 | -1) => {
+    const i = enabled.findIndex((o) => o.value === value);
+    const next = enabled[(i + dir + enabled.length) % enabled.length];
+    if (next) onChange(next.value);
+  };
   return (
     <div
       role="radiogroup"
+      aria-label={label}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+          e.preventDefault();
+          move(1);
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+          e.preventDefault();
+          move(-1);
+        }
+      }}
       className={cn(
-        "inline-flex gap-1 rounded-md bg-neutral-100 p-1 text-xs font-medium",
+        "inline-flex h-9 gap-0.5 rounded-md border border-neutral-200 bg-neutral-50 p-0.5 text-[13px] font-medium",
         className
       )}
     >
-      {options.map(({ value: v, label, icon: Icon }) => (
-        <button
-          key={v}
-          type="button"
-          role="radio"
-          aria-checked={value === v}
-          onClick={() => onChange(v)}
-          className={cn(
-            "inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 transition",
-            value === v
-              ? "bg-white text-sky-700 shadow-sm"
-              : "text-neutral-600 hover:text-neutral-900"
-          )}
-        >
-          {Icon && <Icon className="size-3.5" />}
-          {label}
-        </button>
-      ))}
+      {options.map(({ value: v, label: text, icon: Icon, disabled }) => {
+        const on = value === v;
+        return (
+          <button
+            key={v}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            tabIndex={on ? 0 : -1}
+            disabled={disabled}
+            onClick={() => onChange(v)}
+            className={cn(
+              "inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded px-3 transition disabled:cursor-not-allowed disabled:opacity-40",
+              on
+                ? "bg-sky-600 text-white shadow-sm"
+                : "text-neutral-700 hover:bg-white hover:text-neutral-900",
+              focusRing
+            )}
+          >
+            {Icon && <Icon className="size-4" />}
+            {text}
+          </button>
+        );
+      })}
     </div>
   );
 }

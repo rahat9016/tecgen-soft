@@ -1,5 +1,5 @@
-import RoomTypes from "@/src/components/hotel/admin/RoomTypes";
+import RoomsList from "@/src/components/hotel/admin/RoomsList";
 
 export default function Page() {
-  return <RoomTypes />;
+  return <RoomsList />;
 }

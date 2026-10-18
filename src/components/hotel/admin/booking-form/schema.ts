@@ -7,9 +7,11 @@ import {
 import {
   discountRate,
   freeRooms,
+  freeUnits,
   quoteStay,
   type DiscountInput,
 } from "@/src/lib/hotel-store/store";
+import { housekeepingLabels } from "@/src/lib/hotel-store/format";
 import type {
   DiscountKind,
   GuestInfo,
@@ -31,18 +33,24 @@ export const discountReasons = [
   "Manager approval",
   OTHER_REASON,
 ];
+/** What the front desk takes; Rocket stays available to website bookings. */
 export const payMethods: PayMethod[] = [
   "cash",
-  "card",
   "bkash",
   "nagad",
-  "rocket",
+  "card",
   "bank",
 ];
+/** BDT per extra bed per night, added to the folio as a charge. */
+export const EXTRA_BED_RATE = 1000;
+export const MAX_EXTRA_BEDS = 4;
 
 export type BookingStatusChoice = "confirmed" | "tentative" | "check-in";
 export type GuestMode = "new" | "returning";
 export type PayPlan = "none" | "deposit" | "full" | "custom";
+
+/** Guests staying in one room type's rooms when staff split the party by hand. */
+export type LineParty = { adults: number | string; children: number | string };
 
 /** One room type in the booking; each becomes its own linked booking when saved. */
 export type StayLine = {
@@ -50,17 +58,21 @@ export type StayLine = {
   rooms: number;
   rate: number | string;
   unitIds: string[];
+  /** Reservations only: leave unpicked rooms for the desk to assign before arrival. */
+  assignLater: boolean;
+  /** null = share the party out automatically. */
+  party: LineParty | null;
 };
 
 export const titles = ["Mr", "Ms", "Mrs", "Dr"] as const;
 export const AIRPORT_PICKUP = "Airport pickup";
+/** Asked for, not promised — the desk confirms them later. */
 export const requestOptions = [
   "Early check-in",
   "Late check-out",
   "High floor",
-  "Extra bed",
-  "Baby cot",
   "Quiet room",
+  "Baby cot",
   AIRPORT_PICKUP,
 ];
 export const arrivalOptions = [
@@ -75,8 +87,7 @@ export const arrivalOptions = [
 /** Same shape as the website's guest form, so staff and guests fill in the same details. */
 export type GuestForm = {
   title: (typeof titles)[number];
-  firstName: string;
-  lastName: string;
+  fullName: string;
   email: string;
   /** Country code, or "OTHER". */
   country: string;
@@ -103,7 +114,14 @@ export type CommissionForm = {
 export const newLine = (
   t: RoomTypeRecord,
   unitIds: string[] = []
-): StayLine => ({ typeId: t.id, rooms: 1, rate: t.price, unitIds });
+): StayLine => ({
+  typeId: t.id,
+  rooms: 1,
+  rate: t.price,
+  unitIds,
+  assignLater: false,
+  party: null,
+});
 
 export type BookingFormValues = {
   source: "walk-in" | "phone" | "agent";
@@ -117,6 +135,7 @@ export type BookingFormValues = {
   userId: string;
   guest: GuestForm;
   updateProfile: boolean;
+  extraBeds: number;
   discountKind: DiscountKind;
   discountValue: number | string;
   discountReason: string;
@@ -124,6 +143,8 @@ export type BookingFormValues = {
   payPlan: PayPlan;
   /** Only used with the "custom" plan; the other plans follow the live total. */
   payAmount: number | string;
+  /** Staff confirmed the money is in hand. Choosing a plan alone records nothing. */
+  payCollected: boolean;
   payMethod: PayMethod;
   payRef: string;
   status: BookingStatusChoice;
@@ -132,8 +153,7 @@ export type BookingFormValues = {
 
 export const emptyGuest: GuestForm = {
   title: "Mr",
-  firstName: "",
-  lastName: "",
+  fullName: "",
   email: "",
   country: "BD",
   otherCountry: "",
@@ -164,9 +184,9 @@ export function composeGuest(g: GuestForm): GuestInfo {
       : (getCountry(g.phoneCountry)?.dial ?? "880");
   const local = g.phone.replace(/[\s()-]/g, "").replace(/^0/, "");
   return {
-    name: [g.title, g.firstName.trim(), g.lastName.trim()]
-      .filter(Boolean)
-      .join(" "),
+    name: g.fullName.trim()
+      ? [g.title, g.fullName.trim().replace(/\s+/g, " ")].join(" ")
+      : "",
     email: g.email.trim(),
     phone: local ? `+${dial} ${local}` : "",
     country:
@@ -215,8 +235,7 @@ export function guestFromUser(user: User, last?: GuestInfo): GuestForm {
   return {
     ...emptyGuest,
     title,
-    firstName: words.shift() ?? "",
-    lastName: words.join(" "),
+    fullName: words.join(" "),
     email: user.email,
     country,
     otherCountry: country === "OTHER" ? (user.country ?? "") : "",
@@ -274,6 +293,7 @@ type StayInput = Pick<
   | "discountKind"
   | "discountValue"
 > & {
+  extraBeds?: number | string;
   source?: BookingFormValues["source"];
   commission?: CommissionForm;
 };
@@ -360,51 +380,86 @@ export function computeStay(db: HotelDB, v: StayInput) {
     return share;
   });
   const capacities = lines.map((l) => (l.type?.capacity ?? 0) * l.rooms);
-  const party = allocateGuests(capacities, toNum(v.adults), toNum(v.children));
+  const adults = toNum(v.adults);
+  const children = toNum(v.children);
+  // Hand-set rooms keep their guests; everyone else is shared over the rest.
+  const manual = lines.map((l) =>
+    lines.length > 1 && l.line.party
+      ? {
+          adults: Math.max(0, Math.round(toNum(l.line.party.adults))),
+          children: Math.max(0, Math.round(toNum(l.line.party.children))),
+        }
+      : null
+  );
+  const fixed = manual.reduce<{ adults: number; children: number }>(
+    (s, m) => ({
+      adults: s.adults + (m?.adults ?? 0),
+      children: s.children + (m?.children ?? 0),
+    }),
+    { adults: 0, children: 0 }
+  );
+  const autoIdx = manual.flatMap((m, i) => (m ? [] : [i]));
+  const auto = allocateGuests(
+    autoIdx.map((i) => capacities[i]),
+    Math.max(0, adults - fixed.adults),
+    Math.max(0, children - fixed.children)
+  );
+  const party = manual.map((m, i) => m ?? auto[autoIdx.indexOf(i)]);
+  const placed = party.reduce((s, p) => s + p.adults + p.children, 0);
+  const extraBeds = Math.max(0, Math.round(toNum(v.extraBeds)));
+  const extras = extraBeds * EXTRA_BED_RATE * n;
+  const total = quote.total + extras;
   return {
     nights,
     lines: lines.map((l, i) => ({
       ...l,
       ...party[i],
+      capacity: capacities[i],
+      manual: !!manual[i],
       commission: commissions[i],
     })),
     commission: commissions.reduce((s, c) => s + c, 0),
     rooms: lines.reduce((s, l) => s + l.rooms, 0),
     capacity: capacities.reduce((s, c) => s + c, 0),
+    /** Guests placed in rooms minus the party size; non-zero when a hand split doesn't add up. */
+    partyGap: lines.length ? placed - (adults + children) : 0,
     quote,
+    extraBeds,
+    extras,
+    /** Room charge with tax plus paid extras — what the guest owes. */
+    total,
+    deposit: Math.ceil((total * db.settings.depositRate) / 100),
     discountPct: discountRate(quote.subtotal, quote.discount),
   };
 }
 
-/** What the guest pays at the desk now, following the total when the rate or discount changes. */
-export const payNowOf = (
+/** The amount the chosen plan asks for, following the total when the rate or discount changes. */
+export const planAmountOf = (
   v: Pick<BookingFormValues, "payPlan" | "payAmount">,
-  quote: { total: number; deposit: number }
+  t: { total: number; deposit: number }
 ) =>
   v.payPlan === "full"
-    ? quote.total
+    ? t.total
     : v.payPlan === "deposit"
-      ? quote.deposit
+      ? t.deposit
       : v.payPlan === "custom"
-        ? Math.min(Math.max(0, Math.round(toNum(v.payAmount))), quote.total)
+        ? Math.min(Math.max(0, Math.round(toNum(v.payAmount))), t.total)
         : 0;
 
-/** The payment taken now, split over the linked bookings so each folio shows its share. */
-export function splitPayment(
-  v: Pick<BookingFormValues, "payPlan" | "payAmount">,
-  lines: { quote: { total: number; deposit: number } }[]
-) {
-  if (v.payPlan === "deposit") return lines.map((l) => l.quote.deposit);
-  if (v.payPlan === "full") return lines.map((l) => l.quote.total);
-  if (v.payPlan !== "custom") return lines.map(() => 0);
-  const total = lines.reduce((s, l) => s + l.quote.total, 0);
-  let left = payNowOf(v, { total, deposit: 0 });
-  return lines.map((l, i) => {
+/** Money actually in hand — only once staff mark it as received. */
+export const receivedOf = (
+  v: Pick<BookingFormValues, "payPlan" | "payAmount" | "payCollected">,
+  t: { total: number; deposit: number }
+) => (v.payCollected ? planAmountOf(v, t) : 0);
+
+/** Shares `amount` over the linked bookings in proportion to what each owes, so each folio shows its part. */
+export function splitAmount(amount: number, dues: number[]) {
+  const total = dues.reduce((s, d) => s + d, 0);
+  let left = Math.min(amount, total);
+  return dues.map((d, i) => {
     const share = Math.min(
-      l.quote.total,
-      i === lines.length - 1
-        ? left
-        : Math.round((left * l.quote.total) / (total || 1))
+      d,
+      i === dues.length - 1 ? left : Math.round((amount * d) / (total || 1))
     );
     left -= share;
     return share;
@@ -412,6 +467,10 @@ export function splitPayment(
 }
 
 export type SchemaContext = { db: HotelDB; limit: number };
+
+/** Index of the line a nested field belongs to, from a yup path like "lines[2].party". */
+const lineIndex = (path: string) =>
+  Number(/lines\[(\d+)\]/.exec(path)?.[1] ?? -1);
 
 const num = (label: string) =>
   yup
@@ -433,8 +492,7 @@ const guestSchema = yup.object({
     .mixed<GuestForm["title"]>()
     .oneOf([...titles])
     .required(),
-  firstName: yup.string().trim().required("Enter the first name"),
-  lastName: yup.string().trim().default(""),
+  fullName: yup.string().trim().required("Enter the guest's full name"),
   email: yup.string().trim().default("").email("Enter a valid email"),
   country: yup.string().required("Select the country"),
   otherCountry: yup
@@ -575,37 +633,103 @@ export const bookingSchema = yup.object({
     .array(
       yup.object({
         typeId: yup.string().required(),
-        rooms: num("Rooms")
-          .integer()
-          .min(1, "At least one room")
-          .test("free", function (v) {
+        rooms: num("Rooms").integer().min(1, "At least one room"),
+        rate: num("Rate").min(1, "Enter the rate"),
+        assignLater: yup.boolean().default(false),
+        party: yup
+          .object({
+            adults: num("Adults").min(0),
+            children: num("Children").min(0),
+          })
+          .nullable()
+          .default(null)
+          .test("fits", function (p) {
+            if (!p) return true;
             const s = stayOf(this, this.from?.[1]?.value as BookingFormValues);
-            const l = s.lines.find((x) => x.line.typeId === this.parent.typeId);
-            if (!l?.type || s.nights < 1 || !v || l.free >= v) return true;
+            const l = s.lines[lineIndex(this.path)];
+            if (!l || l.adults + l.children <= l.capacity) return true;
             return this.createError({
-              message: l.free
-                ? `Only ${l.free} free for these dates`
-                : "Fully booked for these dates",
+              message: `${l.rooms > 1 ? "These rooms sleep" : "This room sleeps"} up to ${l.capacity}`,
             });
           }),
-        rate: num("Rate").min(1, "Enter the rate"),
         unitIds: yup
           .array(yup.string().required())
           .default([])
-          .test("all", function (v) {
+          .test("free", function (v) {
+            const root = this.from?.[1]?.value as BookingFormValues | undefined;
+            if (
+              !root?.checkIn ||
+              !root.checkOut ||
+              root.checkOut <= root.checkIn
+            )
+              return true;
+            const { db } = ctxOf(this);
+            const free = new Set(
+              freeUnits(
+                db,
+                this.parent.typeId,
+                root.checkIn,
+                root.checkOut
+              ).map((u) => u.id)
+            );
+            const taken = (v ?? [])
+              .map((id) => db.units.find((u) => u.id === id))
+              .find((u) => !u || !free.has(u.id));
+            if (!taken) return true;
+            return this.createError({
+              message: taken?.outOfService
+                ? `Room ${taken.number} is out of service — pick another room`
+                : `Room ${taken?.number ?? ""} is booked for these dates — pick another room`,
+            });
+          })
+          .test("ready", function (v) {
             const root = this.from?.[1]?.value as BookingFormValues | undefined;
             if (root?.status !== "check-in") return true;
             const missing = toNum(this.parent.rooms) - (v?.length ?? 0);
+            if (missing > 0)
+              return this.createError({
+                message: `Assign ${missing === 1 ? "a ready room" : `${missing} ready rooms`} to check in now`,
+              });
+            const { db } = ctxOf(this);
+            const notReady = (v ?? [])
+              .map((id) => db.units.find((u) => u.id === id))
+              .find((u) => !u || u.outOfService || u.housekeeping === "dirty");
             return (
-              missing <= 0 ||
+              !notReady ||
               this.createError({
-                message: `No clean room free for ${missing} of these — can't check in yet`,
+                message: `Room ${notReady.number} is ${notReady.outOfService ? "out of service" : housekeepingLabels.dirty.toLowerCase()} — pick a ready room to check in`,
               })
             );
           }),
       })
     )
-    .min(1, "Choose at least one room type"),
+    .min(1, "Select at least one room")
+    .test("available", function (lines) {
+      // Rooms held without a number still need a free room of that kind.
+      const root = this.parent as BookingFormValues;
+      const s = stayOf(this, root);
+      if (s.nights < 1) return true;
+      const types = [...new Set((lines ?? []).map((l) => l.typeId))];
+      for (const typeId of types) {
+        const mine = s.lines.filter((l) => l.line.typeId === typeId);
+        const unnumbered = mine.filter((l) => !l.line.unitIds.length).length;
+        const numbered = mine.length - unnumbered;
+        if (unnumbered && mine[0].free - numbered < unnumbered)
+          return this.createError({
+            message: `Not enough free ${mine[0].type?.name ?? "rooms"} to assign later — pick room numbers instead`,
+          });
+      }
+      return true;
+    })
+    .test("party", function () {
+      const root = this.parent as BookingFormValues;
+      const s = stayOf(this, root);
+      if (!s.partyGap) return true;
+      const guests = toNum(root.adults) + toNum(root.children);
+      return this.createError({
+        message: `Rooms list ${guests + s.partyGap} guests but the party is ${guests} — adjust the split`,
+      });
+    }),
   adults: num("Adults")
     .integer()
     .min(1, "At least one adult")
@@ -637,6 +761,10 @@ export const bookingSchema = yup.object({
       mode === "returning" && !userId ? yup.object() : guestSchema
     ),
   updateProfile: yup.boolean().default(false),
+  extraBeds: num("Extra beds")
+    .integer()
+    .min(0)
+    .max(MAX_EXTRA_BEDS, `Up to ${MAX_EXTRA_BEDS} extra beds`),
 
   discountKind: yup
     .mixed<DiscountKind>()
@@ -689,15 +817,16 @@ export const bookingSchema = yup.object({
     .min(0, "Amount can't be negative")
     .test("custom", function (v) {
       if (this.parent.payPlan !== "custom") return true;
-      if (!v) return this.createError({ message: "Enter the amount received" });
+      if (!v) return this.createError({ message: "Enter an amount" });
       const s = stayOf(this, this.parent);
       return (
-        v <= s.quote.total ||
+        v <= s.total ||
         this.createError({
-          message: `More than the total (${s.quote.total.toLocaleString("en-IN")})`,
+          message: `More than the total (৳${s.total.toLocaleString("en-IN")})`,
         })
       );
     }),
+  payCollected: yup.boolean().default(false),
   payMethod: yup.mixed<PayMethod>().oneOf(payMethods).required(),
   payRef: yup
     .string()
@@ -707,6 +836,7 @@ export const bookingSchema = yup.object({
       return (
         this.parent.payMethod === "cash" ||
         this.parent.payPlan === "none" ||
+        !this.parent.payCollected ||
         !!v
       );
     }),
@@ -727,15 +857,17 @@ export const bookingSchema = yup.object({
 
 /** Which on-page section holds a field, so a failed submit can scroll to it. */
 export const sectionOf = (field: string) =>
-  /^(guest|userId|guestMode|updateProfile)/.test(field)
+  /^(guest|userId|guestMode|updateProfile|extraBeds)/.test(field)
     ? "guest"
-    : /^pay/.test(field)
-      ? "payment"
-      : /^(discount|status|internalNote)/.test(field)
-        ? "summary"
-        : "stay";
+    : /^lines/.test(field)
+      ? "rooms"
+      : /^pay/.test(field)
+        ? "payment"
+        : /^(discount|internalNote)/.test(field)
+          ? "summary"
+          : "stay";
 
-export const sectionOrder = ["stay", "guest", "payment", "summary"];
+export const sectionOrder = ["stay", "rooms", "guest", "payment", "summary"];
 
 /** Puts an error message from the store back on the field it belongs to. */
 export function fieldForStoreError(
@@ -744,13 +876,21 @@ export function fieldForStoreError(
   | "discountValue"
   | "adults"
   | "checkIn"
-  | "guest.firstName"
+  | "lines"
+  | "guest.fullName"
   | "guest.phone"
   | null {
   if (/discount/i.test(msg)) return "discountValue";
+  // Someone else took a room or the last free one while this form was open.
+  if (
+    /taken by|fully booked|out of service|are free|is free|assign a room/i.test(
+      msg
+    )
+  )
+    return "lines";
   if (/sleeps up to|adult/i.test(msg)) return "adults";
   if (/check-in can|check-out must|past/i.test(msg)) return "checkIn";
-  if (/name is required/i.test(msg)) return "guest.firstName";
+  if (/name is required/i.test(msg)) return "guest.fullName";
   if (/phone|email/i.test(msg)) return "guest.phone";
   return null;
 }
