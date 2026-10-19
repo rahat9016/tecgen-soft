@@ -1,5 +1,6 @@
-import Dashboard from "@/src/components/hotel/admin/Dashboard";
+import { redirect } from "next/navigation";
 
-export default function HotelAdminDashboardPage() {
-  return <Dashboard />;
+// There's no dashboard: the admin opens on Bookings.
+export default function Page() {
+  redirect("/hotel-management/admin/bookings");
 }

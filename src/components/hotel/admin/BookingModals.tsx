@@ -1,8 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "react-toastify";
-import { chargeLabels, housekeepingLabels, nightsBetween, payLabels, taka, todayKey } from "@/src/lib/hotel-store/format";
+import { AlertCircle, AlertTriangle, Check, Loader2, Minus, Wallet } from "lucide-react";
+import { can } from "@/src/lib/hotel-store/auth";
+import { chargeLabels, dateLabel, housekeepingLabels, nightsBetween, payLabels, taka, todayKey } from "@/src/lib/hotel-store/format";
+import { checkInBlockers, type Blocker } from "@/src/lib/hotel-store/frontDesk";
 import {
   addCharge,
   addPayment,
@@ -14,16 +18,20 @@ import {
   checkOutBooking,
   creditOf,
   dueOf,
+  folioTotal,
   freeRooms,
   freeUnits,
   paidOf,
   quoteStay,
+  setHousekeeping,
+  unitNumbers,
   updateBookingGuest,
+  useCurrentStaff,
   useHotelDB,
 } from "@/src/lib/hotel-store/store";
-import type { Booking, ChargeCategory, GuestInfo, PayMethod, PaymentKind } from "@/src/lib/hotel-store/types";
+import type { Booking, ChargeCategory, GuestInfo, PayMethod, PaymentKind, RoomUnit } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
-import { Field, hbtn, inputClass, Modal, textareaClass } from "./ui";
+import { ADMIN, Field, hbtn, inputClass, Modal, textareaClass, useSaving } from "./ui";
 
 const methods: PayMethod[] = ["cash", "card", "bkash", "nagad", "rocket", "bank"];
 
@@ -35,36 +43,42 @@ export function PaymentModal({ booking, kind, onClose }: { booking: Booking; kin
   const [method, setMethod] = useState<PayMethod>(isRefund && firstMethod ? firstMethod : "cash");
   const [ref, setRef] = useState("");
   const [note, setNote] = useState("");
+  const [error, setError] = useState("");
+  const { saving, run } = useSaving();
 
-  const submit = () => {
-    const r = addPayment(booking.id, { amount: Number(amount), method, kind: kind ?? "payment", ref, note });
-    if (!r.ok) return toast.error(r.error);
-    toast.success(isRefund ? `Refunded ${taka(Number(amount))}` : `Received ${taka(Number(amount))} via ${payLabels[method]}`);
-    onClose();
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    run(() => {
+      setError("");
+      const r = addPayment(booking.id, { amount: Number(amount), method, kind: kind ?? "payment", ref, note });
+      if (!r.ok) return setError(r.error);
+      toast.success(isRefund ? `Refunded ${taka(Number(amount))}` : `Received ${taka(Number(amount))} via ${payLabels[method]}`);
+      onClose();
+    });
   };
 
   return (
-    <Modal open={!!kind} onClose={onClose} title={isRefund ? `Refund · ${booking.code}` : `Record payment · ${booking.code}`}>
-      <div className="space-y-4">
-        <div className="grid grid-cols-3 gap-2 rounded-md bg-neutral-50 p-3 text-center text-xs">
+    <Modal open={!!kind} onClose={onClose} title={isRefund ? `Refund · ${booking.guest.name}` : `Collect payment · ${booking.guest.name}`}>
+      <form onSubmit={submit} className="space-y-4">
+        <div className="grid grid-cols-3 gap-2 rounded-md bg-neutral-50 p-3 text-center text-sm">
           <div>
-            <p className="text-neutral-500">Paid</p>
-            <p className="font-semibold text-neutral-900">{taka(paidOf(booking))}</p>
+            <p className="text-[13px] text-neutral-600">Paid</p>
+            <p className="font-semibold tabular-nums text-neutral-900">{taka(paidOf(booking))}</p>
           </div>
           <div>
-            <p className="text-neutral-500">Due</p>
-            <p className="font-semibold text-rose-600">{taka(dueOf(booking))}</p>
+            <p className="text-[13px] text-neutral-600">Balance due</p>
+            <p className="font-semibold tabular-nums text-amber-800">{taka(dueOf(booking))}</p>
           </div>
           <div>
-            <p className="text-neutral-500">Refundable</p>
-            <p className="font-semibold text-violet-700">{taka(creditOf(booking))}</p>
+            <p className="text-[13px] text-neutral-600">Refundable</p>
+            <p className="font-semibold tabular-nums text-violet-700">{taka(creditOf(booking))}</p>
           </div>
         </div>
-        <Field label="Amount (BDT)">
-          <input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} className={inputClass} autoFocus />
+        <Field label="Amount (৳)">
+          <input type="number" min={1} inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} className={inputClass} autoFocus />
         </Field>
-        <div>
-          <span className="mb-1 block text-xs font-medium text-neutral-600">{isRefund ? "Refund to" : "Method"}</span>
+        <fieldset>
+          <legend className="mb-1 block text-xs font-medium text-neutral-600">{isRefund ? "Refund to" : "Method"}</legend>
           <div className="grid grid-cols-3 gap-2">
             {methods.map((m) => (
               <button
@@ -72,13 +86,16 @@ export function PaymentModal({ booking, kind, onClose }: { booking: Booking; kin
                 type="button"
                 onClick={() => setMethod(m)}
                 aria-pressed={method === m}
-                className={cn("h-9 rounded-md border text-sm font-medium transition", method === m ? "border-sky-500 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-600 hover:border-sky-300")}
+                className={cn(
+                  "h-10 rounded-md border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500",
+                  method === m ? "border-sky-500 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-700 hover:border-sky-300"
+                )}
               >
                 {payLabels[m]}
               </button>
             ))}
           </div>
-        </div>
+        </fieldset>
         {method !== "cash" && (
           <Field label={method === "card" ? "Card / auth reference" : method === "bank" ? "Bank reference" : "Transaction ID (TrxID)"}>
             <input value={ref} onChange={(e) => setRef(e.target.value)} className={inputClass} placeholder={method === "card" ? "•••• 4242 · Auth 123456" : "e.g. 9F3K2L1M0P"} />
@@ -87,16 +104,28 @@ export function PaymentModal({ booking, kind, onClose }: { booking: Booking; kin
         <Field label="Note (optional)">
           <input value={note} onChange={(e) => setNote(e.target.value)} className={inputClass} placeholder={isRefund ? "Reason for the refund" : "e.g. Paid at check-out"} />
         </Field>
+        <FormError text={error} />
         <div className="flex justify-end gap-2 pt-1">
-          <button onClick={onClose} className={hbtn.outline}>
+          <button type="button" onClick={onClose} className={hbtn.outline}>
             Cancel
           </button>
-          <button onClick={submit} className={isRefund ? hbtn.dark : hbtn.success}>
-            {isRefund ? "Refund" : "Record payment"}
+          <button type="submit" disabled={saving} className={isRefund ? hbtn.dark : hbtn.primary}>
+            {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
+            {saving ? "Saving…" : isRefund ? "Refund" : "Record payment"}
           </button>
         </div>
-      </div>
+      </form>
     </Modal>
+  );
+}
+
+/** A save that didn't go through, explained next to the button that tried it. */
+export function FormError({ text }: { text?: string }) {
+  if (!text) return null;
+  return (
+    <p role="alert" className="flex gap-2 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+      <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden /> {text}
+    </p>
   );
 }
 
@@ -162,16 +191,21 @@ export function RoomsModal({ booking, mode, onClose }: { booking: Booking; mode:
   const options = db.units.filter((u) => u.typeId === booking.roomTypeId && (free.some((f) => f.id === u.id) || booking.unitIds.includes(u.id)));
   const others = db.units.filter((u) => u.typeId === booking.roomTypeId && !options.includes(u));
   const [picked, setPicked] = useState<string[]>(booking.unitIds);
+  const [error, setError] = useState("");
+  const { saving, run } = useSaving();
 
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= booking.rooms ? [...p.slice(1), id] : [...p, id]));
 
-  const submit = () => {
-    const r = mode === "checkin" ? checkInBooking(booking.id, picked) : assignUnits(booking.id, picked);
-    if (!r.ok) return toast.error(r.error);
-    toast.success(mode === "checkin" ? `${booking.guest.name} checked in` : "Rooms updated");
-    onClose();
-  };
+  const submit = () =>
+    run(() => {
+      setError("");
+      const r = mode === "checkin" ? checkInBooking(booking.id, picked) : assignUnits(booking.id, picked);
+      if (!r.ok) return setError(r.error);
+      const numbers = unitNumbers(db, picked).join(", ");
+      toast.success(mode === "checkin" ? `${booking.guest.name} checked in to room ${numbers}` : picked.length ? `Room ${numbers} assigned to ${booking.guest.name}` : "Rooms updated");
+      onClose();
+    });
 
   return (
     <Modal open={!!mode} onClose={onClose} title={mode === "checkin" ? `Check in · ${booking.guest.name}` : booking.status === "checked-in" ? "Move room" : "Assign rooms"} wide>
@@ -187,11 +221,14 @@ export function RoomsModal({ booking, mode, onClose }: { booking: Booking; mode:
               type="button"
               onClick={() => toggle(u.id)}
               aria-pressed={on}
-              className={cn("rounded-md border p-3 text-left transition", on ? "border-sky-500 bg-sky-50 ring-2 ring-sky-100" : "border-neutral-200 hover:border-sky-300")}
+              className={cn(
+                "rounded-md border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500",
+                on ? "border-sky-500 bg-sky-50 ring-2 ring-sky-100" : "border-neutral-200 hover:border-sky-300"
+              )}
             >
               <p className="text-lg font-bold text-neutral-900">{u.number}</p>
-              <p className={cn("text-[11px] font-medium", u.housekeeping === "dirty" ? "text-amber-600" : "text-emerald-600")}>{housekeepingLabels[u.housekeeping]}</p>
-              <p className="text-[11px] text-neutral-400">Floor {u.floor}</p>
+              <p className={cn("text-xs font-medium", u.housekeeping === "dirty" ? "text-amber-700" : "text-emerald-700")}>{housekeepingLabels[u.housekeeping]}</p>
+              <p className="text-xs text-neutral-500">Floor {u.floor}</p>
             </button>
           );
         })}
@@ -206,12 +243,16 @@ export function RoomsModal({ booking, mode, onClose }: { booking: Booking; mode:
       {mode === "checkin" && picked.some((id) => db.units.find((u) => u.id === id)?.housekeeping === "dirty") && (
         <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">Heads up: a selected room is still marked as needing cleaning.</p>
       )}
+      <div className="mt-3">
+        <FormError text={error} />
+      </div>
       <div className="mt-5 flex justify-end gap-2">
         <button onClick={onClose} className={hbtn.outline}>
           Cancel
         </button>
-        <button onClick={submit} disabled={mode === "checkin" && picked.length < booking.rooms} className={mode === "checkin" ? hbtn.success : hbtn.primary}>
-          {mode === "checkin" ? `Check in to ${picked.length ? db.units.filter((u) => picked.includes(u.id)).map((u) => u.number).join(", ") : "…"}` : "Save rooms"}
+        <button onClick={submit} disabled={saving || (mode === "checkin" && picked.length < booking.rooms)} className={mode === "checkin" ? hbtn.success : hbtn.primary}>
+          {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
+          {saving ? "Saving…" : mode === "checkin" ? `Check in to ${picked.length ? db.units.filter((u) => picked.includes(u.id)).map((u) => u.number).join(", ") : "…"}` : "Save rooms"}
         </button>
       </div>
     </Modal>
@@ -347,43 +388,238 @@ export function CancelModal({ booking, open, onClose }: { booking: Booking; open
   );
 }
 
+/** Review the bill, then check out. Collecting money is its own step, so nobody checks out a balance by accident. */
 export function CheckoutModal({ booking, open, onClose, onCollect }: { booking: Booking; open: boolean; onClose: () => void; onCollect: () => void }) {
+  const db = useHotelDB();
   const due = dueOf(booking);
-  const out = (allowDue: boolean) => {
-    const r = checkOutBooking(booking.id, { allowDue });
-    if (!r.ok) return toast.error(r.error);
-    toast.success(`${booking.guest.name} checked out — room marked for cleaning`);
-    onClose();
-  };
+  const credit = creditOf(booking);
+  const rooms = unitNumbers(db, booking.unitIds).join(", ");
+  const [leaveOwed, setLeaveOwed] = useState(false);
+  const [error, setError] = useState("");
+  const { saving, run } = useSaving();
+
+  const out = () =>
+    run(() => {
+      setError("");
+      const r = checkOutBooking(booking.id, { allowDue: due > 0 && leaveOwed });
+      if (!r.ok) return setError(r.error);
+      toast.success(`${booking.guest.name} checked out — room ${rooms} marked for cleaning`);
+      onClose();
+    });
+
   return (
-    <Modal open={open} onClose={onClose} title={`Check out · ${booking.guest.name}`}>
-      {due > 0 ? (
-        <div className="space-y-4">
-          <p className="rounded-md bg-rose-50 p-3 text-sm text-rose-700">
-            <b>{taka(due)}</b> is still due on this folio.
+    <Modal open={open} onClose={onClose} title={`Review & check out · ${booking.guest.name}`}>
+      <div className="space-y-4">
+        <dl className="divide-y divide-neutral-100 rounded-md border border-neutral-200 text-sm">
+          {[
+            ["Room", rooms || "—"],
+            ["Stay", `${dateLabel(booking.checkIn, "dd MMM")} → ${dateLabel(booking.checkOut, "dd MMM")} · ${booking.nights} night${booking.nights > 1 ? "s" : ""}`],
+            ["Bill total", taka(folioTotal(booking))],
+            ["Paid", taka(paidOf(booking))],
+          ].map(([k, v]) => (
+            <div key={k} className="flex justify-between gap-3 px-3 py-2">
+              <dt className="text-neutral-600">{k}</dt>
+              <dd className="text-right font-medium tabular-nums text-neutral-900">{v}</dd>
+            </div>
+          ))}
+          <div className="flex justify-between gap-3 bg-neutral-50 px-3 py-2.5">
+            <dt className="font-semibold text-neutral-900">{credit > 0 ? "Refund due to guest" : "Balance due"}</dt>
+            <dd className={cn("text-right font-bold tabular-nums", due > 0 ? "text-amber-800" : credit > 0 ? "text-violet-700" : "text-emerald-700")}>
+              {due > 0 ? taka(due) : credit > 0 ? taka(credit) : "Paid in full"}
+            </dd>
+          </div>
+        </dl>
+
+        {due > 0 ? (
+          <>
+            <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              <b>{taka(due)}</b> is still due. Collect it first, or check out and keep it as an unpaid balance on this booking.
+            </p>
+            <label className="flex items-start gap-2.5 text-sm text-neutral-800">
+              <input type="checkbox" checked={leaveOwed} onChange={(e) => setLeaveOwed(e.target.checked)} className="mt-0.5 size-4 accent-sky-600" />
+              Check out with {taka(due)} unpaid — the guest or their company will settle later.
+            </label>
+          </>
+        ) : credit > 0 ? (
+          <p className="rounded-md bg-violet-50 p-3 text-sm text-violet-900">The guest paid {taka(credit)} more than the bill. Send the refund from Payments after check-out.</p>
+        ) : (
+          <p className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-900">The bill is settled.</p>
+        )}
+        <p className="text-[13px] text-neutral-600">Room {rooms || "—"} will be marked as needing cleaning.</p>
+        <FormError text={error} />
+
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onClose} className={hbtn.outline}>
+            Not yet
+          </button>
+          {due > 0 && (
+            <button type="button" onClick={onCollect} className={leaveOwed ? hbtn.outline : hbtn.primary}>
+              <Wallet className="size-4" aria-hidden /> Collect payment
+            </button>
+          )}
+          <button type="button" onClick={out} disabled={saving || (due > 0 && !leaveOwed)} className={due > 0 && !leaveOwed ? hbtn.outline : hbtn.primary}>
+            {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
+            {saving ? "Checking out…" : due > 0 ? "Check out with balance owed" : "Complete check-out"}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/**
+ * Check-in with a checklist: every room assigned, in service, vacant and clean. Anything that isn't is explained,
+ * with the fix one click away, and the check-in button stays off until it's sorted.
+ */
+export function CheckInModal({
+  booking,
+  onClose,
+  onAssign,
+  onViewRoom,
+}: {
+  booking: Booking;
+  onClose: () => void;
+  /** Open room assignment; the caller brings this checklist back afterwards. */
+  onAssign: () => void;
+  /** Show the room's status (the dashboard's rooms board); hidden where there's nowhere to show it. */
+  onViewRoom?: (unitId: string) => void;
+}) {
+  const db = useHotelDB();
+  const staff = useCurrentStaff();
+  const [error, setError] = useState("");
+  const { saving, run } = useSaving();
+  const blockers = checkInBlockers(db, booking);
+  const units = booking.unitIds.map((id) => db.units.find((u) => u.id === id)).filter(Boolean) as RoomUnit[];
+  const numbers = units.map((u) => u.number).join(", ");
+  const of = <K extends Blocker["kind"]>(kind: K) => blockers.filter((b): b is Extract<Blocker, { kind: K }> => b.kind === kind);
+  const unassigned = of("unassigned");
+  const oos = of("oos");
+  const occupied = of("occupied");
+  const dirty = of("dirty");
+  const noRooms = units.length === 0;
+  const canClean = can(staff?.role, "rooms.housekeeping");
+  const due = dueOf(booking);
+
+  const checks: { label: string; ok: boolean | null; detail: string; fix?: React.ReactNode }[] = [
+    {
+      label: "Room assigned",
+      ok: unassigned.length === 0,
+      detail: unassigned.length ? unassigned[0].text : `Room ${numbers}`,
+      fix: unassigned.length > 0 && (
+        <button type="button" onClick={onAssign} className={hbtn.small}>
+          Assign room
+        </button>
+      ),
+    },
+    {
+      label: "In service",
+      ok: noRooms ? null : oos.length === 0,
+      detail: noRooms ? "Checked once a room is assigned." : oos.length ? oos.map((b) => b.text).join(" ") : "No maintenance holds.",
+      fix: oos.length > 0 && (
+        <button type="button" onClick={onAssign} className={hbtn.small}>
+          Change room
+        </button>
+      ),
+    },
+    {
+      label: "Previous guest has left",
+      ok: noRooms ? null : occupied.length === 0,
+      detail: noRooms ? "Checked once a room is assigned." : occupied.length ? occupied.map((b) => b.text).join(" ") : "Room is vacant.",
+      fix: occupied.length > 0 && (
+        <Link href={`${ADMIN}/bookings/${occupied[0].booking.id}?from=${encodeURIComponent(ADMIN)}`} className={hbtn.small}>
+          Open their stay
+        </Link>
+      ),
+    },
+    {
+      label: "Clean and ready",
+      ok: noRooms ? null : dirty.length === 0,
+      detail: noRooms ? "Checked once a room is assigned." : dirty.length ? dirty.map((b) => b.text).join(" ") : units.map((u) => `${u.number}: ${housekeepingLabels[u.housekeeping]}`).join(" · "),
+      fix: dirty.length > 0 && (
+        <span className="flex flex-wrap gap-2">
+          {canClean && (
+            <button
+              type="button"
+              onClick={() => {
+                dirty.forEach((b) => setHousekeeping(b.unit.id, "clean"));
+                toast.success(`Room ${dirty.map((b) => b.unit.number).join(", ")} marked clean`);
+              }}
+              className={hbtn.small}
+            >
+              Housekeeping done — mark clean
+            </button>
+          )}
+          {onViewRoom && (
+            <button type="button" onClick={() => onViewRoom(dirty[0].unit.id)} className={hbtn.small}>
+              View room
+            </button>
+          )}
+        </span>
+      ),
+    },
+  ];
+
+  const submit = () =>
+    run(() => {
+      setError("");
+      const r = checkInBooking(booking.id);
+      if (!r.ok) return setError(r.error);
+      toast.success(`${booking.guest.name} checked in to room ${unitNumbers(db, r.value.unitIds).join(", ")}`);
+      onClose();
+    });
+
+  return (
+    <Modal open onClose={onClose} title={`Check in · ${booking.guest.name}`} wide>
+      <p className="text-sm text-neutral-600">
+        {booking.roomName}
+        {booking.rooms > 1 ? ` ×${booking.rooms}` : ""} · {dateLabel(booking.checkIn, "dd MMM")} → {dateLabel(booking.checkOut, "dd MMM")} · {booking.nights} night
+        {booking.nights > 1 ? "s" : ""} · {booking.adults + booking.children} guest{booking.adults + booking.children > 1 ? "s" : ""}
+      </p>
+
+      <ul className="mt-4 divide-y divide-neutral-100 rounded-md border border-neutral-200" aria-label="Check-in checklist">
+        {checks.map((c) => (
+          <li key={c.label} className="flex flex-wrap items-start gap-3 p-3">
+            <span
+              className={cn(
+                "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full",
+                c.ok === true ? "bg-emerald-100 text-emerald-700" : c.ok === false ? "bg-amber-100 text-amber-800" : "bg-neutral-100 text-neutral-500"
+              )}
+            >
+              {c.ok === true ? <Check className="size-3.5" aria-label="Done" /> : c.ok === false ? <AlertTriangle className="size-3.5" aria-label="Needs attention" /> : <Minus className="size-3.5" aria-label="Not checked yet" />}
+            </span>
+            <span className="min-w-0 flex-1 basis-48">
+              <span className="block text-sm font-semibold text-neutral-900">{c.label}</span>
+              <span className={cn("block text-sm", c.ok === false ? "text-amber-900" : "text-neutral-600")}>{c.detail}</span>
+            </span>
+            {c.ok === false && c.fix}
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-4 space-y-2 text-sm">
+        {booking.status === "pending" && <p className="rounded-md bg-sky-50 p-3 text-sky-900">This booking hasn&rsquo;t been confirmed yet — checking in confirms it.</p>}
+        {!booking.guest.idNumber && <p className="rounded-md bg-neutral-50 p-3 text-neutral-700">No ID on file — ask for an NID or passport before handing over the key.</p>}
+        {booking.guest.note && <p className="rounded-md bg-neutral-50 p-3 text-neutral-700">Guest request: {booking.guest.note}</p>}
+        {due > 0 && <p className="rounded-md bg-neutral-50 p-3 text-neutral-700">{taka(due)} still to pay — collect now from the booking, or at check-out.</p>}
+      </div>
+
+      <div className="mt-3">
+        <FormError text={error} />
+      </div>
+      <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+        {blockers.length > 0 && (
+          <p id="checkin-blocked" className="text-sm text-amber-900 sm:mr-auto">
+            Sort out the {blockers.length === 1 ? "item" : "items"} above to check in.
           </p>
-          <div className="flex flex-col gap-2">
-            <button onClick={onCollect} className={hbtn.success}>
-              Collect {taka(due)} first
-            </button>
-            <button onClick={() => out(true)} className={hbtn.outline}>
-              Check out with balance owed (city ledger)
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <p className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-800">Folio is settled. The room will be marked as needing cleaning.</p>
-          <div className="flex justify-end gap-2">
-            <button onClick={onClose} className={hbtn.outline}>
-              Not yet
-            </button>
-            <button onClick={() => out(false)} className={hbtn.success}>
-              Check out
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+        <button type="button" onClick={onClose} className={hbtn.outline}>
+          Cancel
+        </button>
+        <button type="button" onClick={submit} disabled={saving || blockers.length > 0} aria-describedby={blockers.length ? "checkin-blocked" : undefined} className={hbtn.primary}>
+          {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
+          {saving ? "Checking in…" : `Complete check-in${numbers ? ` · ${numbers}` : ""}`}
+        </button>
+      </div>
     </Modal>
   );
 }

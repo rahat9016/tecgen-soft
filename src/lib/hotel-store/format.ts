@@ -15,7 +15,38 @@ import type {
 export const taka = (n: number) => `${n < 0 ? "-" : ""}৳${Math.abs(Math.round(n)).toLocaleString("en-IN")}`;
 export const bdt = (n: number) => `BDT ${Math.round(n).toLocaleString("en-US")}`;
 
-export const todayKey = () => toDayKey(new Date());
+/** The hotel's clock. Bangladesh keeps no daylight saving, so it's UTC+6 all year. */
+export const HOTEL_TZ = "Asia/Dhaka";
+const HOTEL_OFFSET = "+06:00";
+
+const clockParts = new Intl.DateTimeFormat("en-US", {
+  timeZone: HOTEL_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+const partsOf = (d: Date | string | number) => Object.fromEntries(clockParts.formatToParts(new Date(d)).map((p) => [p.type, p.value]));
+const hotelTimeFormat = new Intl.DateTimeFormat("en-US", { timeZone: HOTEL_TZ, hour: "numeric", minute: "2-digit" });
+
+/** The hotel's calendar day ("2026-10-19") for a moment in time, wherever the browser is. */
+export const hotelDayOf = (d: Date | string | number) => {
+  const p = partsOf(d);
+  return `${p.year}-${p.month}-${p.day}`;
+};
+/** Minutes after midnight on the hotel's clock. */
+export const hotelMinutesOf = (d: Date | string | number) => {
+  const p = partsOf(d);
+  return Number(p.hour) * 60 + Number(p.minute);
+};
+/** The moment a wall-clock time happens at the hotel, e.g. 2:00 PM on check-in day. */
+export const hotelInstant = (day: string, minutes = 0) => Date.parse(`${day}T00:00:00${HOTEL_OFFSET}`) + minutes * 60_000;
+/** "2:41 PM" on the hotel's clock. */
+export const hotelTime = (d: Date | string | number) => hotelTimeFormat.format(new Date(d));
+
+export const todayKey = () => hotelDayOf(Date.now());
 export const dayOf = (key: string) => parseDayKey(key) ?? new Date();
 export const shiftDay = (key: string, n: number) => toDayKey(addDaysFns(dayOf(key), n));
 export const nightsBetween = (checkIn: string, checkOut: string) =>
@@ -41,7 +72,7 @@ export const relativeDay = (key: string) => {
   return dateLabel(key, "dd MMM");
 };
 
-export const formatDateTime = (iso: string) => format(new Date(iso), "dd MMM yyyy, h:mm a");
+export const formatDateTime = (iso: string) => `${dateLabel(hotelDayOf(iso), "dd MMM yyyy")}, ${hotelTime(iso)}`;
 
 export const timeAgo = (iso: string, now = Date.now()) => {
   const s = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
@@ -52,7 +83,7 @@ export const timeAgo = (iso: string, now = Date.now()) => {
   if (h < 24) return `${h}h ago`;
   const d = Math.round(h / 24);
   if (d < 7) return `${d}d ago`;
-  return format(new Date(iso), "dd MMM");
+  return dateLabel(hotelDayOf(iso), "dd MMM");
 };
 
 /** "2:00 PM" → minutes after midnight. */

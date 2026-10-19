@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, ShieldAlert } from "lucide-react";
 import { statusLabels, statusStyles } from "@/src/lib/hotel-store/format";
 import { paymentStatus } from "@/src/lib/hotel-store/store";
@@ -17,50 +18,13 @@ export function Card({ className, children }: { className?: string; children: Re
 }
 
 const statTones = {
-  neutral: { icon: "bg-slate-100 text-slate-700", art: "text-slate-400", bar: "bg-slate-500" },
-  sky: { icon: "bg-sky-50 text-sky-600", art: "text-sky-500", bar: "bg-sky-600" },
-  orange: { icon: "bg-orange-50 text-orange-600", art: "text-orange-400", bar: "bg-orange-500" },
-  green: { icon: "bg-emerald-50 text-emerald-600", art: "text-emerald-500", bar: "bg-emerald-500" },
-  rose: { icon: "bg-rose-50 text-rose-600", art: "text-rose-400", bar: "bg-rose-500" },
-  violet: { icon: "bg-violet-50 text-violet-600", art: "text-violet-500", bar: "bg-violet-500" },
+  neutral: "bg-slate-100 text-slate-700",
+  sky: "bg-sky-50 text-sky-700",
+  orange: "bg-orange-50 text-orange-700",
+  green: "bg-emerald-50 text-emerald-700",
+  rose: "bg-rose-50 text-rose-700",
+  violet: "bg-violet-50 text-violet-700",
 };
-
-/** Animations sit paused until the parent `group/card` is hovered. */
-const onHover = "[animation-play-state:paused] group-hover/card:[animation-play-state:running] motion-reduce:animate-none";
-/** One wave per 200 units across 800, so sliding the double-width svg by half loops seamlessly. */
-const wave = (y: number, dip: number) => `M0 ${y}Q50 ${y + dip} 100 ${y}T200 ${y}T300 ${y}T400 ${y}T500 ${y}T600 ${y}T700 ${y}T800 ${y}V80H0z`;
-
-/** Decorative sea-wave backdrop (with optional rings), tinted through currentColor; drifts while the card is hovered. Parent needs `group/card relative isolate overflow-hidden`. */
-export function CardArt({ className, rings = true }: { className?: string; rings?: boolean }) {
-  return (
-    <span aria-hidden className={cn("pointer-events-none absolute inset-0 -z-10", className)}>
-      {rings && (
-        <svg viewBox="0 0 120 120" fill="none" className="absolute -right-10 -top-10 size-36 transition-transform duration-700 ease-out group-hover/card:scale-110">
-          <circle cx="60" cy="60" r="58" stroke="currentColor" strokeOpacity=".12" strokeWidth="1.5" />
-          <circle
-            cx="60"
-            cy="60"
-            r="42"
-            stroke="currentColor"
-            strokeOpacity=".16"
-            strokeWidth="1.5"
-            strokeDasharray="5 7"
-            className={cn("origin-center [transform-box:fill-box] animate-[spin_14s_linear_infinite]", onHover)}
-          />
-          <circle cx="60" cy="60" r="26" fill="currentColor" fillOpacity=".06" />
-        </svg>
-      )}
-      <span className="absolute inset-x-0 bottom-0 h-14 origin-bottom overflow-hidden transition-transform duration-500 ease-out group-hover/card:scale-y-125">
-        <svg viewBox="0 0 800 80" preserveAspectRatio="none" fill="currentColor" className={cn("absolute bottom-0 left-0 h-full w-[200%] animate-[marquee_9s_linear_infinite]", onHover)}>
-          <path fillOpacity=".07" d={wave(36, -16)} />
-        </svg>
-        <svg viewBox="0 0 800 80" preserveAspectRatio="none" fill="currentColor" className={cn("absolute bottom-0 left-0 h-full w-[200%] animate-[marquee-reverse_6s_linear_infinite]", onHover)}>
-          <path fillOpacity=".11" d={wave(56, 12)} />
-        </svg>
-      </span>
-    </span>
-  );
-}
 
 export function StatCard({
   label,
@@ -68,7 +32,6 @@ export function StatCard({
   hint,
   icon: Icon,
   tone = "neutral",
-  meter,
   className,
 }: {
   label: string;
@@ -76,56 +39,60 @@ export function StatCard({
   hint?: string;
   icon: React.ComponentType<{ className?: string }>;
   tone?: keyof typeof statTones;
-  /** Optional 0–100 fill shown as a slim bar under the value. */
-  meter?: number;
   className?: string;
 }) {
-  const t = statTones[tone];
   return (
-    <section
-      className={cn(
-        "group/card relative isolate flex min-h-32 min-w-0 flex-col overflow-hidden rounded-md border border-neutral-200 bg-white p-3.5 transition sm:min-h-36 sm:p-4 duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-neutral-900/5 motion-reduce:hover:translate-y-0",
-        className
-      )}
-    >
-      <CardArt className={t.art} />
+    <section className={cn("flex min-w-0 flex-col rounded-md border border-neutral-200 bg-white p-4", className)}>
       <div className="flex items-start justify-between gap-2">
-        <p className="min-w-0 truncate pt-1 text-xs font-medium text-neutral-500 sm:text-sm" title={label}>
-          {label}
-        </p>
-        <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-md transition-transform duration-300 group-hover/card:scale-110 sm:size-9", t.icon)}>
-          <Icon className="size-4 sm:size-4.5" />
+        <p className="min-w-0 pt-1 text-sm font-medium text-neutral-600">{label}</p>
+        <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-md", statTones[tone])}>
+          <Icon className="size-4.5" />
         </span>
       </div>
-      <p className="mt-auto truncate pt-3 text-xl font-bold tabular-nums tracking-tight text-neutral-900 sm:text-2xl">{value}</p>
-      {meter !== undefined && (
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-neutral-100">
-          <div className={cn("h-full rounded-full", t.bar)} style={{ width: `${Math.min(100, Math.max(0, meter))}%` }} />
-        </div>
-      )}
-      {hint && (
-        <p className="mt-1.5 truncate text-xs text-neutral-500" title={hint}>
-          {hint}
-        </p>
-      )}
+      <p className="mt-auto pt-3 text-2xl font-bold tabular-nums tracking-tight text-neutral-900">{value}</p>
+      {hint && <p className="mt-1 text-[13px] text-neutral-600">{hint}</p>}
     </section>
   );
 }
 
+/** Keyboard focus ring shared by every admin control. */
+export const focusRing = "outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2";
+
+/**
+ * Runs one save at a time: clicks while it's in flight are ignored, and `saving` drives the button's busy state.
+ * Works the same once the store's actions become network calls.
+ */
+export function useSaving() {
+  const lock = useRef(false);
+  const [saving, setSaving] = useState(false);
+  const run = useCallback(async (fn: () => unknown) => {
+    if (lock.current) return;
+    lock.current = true;
+    setSaving(true);
+    try {
+      await fn();
+    } finally {
+      lock.current = false;
+      setSaving(false);
+    }
+  }, []);
+  return { saving, run };
+}
+
 export const hbtn = {
   primary:
-    "inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sky-600 px-4 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50",
-  dark: "inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sky-950 px-4 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-not-allowed disabled:opacity-50",
+    `inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sky-600 px-4 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`,
+  dark: `inline-flex h-10 items-center justify-center gap-2 rounded-md bg-sky-950 px-4 text-sm font-semibold text-white transition hover:bg-sky-900 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`,
   success:
-    "inline-flex h-10 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50",
+    `inline-flex h-10 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`,
   outline:
-    "inline-flex h-10 items-center justify-center gap-2 rounded-md border border-neutral-200 bg-white px-4 text-sm font-medium text-neutral-700 transition hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50",
+    `inline-flex h-10 items-center justify-center gap-2 rounded-md border border-neutral-200 bg-white px-4 text-sm font-medium text-neutral-700 transition hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`,
   danger:
-    "inline-flex h-10 items-center justify-center gap-2 rounded-md border border-rose-200 bg-white px-4 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50",
+    `inline-flex h-10 items-center justify-center gap-2 rounded-md border border-rose-200 bg-white px-4 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`,
   small:
-    "inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 text-xs font-medium text-neutral-700 transition hover:border-sky-400 hover:text-sky-700 disabled:opacity-50",
-  icon: "inline-flex size-8 items-center justify-center rounded-md text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-800",
-  iconDanger: "inline-flex size-8 items-center justify-center rounded-md text-neutral-400 transition hover:bg-rose-50 hover:text-rose-600",
+    `inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 text-xs font-medium text-neutral-700 transition hover:border-sky-400 hover:text-sky-700 disabled:opacity-50 ${focusRing}`,
+  icon: `inline-flex size-8 items-center justify-center rounded-md text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-800 ${focusRing}`,
+  iconDanger: `inline-flex size-8 items-center justify-center rounded-md text-neutral-400 transition hover:bg-rose-50 hover:text-rose-600 ${focusRing}`,
 };
 
 export const inputClass =

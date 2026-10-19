@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -155,12 +155,28 @@ export function Modal({
   children: React.ReactNode;
   wide?: boolean;
 }) {
+  const panel = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  });
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close.current();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open]);
+
+  // Move keyboard focus into the dialog (unless a field asked for it) and give it back to the opener on close.
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement as HTMLElement | null;
+    if (!panel.current?.contains(document.activeElement)) panel.current?.focus();
+    return () => {
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [open]);
 
   if (!open) return null;
   return (
@@ -172,12 +188,15 @@ export function Modal({
     >
       <button
         aria-label="Close"
+        tabIndex={-1}
         className="absolute inset-0 bg-black/40"
         onClick={onClose}
       />
       <div
+        ref={panel}
+        tabIndex={-1}
         className={cn(
-          "relative max-h-[90vh] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl",
+          "relative max-h-[90vh] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl outline-none",
           wide ? "max-w-2xl" : "max-w-md"
         )}
       >
@@ -207,17 +226,27 @@ export function Drawer({
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  const panel = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  });
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close.current();
     window.addEventListener("keydown", onKey);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    // Same focus handling as Modal: move in on open, back to the opener on close.
+    const opener = document.activeElement as HTMLElement | null;
+    if (!panel.current?.contains(document.activeElement)) panel.current?.focus();
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = overflow;
+      if (opener?.isConnected) opener.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   return (
@@ -228,10 +257,11 @@ export function Drawer({
     >
       <button
         aria-label="Close"
+        tabIndex={-1}
         className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"
         onClick={onClose}
       />
-      <div className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-200">
+      <div ref={panel} tabIndex={-1} className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col bg-white shadow-2xl outline-none animate-in slide-in-from-right duration-200">
         <div className="flex items-start justify-between gap-3 border-b border-neutral-100 px-6 py-4">
           <div className="min-w-0">{title}</div>
           <button onClick={onClose} aria-label="Close" className={btn.ghost}>

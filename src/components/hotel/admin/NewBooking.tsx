@@ -94,7 +94,7 @@ function initialValues(
   params: URLSearchParams
 ): BookingFormValues {
   const today = todayKey();
-  // A room number from the Rooms board, or a kind of room (e.g. from the calendar) that gets the best free number.
+  // A specific room, or a kind of room that gets the best free number.
   const unit = db.units.find((u) => u.id === params.get("unit"));
   const type = db.roomTypes.find(
     (t) => t.id === (unit?.typeId ?? params.get("type"))

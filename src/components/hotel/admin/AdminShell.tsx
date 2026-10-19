@@ -7,14 +7,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import {
   Bell,
-  BedDouble,
-  CalendarRange,
   CheckCheck,
   ClipboardList,
   DoorOpen,
   ExternalLink,
   Image as ImageIcon,
-  LayoutDashboard,
   LayoutTemplate,
   LogOut,
   Menu,
@@ -57,10 +54,7 @@ const groups: { title: string; items: NavItem[] }[] = [
   {
     title: "Front office",
     items: [
-      { href: ADMIN, label: "Dashboard", icon: LayoutDashboard },
       { href: `${ADMIN}/bookings`, label: "Bookings", icon: ClipboardList, perm: "bookings.manage", badge: "pending" },
-      { href: `${ADMIN}/housekeeping`, label: "Rooms board", icon: BedDouble, perm: "rooms.housekeeping" },
-      { href: `${ADMIN}/calendar`, label: "Calendar", icon: CalendarRange, perm: "bookings.manage" },
       { href: `${ADMIN}/payments`, label: "Payments", icon: Wallet, perm: "payments.record", badge: "refunds" },
       { href: `${ADMIN}/users`, label: "Guests & staff", icon: Users, perm: "guests.view" },
     ],
@@ -84,7 +78,7 @@ const groups: { title: string; items: NavItem[] }[] = [
 ];
 
 const allItems = groups.flatMap((g) => g.items);
-const isActive = (href: string, path: string) => (href === ADMIN ? path === ADMIN : path === href || path.startsWith(`${href}/`));
+const isActive = (href: string, path: string) => path === href || path.startsWith(`${href}/`);
 
 /** A short two-note chime made on the fly, so there's no audio file to ship. */
 function chime() {
@@ -129,9 +123,11 @@ function useStaffAlerts(onOpen: (n: Notice) => void) {
       return;
     }
     const fresh = staffNotices.filter((n) => !seen.current!.has(n.id));
-    if (!fresh.length) return;
-    fresh.forEach((n) => {
-      seen.current!.add(n.id);
+    fresh.forEach((n) => seen.current!.add(n.id));
+    // Staff's own actions arrive already read: they belong in the activity feed, not in a pop-up.
+    const alerts = fresh.filter((n) => !n.read);
+    if (!alerts.length) return;
+    alerts.forEach((n) => {
       toast.info(
         <button type="button" onClick={() => open.current(n)} className="block text-left">
           <span className="block font-semibold">{n.title}</span>
@@ -249,7 +245,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   const sidebar = (
     <nav className="flex h-full flex-col">
-      <Link href={ADMIN} className="block px-5 pb-1 pt-5" onClick={() => setOpen(false)}>
+      <Link href={`${ADMIN}/bookings`} className="block px-5 pb-1 pt-5" onClick={() => setOpen(false)}>
         <Image src="/TripWaveLogo-light.webp" alt="TripWave" width={614} height={192} className="h-10 w-auto" />
       </Link>
       <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/50">Hotel admin</p>

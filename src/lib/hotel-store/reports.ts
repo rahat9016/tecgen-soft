@@ -1,5 +1,4 @@
-import { toDayKey } from "@/src/lib/hotelDates";
-import { stayNights } from "./format";
+import { hotelDayOf, stayNights } from "./format";
 import { effectiveCheckOut, isLive } from "./store";
 import type { Booking, HotelDB, Payment } from "./types";
 
@@ -23,12 +22,12 @@ export type LedgerRow = Payment & { booking: Booking; signed: number; day: strin
 export function ledger(db: HotelDB): LedgerRow[] {
   return db.bookings
     .flatMap((booking) =>
-      booking.payments.map((p) => ({ ...p, booking, signed: p.void ? 0 : p.kind === "refund" ? -p.amount : p.amount, day: toDayKey(new Date(p.at)) }))
+      booking.payments.map((p) => ({ ...p, booking, signed: p.void ? 0 : p.kind === "refund" ? -p.amount : p.amount, day: hotelDayOf(p.at) }))
     )
     .sort((a, b) => b.at.localeCompare(a.at));
 }
 
-/** Net cash in (payments − refunds) per day. */
+/** Net payments (payments − refunds) per hotel day. */
 export function collectedByDay(rows: LedgerRow[]) {
   const map = new Map<string, number>();
   rows.forEach((r) => map.set(r.day, (map.get(r.day) ?? 0) + r.signed));

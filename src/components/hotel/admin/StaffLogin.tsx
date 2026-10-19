@@ -82,7 +82,7 @@ export default function StaffLogin() {
   const params = useSearchParams();
   const raw = params.get("next");
   const next =
-    raw && raw.startsWith(ADMIN) && raw !== `${ADMIN}/login` ? raw : ADMIN;
+    raw && raw.startsWith(ADMIN) && raw !== `${ADMIN}/login` ? raw : `${ADMIN}/bookings`;
   const staff = useCurrentStaff();
   const methods = useForm<LoginValues>({
     resolver: yupResolver(schema),

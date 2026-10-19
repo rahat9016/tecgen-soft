@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Hotel, RoomType } from "@/src/data/hotels";
 import { discountLimit, hashPassword, isStaff } from "./auth";
-import { clockMinutes, nightsBetween, shiftDay, stayNights, todayKey } from "./format";
+import { clockMinutes, dateLabel, hotelDayOf, hotelInstant, nightsBetween, payLabels, shiftDay, sourceLabels, stayNights, todayKey } from "./format";
 import { createSeed, DB_VERSION, staticState } from "./seed";
 import type {
   Booking,
@@ -137,6 +137,12 @@ export function useHotelDB(): HotelDB {
   return useSyncExternalStore(subscribe, getState, () => staticState);
 }
 
+/** Re-reads the saved data, e.g. after an error or when someone asks for the latest. */
+export function refreshHotelDB() {
+  state = read() ?? load();
+  emit();
+}
+
 export function useSession(): Session {
   return useSyncExternalStore(subscribe, getSession, () => emptySession);
 }
@@ -240,8 +246,7 @@ export const discountRate = (subtotal: number, amount: number) => (subtotal > 0 
 
 /** When free cancellation ends, and what the hotel keeps if the booking is cancelled at `now`. */
 export function cancellationTerms(db: HotelDB, b: Booking, now = Date.now()) {
-  const [y, m, d] = b.checkIn.split("-").map(Number);
-  const arrival = new Date(y, m - 1, d, 0, clockMinutes(db.settings.checkInTime)).getTime();
+  const arrival = hotelInstant(b.checkIn, clockMinutes(db.settings.checkInTime));
   const freeUntil = arrival - db.settings.freeCancellationHours * 3600_000;
   const free = db.settings.freeCancellationHours > 0 && now < freeUntil;
   const paid = paidOf(b);
@@ -257,8 +262,7 @@ const holdsRooms = (b: Booking) => b.status === "pending" || b.status === "confi
 /** A guest who leaves early frees the room from the day they actually left. */
 export const effectiveCheckOut = (b: Booking) => {
   if (b.status !== "checked-out" || !b.checkedOutAt) return b.checkOut;
-  const d = new Date(b.checkedOutAt);
-  const left = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const left = hotelDayOf(b.checkedOutAt);
   return left < b.checkOut ? (left > b.checkIn ? left : shiftDay(b.checkIn, 1)) : b.checkOut;
 };
 
@@ -389,6 +393,9 @@ const guestNotice = (s: HotelDB, b: Booking, kind: NoticeKind, title: string, bo
   const user = s.users.find((u) => u.id === b.userId);
   return user?.passwordHash ? [notice(user.id, kind, title, body, b.id)] : [];
 };
+
+/** Something staff did themselves: kept in the activity feed, already read, so it never pops up as an alert. */
+const staffActivity = (kind: NoticeKind, title: string, body: string, bookingId?: string): Notice => ({ ...notice("staff", kind, title, body, bookingId), read: true });
 
 const withNotices = (s: HotelDB, ...list: Notice[]) => ({ ...s, notices: [...list, ...s.notices].slice(0, 300) });
 
@@ -872,6 +879,12 @@ function addStaffBooking(s: HotelDB, input: StaffBookingInput, groupId?: string)
     booking,
     state: withNotices(
       next,
+      staffActivity(
+        "booking",
+        `New booking · ${booking.code}`,
+        `${booking.guest.name} · ${type.name}${input.rooms > 1 ? ` ×${input.rooms}` : ""} · ${nights} night${nights > 1 ? "s" : ""} from ${dateLabel(input.checkIn, "d MMM")} · ${sourceLabels[input.source]}, taken by ${by}`,
+        booking.id
+      ),
       ...guestNotice(next, booking, "booking", `Booking confirmed · ${booking.code}`, `${type.name}, ${nights} night${nights > 1 ? "s" : ""} from ${input.checkIn}.`)
     ),
   };
@@ -999,9 +1012,9 @@ export function cancelBooking(id: string, opts: { reason: string; fee?: number; 
     (b, s) => {
       const refund = creditOf(b);
       return [
-        ...(opts.byGuest
-          ? [notice("staff", "cancel", `Cancelled by guest · ${b.code}`, `${b.guest.name} cancelled ${b.roomName} (${b.checkIn}).${refund ? ` Refund due: ${money(refund)}.` : ""}`, b.id)]
-          : []),
+        opts.byGuest
+          ? notice("staff", "cancel", `Cancelled by guest · ${b.code}`, `${b.guest.name} cancelled ${b.roomName} (${b.checkIn}).${refund ? ` Refund due: ${money(refund)}.` : ""}`, b.id)
+          : staffActivity("cancel", `Booking cancelled · ${b.code}`, `${b.guest.name} · ${b.roomName}, ${dateLabel(b.checkIn, "d MMM")} — ${b.cancelReason}.${refund ? ` Refund due: ${money(refund)}.` : ""}`, b.id),
         ...guestNotice(s, b, "cancel", `Booking cancelled · ${b.code}`, refund ? `A refund of ${money(refund)} will be sent to your original payment method.` : "No payment was due back for this booking."),
       ];
     }
@@ -1110,13 +1123,16 @@ export function addPayment(id: string, input: PaymentInput) {
     },
     (b, s) => {
       const p = b.payments[b.payments.length - 1];
-      return guestNotice(
-        s,
-        b,
-        "payment",
-        p.kind === "refund" ? `Refund sent · ${b.code}` : `Payment received · ${b.code}`,
-        p.kind === "refund" ? `${money(p.amount)} has been refunded to your ${p.method} account.` : `Thank you — ${money(p.amount)} received by ${p.method}. Balance: ${money(dueOf(b))}.`
-      );
+      return [
+        ...(p.kind === "refund" ? [] : [staffActivity("payment", `Payment received · ${b.code}`, `${money(p.amount)} via ${payLabels[p.method]} from ${b.guest.name}`, b.id)]),
+        ...guestNotice(
+          s,
+          b,
+          "payment",
+          p.kind === "refund" ? `Refund sent · ${b.code}` : `Payment received · ${b.code}`,
+          p.kind === "refund" ? `${money(p.amount)} has been refunded to your ${p.method} account.` : `Thank you — ${money(p.amount)} received by ${p.method}. Balance: ${money(dueOf(b))}.`
+        ),
+      ];
     }
   );
 }

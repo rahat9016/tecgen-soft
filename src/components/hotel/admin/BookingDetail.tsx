@@ -11,27 +11,34 @@ import {
   Ban,
   BedDouble,
   CalendarCog,
+  CalendarPlus,
+  Check,
   Clock3,
   Globe2,
   IdCard,
   LogIn,
   LogOut,
   Mail,
+  Moon,
   Phone,
   Plane,
   Plus,
   Printer,
   Receipt,
+  Repeat,
   SearchX,
   StickyNote,
+  Tag,
   Trash2,
   Undo2,
   UserRound,
+  Users,
   UserX,
   Wallet,
 } from "lucide-react";
 import { can } from "@/src/lib/hotel-store/auth";
-import { chargeLabels, dateLabel, formatDateTime, payLabels, paymentKindLabels, sourceLabels, taka, todayKey } from "@/src/lib/hotel-store/format";
+import { chargeLabels, dateLabel, formatDateTime, hotelDayOf, hotelTime, payLabels, paymentKindLabels, sourceLabels, taka, todayKey } from "@/src/lib/hotel-store/format";
+import { checkInBlockers, isArrival } from "@/src/lib/hotel-store/frontDesk";
 import {
   cancellationTerms,
   confirmBooking,
@@ -42,6 +49,7 @@ import {
   isLive,
   markNoShow,
   paidOf,
+  refundedOf,
   removeCharge,
   setInternalNote,
   unitNumbers,
@@ -49,21 +57,28 @@ import {
   useHotelDB,
   voidPayment,
 } from "@/src/lib/hotel-store/store";
-import type { PaymentKind } from "@/src/lib/hotel-store/types";
+import type { Booking, HotelDB, PaymentKind } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
 import PrintableInvoice, { invoiceNumber, printWithTitle } from "@/src/components/hotel/Booking/PrintableInvoice";
-import { CancelModal, ChangeStayModal, ChargeModal, CheckoutModal, GuestModal, PaymentModal, RoomsModal } from "./BookingModals";
+import { CancelModal, ChangeStayModal, ChargeModal, CheckInModal, CheckoutModal, GuestModal, PaymentModal, RoomsModal } from "./BookingModals";
 import ExtendStayModal from "./ExtendStayModal";
 import { ADMIN, Card, Empty, hbtn, PayBadge, StatusBadge, textareaClass } from "./ui";
 
 export default function BookingDetail({ id }: { id: string }) {
   const db = useHotelDB();
   const staff = useCurrentStaff();
-  // The bookings list links here with ?do=… to open the matching dialog straight away.
-  const action = useSearchParams().get("do");
+  // The bookings list links here with ?do=… to open the matching dialog straight away, and ?from=… to come back to.
+  const params = useSearchParams();
+  const action = params.get("do");
+  const from = params.get("from");
+  const back = from?.startsWith(`${ADMIN}/`) ? from : `${ADMIN}/bookings`;
   const [payKind, setPayKind] = useState<PaymentKind | null>(action === "pay" ? "payment" : null);
-  const [rooms, setRooms] = useState<"assign" | "checkin" | null>(action === "checkin" ? "checkin" : null);
-  const [modal, setModal] = useState<"charge" | "stay" | "cancel" | "checkout" | "guest" | null>(action === "checkout" ? "checkout" : null);
+  const [rooms, setRooms] = useState<"assign" | null>(null);
+  // Assigning a room from the check-in checklist brings the checklist back afterwards.
+  const [resumeCheckIn, setResumeCheckIn] = useState(false);
+  const [modal, setModal] = useState<"charge" | "stay" | "extend" | "cancel" | "checkout" | "checkin" | "guest" | null>(
+    action === "checkout" ? "checkout" : action === "checkin" ? "checkin" : null
+  );
   const b = db.bookings.find((x) => x.id === id) ?? db.bookings.find((x) => x.code === id);
   const [note, setNote] = useState<string | null>(null);
 
@@ -95,7 +110,7 @@ export default function BookingDetail({ id }: { id: string }) {
   const canRefund = can(role, "payments.refund");
   const canVoid = can(role, "payments.void");
 
-  const startCheckIn = () => setRooms("checkin");
+  const startCheckIn = () => setModal("checkin");
 
   const actions = (
     <div className="flex flex-wrap gap-2">
@@ -136,6 +151,16 @@ export default function BookingDetail({ id }: { id: string }) {
           <CalendarCog className="size-4" /> {b.status === "checked-in" ? "Extend stay" : "Change stay"}
         </button>
       )}
+      {upcoming && (
+        <button onClick={() => setModal("extend")} className={hbtn.outline}>
+          <CalendarPlus className="size-4" /> Extend stay
+        </button>
+      )}
+      {(upcoming || b.status === "checked-in") && (
+        <button onClick={() => setRooms("assign")} className={hbtn.outline}>
+          <Repeat className="size-4" /> {unitList.length ? "Change room" : "Assign room"}
+        </button>
+      )}
       <button onClick={() => printWithTitle(`${invoiceNumber(b.code)} - ${db.content.hotel.name}`)} className={hbtn.outline}>
         <Printer className="size-4" /> {b.status === "checked-in" ? "Interim bill" : "Invoice"}
       </button>
@@ -160,7 +185,64 @@ export default function BookingDetail({ id }: { id: string }) {
     </div>
   );
 
-  const guestRows = [
+  const at = (iso: string) => `${dateLabel(hotelDayOf(iso), "dd MMM")}, ${hotelTime(iso)}`;
+  const missing = b.rooms - unitList.length;
+  const stayRows: InfoRow[] = [
+    {
+      icon: BedDouble,
+      label: b.rooms > 1 ? "Rooms" : "Room",
+      value: (
+        <>
+          {unitList.length > 0 && <b className="text-base text-neutral-900">{unitList.join(", ")}</b>}
+          <span className="text-neutral-600">
+            {unitList.length ? " · " : ""}
+            {b.roomName}
+            {b.rooms > 1 ? ` ×${b.rooms}` : ""}
+          </span>
+          {missing > 0 && <span className="block text-xs font-medium text-rose-700">{missing === b.rooms ? "Not assigned yet" : `${missing} not assigned yet`}</span>}
+        </>
+      ),
+    },
+    {
+      icon: LogIn,
+      label: "Check-in",
+      value: (
+        <>
+          {dateLabel(b.checkIn, "EEE, dd MMM yyyy")}
+          <span className="block text-xs font-normal text-neutral-500">{b.checkedInAt ? `Arrived ${at(b.checkedInAt)}` : `From ${db.settings.checkInTime}`}</span>
+        </>
+      ),
+    },
+    {
+      icon: LogOut,
+      label: "Check-out",
+      value: (
+        <>
+          {dateLabel(b.checkOut, "EEE, dd MMM yyyy")}
+          <span className="block text-xs font-normal text-neutral-500">{b.checkedOutAt ? `Left ${at(b.checkedOutAt)}` : `Until ${db.settings.checkOutTime}`}</span>
+        </>
+      ),
+    },
+    { icon: Moon, label: "Nights", value: `${b.nights} night${b.nights > 1 ? "s" : ""}` },
+    { icon: Users, label: "Guests", value: `${b.adults} adult${b.adults > 1 ? "s" : ""}${b.children ? `, ${b.children} child${b.children > 1 ? "ren" : ""}` : ""}` },
+    { icon: Tag, label: "Rate", value: `${taka(b.pricePerNight)} / night` },
+    ...(b.guest.note
+      ? [
+          {
+            icon: StickyNote,
+            label: "Request",
+            value: (
+              <>
+                {b.guest.note}
+                <span className="block text-xs font-normal text-neutral-500">Guest request — not guaranteed</span>
+              </>
+            ),
+          },
+        ]
+      : []),
+  ];
+
+  const guestRows: InfoRow[] = [
     { icon: Phone, label: "Phone", value: b.guest.phone, href: `tel:${b.guest.phone.replace(/\s/g, "")}` },
     { icon: Mail, label: "Email", value: b.guest.email || "—", href: b.guest.email ? `mailto:${b.guest.email}` : undefined },
     { icon: Globe2, label: "Country", value: b.guest.country || "—" },
@@ -174,7 +256,10 @@ export default function BookingDetail({ id }: { id: string }) {
       <PrintableInvoice booking={b} db={db} />
       <div className="space-y-6 print:hidden">
         <div>
-          <Link href={`${ADMIN}/bookings`} className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-sky-700">
+          <Link
+            href={back}
+            className="inline-flex items-center gap-1 rounded-sm text-sm text-neutral-600 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+          >
             <ArrowLeft className="size-4" /> Bookings
           </Link>
           <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
@@ -213,6 +298,7 @@ export default function BookingDetail({ id }: { id: string }) {
             </div>
             {actions}
           </div>
+          <ProcessSteps db={db} b={b} />
         </div>
 
         <div className="grid items-start gap-6 xl:grid-cols-[1fr_360px]">
@@ -229,48 +315,7 @@ export default function BookingDetail({ id }: { id: string }) {
                     </button>
                   )}
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {Array.from({ length: b.rooms }, (_, i) => (
-                    <span
-                      key={i}
-                      className={cn(
-                        "flex h-16 min-w-20 flex-col items-center justify-center rounded-md px-3",
-                        unitList[i] ? (b.status === "checked-in" ? "bg-emerald-50 text-emerald-800" : "bg-sky-50 text-sky-800") : "border border-dashed border-amber-300 bg-amber-50/50 text-amber-700"
-                      )}
-                    >
-                      <span className="text-xl font-bold">{unitList[i] ?? "—"}</span>
-                      <span className="text-[10px] font-medium uppercase tracking-wide">{unitList[i] ? "Room" : "Unassigned"}</span>
-                    </span>
-                  ))}
-                </div>
-                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <dt className="text-xs text-neutral-500">Check-in</dt>
-                    <dd className="font-medium text-neutral-900">{dateLabel(b.checkIn, "EEE, dd MMM yyyy")}</dd>
-                    <dd className="text-xs text-neutral-500">{b.checkedInAt ? `Arrived ${format(new Date(b.checkedInAt), "dd MMM, h:mm a")}` : `From ${db.settings.checkInTime}`}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-neutral-500">Check-out</dt>
-                    <dd className="font-medium text-neutral-900">{dateLabel(b.checkOut, "EEE, dd MMM yyyy")}</dd>
-                    <dd className="text-xs text-neutral-500">{b.checkedOutAt ? `Left ${format(new Date(b.checkedOutAt), "dd MMM, h:mm a")}` : `Until ${db.settings.checkOutTime}`}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-neutral-500">Guests</dt>
-                    <dd className="font-medium text-neutral-900">
-                      {b.adults} adult{b.adults > 1 ? "s" : ""}
-                      {b.children ? `, ${b.children} child${b.children > 1 ? "ren" : ""}` : ""}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-neutral-500">Rate</dt>
-                    <dd className="font-medium text-neutral-900">{taka(b.pricePerNight)} / night</dd>
-                  </div>
-                </dl>
-                {b.guest.note && (
-                  <p className="mt-4 flex gap-2 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
-                    <StickyNote className="mt-0.5 size-4 shrink-0" /> {b.guest.note}
-                  </p>
-                )}
+                <InfoTable rows={stayRows} />
                 {b.status === "checked-in" && b.checkOut < today && (
                   <p className="mt-3 rounded-md bg-rose-50 p-3 text-sm text-rose-700">Past check-out date — extend the stay or check the guest out.</p>
                 )}
@@ -285,27 +330,13 @@ export default function BookingDetail({ id }: { id: string }) {
                     Edit
                   </button>
                 </div>
-                <ul className="mt-4 space-y-2.5 text-sm">
-                  {guestRows.map(({ icon: Icon, label, value, href }) => (
-                    <li key={label} className="flex items-start gap-2.5">
-                      <Icon className="mt-0.5 size-4 shrink-0 text-neutral-400" />
-                      <span className="w-24 shrink-0 text-neutral-500">{label}</span>
-                      {href ? (
-                        <a href={href} className="min-w-0 break-words font-medium text-sky-700 hover:underline">
-                          {value}
-                        </a>
-                      ) : (
-                        <span className="min-w-0 break-words font-medium text-neutral-900">{value}</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                <InfoTable rows={guestRows} />
                 {user && (
                   <div className="mt-4 rounded-md bg-neutral-50 p-3 text-xs text-neutral-600">
                     <p>
                       {user.passwordHash ? "Registered guest account" : "Guest profile (no login)"} · {otherStays.length} other booking{otherStays.length === 1 ? "" : "s"}
                     </p>
-                    {user.note && <p className="mt-1 font-medium text-amber-800">Note: {user.note}</p>}
+                    {user.note && <p className="mt-1 font-medium text-neutral-800">Note: {user.note}</p>}
                     <Link href={`${ADMIN}/users?guest=${user.id}`} className="mt-1 inline-block font-semibold text-sky-700 hover:underline">
                       Open guest profile
                     </Link>
@@ -472,8 +503,14 @@ export default function BookingDetail({ id }: { id: string }) {
                   </div>
                 )}
               </dl>
+              <PaymentState b={b} />
+              {live && due > 0 && (
+                <button onClick={() => setPayKind("payment")} className={cn(hbtn.primary, "mt-4 h-11 w-full text-base")}>
+                  <Wallet className="size-4" /> Collect payment
+                </button>
+              )}
               {upcoming && (
-                <p className={cn("mt-4 rounded-md p-3 text-xs", terms.free ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800")}>
+                <p className={cn("mt-4 rounded-md p-3 text-xs", terms.free ? "bg-emerald-50 text-emerald-800" : "bg-neutral-100 text-neutral-700")}>
                   {terms.free ? `Free cancellation until ${format(new Date(terms.freeUntil), "dd MMM, h:mm a")}.` : `Late cancellation — policy keeps ${taka(terms.fee)}.`}
                 </p>
               )}
@@ -516,8 +553,32 @@ export default function BookingDetail({ id }: { id: string }) {
       </div>
 
       {payKind && <PaymentModal booking={b} kind={payKind} onClose={() => setPayKind(null)} />}
-      {rooms && <RoomsModal booking={b} mode={rooms} onClose={() => setRooms(null)} />}
+      {rooms && (
+        <RoomsModal
+          booking={b}
+          mode={rooms}
+          onClose={() => {
+            setRooms(null);
+            if (resumeCheckIn) {
+              setResumeCheckIn(false);
+              setModal("checkin");
+            }
+          }}
+        />
+      )}
+      {modal === "checkin" && (
+        <CheckInModal
+          booking={b}
+          onClose={() => setModal(null)}
+          onAssign={() => {
+            setModal(null);
+            setResumeCheckIn(true);
+            setRooms("assign");
+          }}
+        />
+      )}
       {modal === "charge" && <ChargeModal booking={b} open onClose={() => setModal(null)} />}
+      {modal === "extend" && <ExtendStayModal booking={b} onClose={() => setModal(null)} />}
       {modal === "stay" &&
         (b.status === "checked-in" ? <ExtendStayModal booking={b} onClose={() => setModal(null)} /> : <ChangeStayModal booking={b} open onClose={() => setModal(null)} />)}
       {modal === "cancel" && <CancelModal booking={b} open onClose={() => setModal(null)} />}
@@ -534,5 +595,166 @@ export default function BookingDetail({ id }: { id: string }) {
         />
       )}
     </>
+  );
+}
+
+/** Paid or not, said plainly, with the latest payment that went through. */
+function PaymentState({ b }: { b: Booking }) {
+  if (!isLive(b)) return null;
+  const due = dueOf(b);
+  const credit = creditOf(b);
+  const received = paidOf(b) + refundedOf(b);
+  const last = b.payments.filter((p) => !p.void && p.kind !== "refund").sort((x, y) => x.at.localeCompare(y.at)).at(-1);
+  const state =
+    credit > 0
+      ? { label: "Refund due", tone: "bg-violet-50 text-violet-700 ring-violet-200" }
+      : due === 0
+        ? { label: "Paid in full", tone: "bg-emerald-50 text-emerald-700 ring-emerald-200" }
+        : received > 0
+          ? { label: "Partially paid", tone: "bg-sky-50 text-sky-700 ring-sky-200" }
+          : { label: "Not paid yet", tone: "bg-neutral-100 text-neutral-700 ring-neutral-300" };
+  return (
+    <div className="mt-4 border-t border-neutral-100 pt-3">
+      <span className={cn("inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset", state.tone)}>{state.label}</span>
+      <p className="mt-2 text-xs text-neutral-500">
+        {last ? (
+          <>
+            Last payment <b className="font-semibold text-neutral-700">{taka(last.amount)}</b> · {payLabels[last.method]} · {formatDateTime(last.at)}
+          </>
+        ) : (
+          "No payment received yet."
+        )}
+      </p>
+    </div>
+  );
+}
+
+type StepState = "done" | "part" | "now" | "warn" | "todo";
+
+const stepDot: Record<StepState, string> = {
+  done: "bg-emerald-600 text-white",
+  part: "bg-sky-100 text-sky-700 ring-2 ring-sky-500",
+  now: "bg-sky-600 text-white ring-4 ring-sky-100",
+  warn: "bg-rose-50 text-rose-700 ring-2 ring-rose-400",
+  todo: "bg-neutral-100 text-neutral-500",
+};
+
+/** Where the booking is in the front-desk process — booked, paid, checked in, checked out — and the next thing to do. */
+function ProcessSteps({ db, b }: { db: HotelDB; b: Booking }) {
+  const today = todayKey();
+  const { checkInTime, checkOutTime } = db.settings;
+  const due = dueOf(b);
+  const credit = creditOf(b);
+  const paid = paidOf(b);
+
+  if (b.status === "cancelled" || b.status === "no-show")
+    return (
+      <p className="mt-4 rounded-md border border-neutral-200 bg-white p-3 text-sm text-neutral-700">
+        <b>{b.status === "cancelled" ? "Cancelled" : "No-show"}</b>
+        {b.cancelReason ? ` — ${b.cancelReason}.` : "."}
+        {credit > 0 ? ` Refund due: ${taka(credit)}.` : ""}
+      </p>
+    );
+
+  const inHouse = b.status === "checked-in";
+  const out = b.status === "checked-out";
+  const arriving = isArrival(b, today);
+  const blockers = arriving ? checkInBlockers(db, b) : [];
+  const time = (iso: string) => `${dateLabel(hotelDayOf(iso), "dd MMM")}, ${hotelTime(iso)}`;
+
+  const steps: { label: string; state: StepState; detail: string }[] = [
+    {
+      label: "Booked",
+      state: b.status === "pending" ? "now" : "done",
+      detail: b.status === "pending" ? "Waiting for confirmation" : `${sourceLabels[b.source]} · ${dateLabel(hotelDayOf(b.createdAt), "dd MMM")}`,
+    },
+    {
+      label: "Payment",
+      state: due === 0 ? "done" : paid > 0 ? "part" : "todo",
+      detail: credit > 0 ? `Refund due ${taka(credit)}` : due === 0 ? "Paid in full" : paid > 0 ? `${taka(paid)} paid · ${taka(due)} due` : `Not paid · ${taka(due)} due`,
+    },
+    {
+      label: "Check-in",
+      state: inHouse || out ? "done" : arriving ? (blockers.length ? "warn" : "now") : "todo",
+      detail: b.checkedInAt ? `Arrived ${time(b.checkedInAt)}` : arriving ? (blockers.length ? blockers[0].text : "Room ready — check in now") : `${dateLabel(b.checkIn, "EEE dd MMM")} from ${checkInTime}`,
+    },
+    {
+      label: "Check-out",
+      state: out ? "done" : inHouse ? (b.checkOut < today ? "warn" : "now") : "todo",
+      detail: b.checkedOutAt ? `Left ${time(b.checkedOutAt)}` : `${dateLabel(b.checkOut, "EEE dd MMM")} by ${checkOutTime}`,
+    },
+  ];
+
+  const next =
+    b.status === "pending"
+      ? "Confirm the booking."
+      : out
+        ? due > 0
+          ? `Collect the ${taka(due)} still owed.`
+          : "Stay complete."
+        : inHouse
+          ? b.checkOut < today
+            ? "Past the check-out date — extend the stay or check the guest out."
+            : due > 0
+              ? `Collect ${taka(due)} before check-out on ${dateLabel(b.checkOut, "EEE dd MMM")}.`
+              : `Check out on ${dateLabel(b.checkOut, "EEE dd MMM")} by ${checkOutTime}.`
+          : arriving
+            ? blockers.length
+              ? `Sort this out before check-in: ${blockers.map((k) => k.text).join(" ")}`
+              : `Check the guest in${due > 0 ? ` — ${taka(due)} can be collected now or at check-out` : ""}.`
+            : due > 0
+              ? `Collect ${taka(due)} now, or at check-in on ${dateLabel(b.checkIn, "EEE dd MMM")}.`
+              : `Guest arrives ${dateLabel(b.checkIn, "EEE dd MMM")} — nothing to do until then.`;
+
+  return (
+    <div className="mt-4 rounded-md border border-neutral-200 bg-white p-4">
+      <ol className="grid gap-4 sm:grid-cols-4">
+        {steps.map((st, i) => (
+          <li key={st.label} className="flex items-start gap-3">
+            <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold", stepDot[st.state])}>
+              {st.state === "done" ? <Check className="size-4" aria-label="Done" /> : i + 1}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-neutral-900">{st.label}</span>
+              <span className={cn("block text-xs", st.state === "warn" ? "text-rose-700" : "text-neutral-500")}>{st.detail}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p className={cn("mt-4 rounded-md px-3 py-2 text-sm", blockers.length || (inHouse && b.checkOut < today) ? "bg-rose-50 text-rose-800" : "bg-sky-50 text-sky-900")}>
+        <b>Next:</b> {next}
+      </p>
+    </div>
+  );
+}
+
+type InfoRow = { icon: React.ComponentType<{ className?: string }>; label: string; value: React.ReactNode; href?: string };
+
+/** Label | value rows with dividers — the same table look for the stay and the guest. */
+function InfoTable({ rows }: { rows: InfoRow[] }) {
+  return (
+    <table className="mt-4 w-full table-fixed text-sm">
+      <tbody className="divide-y divide-neutral-100 border-y border-neutral-100">
+        {rows.map(({ icon: Icon, label, value, href }) => (
+          <tr key={label} className="align-top">
+            <th scope="row" className="w-36 whitespace-nowrap py-2.5 pr-3 text-left font-normal text-neutral-500">
+              <span className="inline-flex items-center gap-2">
+                <Icon className="size-4 shrink-0 text-neutral-400" />
+                {label}
+              </span>
+            </th>
+            <td className="py-2.5 font-medium text-neutral-900 wrap-break-word">
+              {href ? (
+                <a href={href} className="text-sky-700 hover:underline">
+                  {value}
+                </a>
+              ) : (
+                value
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }

@@ -1,5 +1,5 @@
 import { hashPassword } from "./auth";
-import { nightsBetween, shiftDay, stayNights, todayKey } from "./format";
+import { dateLabel, hotelInstant, hotelMinutesOf, nightsBetween, payLabels, shiftDay, stayNights, todayKey } from "./format";
 import type {
   Booking,
   BookingSource,
@@ -20,7 +20,7 @@ import type {
 } from "./types";
 
 /** Bump to reset every visitor's demo data on their next page load. */
-export const DB_VERSION = 1;
+export const DB_VERSION = 5;
 
 const photo = (id: string, width = 1200) => `https://images.unsplash.com/photo-${id}?w=${width}&q=80&auto=format&fit=crop`;
 
@@ -324,11 +324,8 @@ const GUESTS: [string, string][] = [
 
 const emailOf = (name: string) => `${name.toLowerCase().replace(/[^a-z]+/g, ".").replace(/(^\.|\.$)/g, "")}@example.com`;
 
-/** Epoch-safe ISO string for a local day + time. */
-const at = (day: string, hour: number, minute = 0) => {
-  const [y, m, d] = day.split("-").map(Number);
-  return new Date(y, m - 1, d, hour, minute).toISOString();
-};
+/** ISO string for a day + time on the hotel's clock (Asia/Dhaka), whatever the browser's time zone. */
+const at = (day: string, hour: number, minute = 0) => new Date(hotelInstant(day, hour * 60 + minute)).toISOString();
 
 const txnRef = (method: PayMethod, rand: () => number) => {
   const code = Array.from({ length: 10 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789"[Math.floor(rand() * 34)]).join("");
@@ -362,8 +359,16 @@ export function createSeed(): HotelDB {
   const s = defaultSettings;
   const today = todayKey();
   const nowMs = Date.now();
-  const nowIso = new Date(nowMs).toISOString();
-  const clampPast = (iso: string) => (new Date(iso).getTime() > nowMs ? nowIso : iso);
+  /** A time that would still be in the future happened a little while ago instead (never "just now"), but not before `floor`. */
+  const pastOr = (iso: string, floor: string) => {
+    if (new Date(iso).getTime() <= nowMs) return iso;
+    const t = Math.max(new Date(floor).getTime(), nowMs - (5 + Math.floor(rand() * 90)) * 60_000);
+    return new Date(Math.min(t, nowMs - 60_000)).toISOString();
+  };
+  // How far through today's arrivals and departures the desk is, judged by the hotel's clock.
+  const nowMin = hotelMinutesOf(nowMs);
+  const arrivedShare = nowMin < 13 * 60 ? 0.1 : nowMin < 17 * 60 ? 0.4 : nowMin < 21 * 60 ? 0.7 : 0.85;
+  const leftShare = nowMin < 9 * 60 ? 0.1 : nowMin < 12 * 60 ? 0.5 : 0.9;
 
   const busy = new Map<string, Set<string>>(seedUnits.map((u) => [u.id, new Set()]));
   const isFree = (unitId: string, nights: string[]) => nights.every((n) => !busy.get(unitId)!.has(n));
@@ -483,7 +488,7 @@ export function createSeed(): HotelDB {
 
     if (opts.status !== "pending" && opts.source !== "website" && opts.source !== "walk-in") log.push({ at: createdAt, text: "Confirmed", by: staff });
     if (opts.status === "checked-in" || opts.status === "checked-out") {
-      const inAt = clampPast(at(opts.checkIn, 14 + Math.floor(rand() * 6), Math.floor(rand() * 60)));
+      const inAt = pastOr(at(opts.checkIn, 14 + Math.floor(rand() * 6), Math.floor(rand() * 60)), at(opts.checkIn, 12));
       booking.checkedInAt = inAt;
       log.push({ at: inAt, text: `Checked in to room ${opts.unitIds.map((id) => id.slice(1)).join(", ")}`, by: staff });
       if (opts.source === "walk-in" || rand() < 0.3) {
@@ -494,32 +499,35 @@ export function createSeed(): HotelDB {
       stayNights(opts.checkIn, opts.checkOut).forEach((night) => {
         if (night > today || rand() > 0.35) return;
         const [category, description, amount] = pick(chargeMenu);
-        const when = clampPast(at(night, 19 + Math.floor(rand() * 3), Math.floor(rand() * 60)));
+        const when = pastOr(at(night, 19 + Math.floor(rand() * 3), Math.floor(rand() * 60)), at(night, 12));
         charges.push({ id: `c${bookings.length}-${charges.length}`, category, description, amount, at: when, by: staff });
       });
     }
     if (opts.status === "checked-out") {
-      const outAt = clampPast(at(opts.checkOut, 10 + Math.floor(rand() * 2), Math.floor(rand() * 60)));
+      const outAt = pastOr(at(opts.checkOut, 10 + Math.floor(rand() * 2), Math.floor(rand() * 60)), at(opts.checkOut, 7));
       pay(folio() - paidSoFar(), pick<PayMethod>(["cash", "card", "card", "bkash", "nagad"]), "payment", outAt, staff);
       booking.checkedOutAt = outAt;
       log.push({ at: outAt, text: "Checked out", by: staff });
     }
     if (opts.status === "cancelled") {
-      const earliest = new Date(createdAt).getTime() + 3 * 3600_000;
-      const cancelAt = clampPast(new Date(Math.max(earliest, new Date(at(shiftDay(opts.checkIn, -Math.floor(1 + rand() * 6)), 11)).getTime())).toISOString());
+      // A few days before the stay, never in the future, and some hours after the booking was made.
+      const made = new Date(createdAt).getTime();
+      const planned = new Date(at(shiftDay(opts.checkIn, -Math.floor(1 + rand() * 6)), 11)).getTime();
+      const latest = nowMs - Math.floor(1 + rand() * 40) * 3600_000;
+      const cancelAt = new Date(Math.max(Math.min(planned, latest), Math.min(made + 3 * 3600_000, nowMs - 20 * 60_000), made + 60_000)).toISOString();
       const paid = paidSoFar();
       const late = rand() < 0.3;
       booking.cancellationFee = late ? Math.min(paid, Math.ceil((q.total * s.lateCancellationFeeRate) / 100)) : 0;
       booking.cancelReason = pick(["Change of travel plans", "Family emergency", "Found a different date", "Flight cancelled"]);
       log.push({ at: cancelAt, text: `Cancelled — ${booking.cancelReason}`, by: pick(["Guest", staff]) });
       // Most refunds are already processed; a couple are left for the demo's "Refunds due" queue.
-      if (paid - booking.cancellationFee > 0 && rand() < 0.8) pay(paid - booking.cancellationFee, payments[0]?.method ?? "bkash", "refund", clampPast(new Date(new Date(cancelAt).getTime() + 20 * 3600_000).toISOString()), "Rashed Karim");
+      if (paid - booking.cancellationFee > 0 && rand() < 0.8) pay(paid - booking.cancellationFee, payments[0]?.method ?? "bkash", "refund", new Date(Math.max(new Date(cancelAt).getTime() + 60_000, Math.min(new Date(cancelAt).getTime() + 20 * 3600_000, nowMs - 10 * 60_000))).toISOString(), "Rashed Karim");
       booking.updatedAt = cancelAt;
     }
     if (opts.status === "no-show") {
       booking.cancellationFee = Math.min(paidSoFar(), Math.ceil((q.total * s.lateCancellationFeeRate) / 100));
       booking.cancelReason = "Guest did not arrive";
-      log.push({ at: clampPast(at(shiftDay(opts.checkIn, 1), 9)), text: "Marked as no-show", by: staff });
+      log.push({ at: pastOr(at(shiftDay(opts.checkIn, 1), 9), at(shiftDay(opts.checkIn, 1), 0)), text: "Marked as no-show", by: staff });
     }
     booking.updatedAt = log[log.length - 1].at;
     bookings.push(booking);
@@ -556,14 +564,18 @@ export function createSeed(): HotelDB {
         cursor = shiftDay(cursor, 1);
         continue;
       }
-      const ended = checkOut < today || (checkOut === today && rand() < 0.45);
+      const ended = checkOut < today || (checkOut === today && rand() < leftShare);
       const started = checkIn <= today;
-      const [name, country] = pick(GUESTS);
-      const source: BookingSource = started && rand() < 0.18 ? "walk-in" : pick(["website", "website", "website", "website", "phone", "phone", "agent"]);
+      // One stay at a time per guest, so the same name doesn't turn up in two rooms on the same night.
+      let [name, country] = pick(GUESTS);
+      for (let tries = 0; tries < 8 && bookings.some((b) => b.guest.name === name && b.checkIn < checkOut && checkIn < b.checkOut); tries++) [name, country] = pick(GUESTS);
+      // Walk-ins for today only once the afternoon check-ins have begun.
+      const walkInOk = checkIn < today || (checkIn === today && nowMin >= 13 * 60);
+      const source: BookingSource = started && walkInOk && rand() < 0.18 ? "walk-in" : pick(["website", "website", "website", "website", "phone", "phone", "agent"]);
       let status: BookingStatus;
       if (source !== "walk-in" && rand() < 0.07) status = "cancelled";
       else if (ended) status = checkIn < today && source !== "walk-in" && rand() < 0.04 ? "no-show" : "checked-out";
-      else if (started) status = checkIn === today && source !== "walk-in" && rand() < 0.5 ? "confirmed" : "checked-in";
+      else if (started) status = checkIn === today && source !== "walk-in" && rand() >= arrivedShare ? "confirmed" : "checked-in";
       // Phone and agent bookings stay tentative until the guest sends a deposit.
       else status = source !== "website" && ahead < 10 && rand() < 0.35 ? "pending" : "confirmed";
 
@@ -585,6 +597,10 @@ export function createSeed(): HotelDB {
   let seq = 10240;
   bookings.forEach((b) => (b.code = `TW-${++seq}`));
 
+  // One of today's phone or agent arrivals hasn't been given a room yet, as often happens with late bookings.
+  const roomless = bookings.filter((b) => b.status === "confirmed" && b.checkIn === today && b.rooms === 1 && b.source !== "website").at(-1);
+  if (roomless) roomless.unitIds = [];
+
   // Rooms vacated today need cleaning; a few occupied rooms are waiting for their daily service.
   const units = seedUnits.map((u) => {
     const leftToday = bookings.some((b) => b.status === "checked-out" && b.checkOut === today && b.unitIds.includes(u.id));
@@ -597,24 +613,40 @@ export function createSeed(): HotelDB {
   const recent = nowMs - 3 * 86_400_000;
   bookings.forEach((b) => {
     const made = new Date(b.createdAt).getTime();
-    if (made > recent && b.source === "website") {
+    const online = b.source === "website";
+    if (made > recent) {
       const paid = b.payments.find((p) => p.kind !== "refund");
       notices.push({
         id: `n${notices.length + 1}`,
         to: "staff",
         kind: "booking",
-        title: b.status === "pending" ? `New booking to confirm · ${b.code}` : `New booking · ${b.code}`,
-        body: `${b.guest.name} · ${b.roomName} · ${b.nights} night${b.nights > 1 ? "s" : ""} from ${b.checkIn}${paid ? ` · ৳${paid.amount.toLocaleString("en-IN")} paid` : ""}`,
+        title: b.status === "pending" && online ? `New booking to confirm · ${b.code}` : `New booking · ${b.code}`,
+        body: `${b.guest.name} · ${b.roomName} · ${b.nights} night${b.nights > 1 ? "s" : ""} from ${dateLabel(b.checkIn, "d MMM")}${online ? (paid ? ` · ৳${paid.amount.toLocaleString("en-IN")} paid` : "") : ` · ${b.source === "walk-in" ? "Walk-in" : b.source === "phone" ? "Phone" : "Travel agent"}`}`,
         bookingId: b.id,
         at: b.createdAt,
-        read: nowMs - made > 6 * 3600_000,
+        // Staff see their own bookings as already read.
+        read: !online || nowMs - made > 6 * 3600_000,
       });
     }
     b.payments
       .filter((p) => p.kind === "payment" && p.by !== "Guest (online)" && new Date(p.at).getTime() > nowMs - 86_400_000)
       .forEach((p) =>
-        notices.push({ id: `n${notices.length + 1}`, to: "staff", kind: "payment", title: `Payment received · ${b.code}`, body: `৳${p.amount.toLocaleString("en-IN")} via ${p.method} from ${b.guest.name}`, bookingId: b.id, at: p.at, read: true })
+        notices.push({ id: `n${notices.length + 1}`, to: "staff", kind: "payment", title: `Payment received · ${b.code}`, body: `৳${p.amount.toLocaleString("en-IN")} via ${payLabels[p.method]} from ${b.guest.name}`, bookingId: b.id, at: p.at, read: true })
       );
+    const cancelled = b.status === "cancelled" ? b.log.find((e) => e.text.startsWith("Cancelled")) : undefined;
+    if (cancelled && new Date(cancelled.at).getTime() > recent) {
+      const byGuest = cancelled.by === "Guest";
+      notices.push({
+        id: `n${notices.length + 1}`,
+        to: "staff",
+        kind: "cancel",
+        title: byGuest ? `Cancelled by guest · ${b.code}` : `Booking cancelled · ${b.code}`,
+        body: `${b.guest.name}${byGuest ? " cancelled" : " ·"} ${b.roomName}, ${dateLabel(b.checkIn, "d MMM")} — ${b.cancelReason}.`,
+        bookingId: b.id,
+        at: cancelled.at,
+        read: !byGuest || nowMs - new Date(cancelled.at).getTime() > 6 * 3600_000,
+      });
+    }
   });
   const tamimPast = bookings.find((b) => b.userId === "ug1" && b.status === "checked-out")!;
   const tamimNext = bookings.find((b) => b.userId === "ug1" && b.status === "confirmed")!;
