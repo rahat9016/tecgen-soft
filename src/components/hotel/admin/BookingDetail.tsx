@@ -16,6 +16,7 @@ import {
   Check,
   Clock3,
   Globe2,
+  Hash,
   IdCard,
   LogIn,
   LogOut,
@@ -26,7 +27,6 @@ import {
   Plus,
   Printer,
   Receipt,
-  Repeat,
   SearchX,
   StickyNote,
   Tag,
@@ -61,9 +61,9 @@ import {
 import type { Booking, HotelDB, PaymentKind } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
 import PrintableInvoice, { invoiceNumber, printWithTitle } from "@/src/components/hotel/Booking/PrintableInvoice";
-import { CancelModal, ChangeStayModal, ChargeModal, CheckInModal, CheckoutModal, GuestModal, PaymentModal, RoomsModal } from "./BookingModals";
+import { CancelModal, CancelRoomModal, cancellableRooms, ChangeStayModal, ChargeModal, CheckInModal, CheckoutModal, GuestModal, PaymentModal, RoomsModal } from "./BookingModals";
 import ExtendStayModal from "./ExtendStayModal";
-import { ADMIN, Card, Empty, hbtn, PayBadge, StatusBadge, textareaClass } from "./ui";
+import { ADMIN, Card, Empty, hbtn, textareaClass } from "./ui";
 
 export default function BookingDetail({ id }: { id: string }) {
   const db = useHotelDB();
@@ -77,7 +77,7 @@ export default function BookingDetail({ id }: { id: string }) {
   const [rooms, setRooms] = useState<"assign" | null>(null);
   // Assigning a room from the check-in checklist brings the checklist back afterwards.
   const [resumeCheckIn, setResumeCheckIn] = useState(false);
-  const [modal, setModal] = useState<"charge" | "stay" | "extend" | "cancel" | "checkout" | "checkin" | "guest" | null>(
+  const [modal, setModal] = useState<"charge" | "stay" | "extend" | "cancel" | "cancelRoom" | "checkout" | "checkin" | "guest" | null>(
     action === "checkout" ? "checkout" : action === "checkin" ? "checkin" : null
   );
   const b = db.bookings.find((x) => x.id === id) ?? db.bookings.find((x) => x.code === id);
@@ -137,11 +137,6 @@ export default function BookingDetail({ id }: { id: string }) {
           <LogOut className="size-4" /> Check out
         </button>
       )}
-      {live && due > 0 && (
-        <button onClick={() => setPayKind("payment")} className={hbtn.outline}>
-          <Wallet className="size-4" /> Record payment
-        </button>
-      )}
       {credit > 0 && canRefund && (
         <button onClick={() => setPayKind("refund")} className={cn(hbtn.outline, "border-violet-200 text-violet-700")}>
           <Undo2 className="size-4" /> Refund {taka(credit)}
@@ -155,11 +150,6 @@ export default function BookingDetail({ id }: { id: string }) {
       {upcoming && (
         <button onClick={() => setModal("extend")} className={hbtn.outline}>
           <CalendarPlus className="size-4" /> Extend stay
-        </button>
-      )}
-      {(upcoming || b.status === "checked-in") && (
-        <button onClick={() => setRooms("assign")} className={hbtn.outline}>
-          <Repeat className="size-4" /> {unitList.length ? "Change room" : "Assign room"}
         </button>
       )}
       <button onClick={() => printWithTitle(`${invoiceNumber(b.code)} - ${db.content.hotel.name}`)} className={hbtn.outline}>
@@ -189,19 +179,34 @@ export default function BookingDetail({ id }: { id: string }) {
   const at = (iso: string) => `${dateLabel(hotelDayOf(iso), "dd MMM")}, ${hotelTime(iso)}`;
   const missing = b.rooms - unitList.length;
   const stayRows: InfoRow[] = [
+    { icon: Hash, label: "Booking", value: <span className="font-mono">{b.code}</span> },
     {
       icon: BedDouble,
-      label: b.rooms > 1 ? "Rooms" : "Room",
+      label: b.rooms + linked.reduce((s, x) => s + x.rooms, 0) > 1 ? "Rooms" : "Room",
+      // Rooms of other types picked at the same time live on linked bookings with their own bill; they're listed here too.
       value: (
-        <>
-          {unitList.length > 0 && <b className="text-base text-neutral-900">{unitList.join(", ")}</b>}
-          <span className="text-neutral-600">
-            {unitList.length ? " · " : ""}
-            {b.roomName}
-            {b.rooms > 1 ? ` ×${b.rooms}` : ""}
-          </span>
-          {missing > 0 && <span className="block text-xs font-medium text-rose-700">{missing === b.rooms ? "Not assigned yet" : `${missing} not assigned yet`}</span>}
-        </>
+        <ul className="space-y-1.5">
+          {[b, ...linked].map((x) => {
+            const nums = x.id === b.id ? unitList : unitNumbers(db, x.unitIds);
+            const gap = x.id === b.id ? missing : x.rooms - nums.length;
+            return (
+              <li key={x.id}>
+                {nums.length > 0 && <b className="text-base text-neutral-900">{nums.join(", ")}</b>}
+                <span className="text-neutral-600">
+                  {nums.length ? " · " : ""}
+                  {x.roomName}
+                  {x.rooms > 1 ? ` ×${x.rooms}` : ""}
+                </span>
+                {x.id !== b.id && (
+                  <Link href={`${ADMIN}/bookings/${x.id}`} title="Open its bill" className="ml-1.5 rounded-sm font-mono text-xs text-sky-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500">
+                    {x.code}
+                  </Link>
+                )}
+                {gap > 0 && <span className="block text-xs font-medium text-rose-700">{gap === x.rooms ? "Not assigned yet" : `${gap} not assigned yet`}</span>}
+              </li>
+            );
+          })}
+        </ul>
       ),
     },
     {
@@ -226,7 +231,7 @@ export default function BookingDetail({ id }: { id: string }) {
     },
     { icon: Moon, label: "Nights", value: `${b.nights} night${b.nights > 1 ? "s" : ""}` },
     { icon: Users, label: "Guests", value: `${b.adults} adult${b.adults > 1 ? "s" : ""}${b.children ? `, ${b.children} child${b.children > 1 ? "ren" : ""}` : ""}` },
-    { icon: Tag, label: "Rate", value: `${taka(b.pricePerNight)} / night` },
+    { icon: Tag, label: "Rate", value: `${taka(b.pricePerNight)} / ${b.rooms > 1 ? "room / " : ""}night` },
     ...(b.guest.note
       ? [
           {
@@ -244,6 +249,7 @@ export default function BookingDetail({ id }: { id: string }) {
   ];
 
   const guestRows: InfoRow[] = [
+    { icon: UserRound, label: "Name", value: b.guest.name },
     { icon: Phone, label: "Phone", value: b.guest.phone, href: `tel:${b.guest.phone.replace(/\s/g, "")}` },
     { icon: Mail, label: "Email", value: b.guest.email || "—", href: b.guest.email ? `mailto:${b.guest.email}` : undefined },
     { icon: Globe2, label: "Country", value: b.guest.country || "—" },
@@ -257,48 +263,24 @@ export default function BookingDetail({ id }: { id: string }) {
       <PrintableInvoice booking={b} db={db} />
       <div className="space-y-6 print:hidden">
         <div>
-          <Link
-            href={back}
-            className="inline-flex items-center gap-1 rounded-sm text-sm text-neutral-600 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
-          >
-            <ArrowLeft className="size-4" /> Bookings
-          </Link>
-          <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-sm font-semibold text-neutral-500">{b.code}</span>
-                <StatusBadge status={b.status} />
-                <PayBadge booking={b} />
-                <span className="rounded-md bg-neutral-100 px-2.5 py-0.5 text-xs text-neutral-600">{sourceLabels[b.source]}</span>
-              </div>
-              <h1 className="mt-1 text-2xl font-bold text-neutral-900">{b.guest.name}</h1>
-              <p className="text-sm text-neutral-500">
-                {b.roomName}
-                {b.rooms > 1 ? ` ×${b.rooms}` : ""} · {dateLabel(b.checkIn, "EEE dd MMM")} → {dateLabel(b.checkOut, "EEE dd MMM yyyy")} · {b.nights} night{b.nights > 1 ? "s" : ""}
-              </p>
-              {b.commission && (
-                <p className="mt-2 inline-flex flex-wrap items-center gap-1.5 rounded-md bg-violet-50 px-2.5 py-1 text-xs text-violet-800">
-                  Commission <b className="tabular-nums">{taka(b.commission.amount)}</b>
-                  {b.commission.kind === "percent" && ` (${b.commission.value}%)`} to {b.commission.name}
-                  <span className="text-violet-600">· {b.commission.to === "agency" ? "Agency" : "Person"}</span>
-                  {b.commission.phone && <span className="text-violet-600">· {b.commission.phone}</span>}
-                </p>
-              )}
-              {linked.length > 0 && (
-                <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-neutral-500">
-                  <span className="rounded-md bg-violet-50 px-2 py-0.5 font-semibold text-violet-700">Group booking</span>
-                  Booked together with
-                  {linked.map((x) => (
-                    <Link key={x.id} href={`${ADMIN}/bookings/${x.id}`} className="rounded-md border border-neutral-200 bg-white px-2 py-0.5 font-medium text-sky-700 hover:border-sky-300">
-                      {x.code} · {x.roomName}
-                      {x.rooms > 1 ? ` ×${x.rooms}` : ""}
-                    </Link>
-                  ))}
-                </p>
-              )}
-            </div>
+          {/* Status, payment, room and dates are on the steps and cards below. */}
+          <h1 className="sr-only">Booking {b.code}</h1>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <Link href={back} className={hbtn.outline}>
+              <ArrowLeft className="size-4" /> Bookings
+            </Link>
             {actions}
           </div>
+          {b.commission && (
+            <div>
+              <p className="mt-2 inline-flex flex-wrap items-center gap-1.5 rounded-md bg-violet-50 px-2.5 py-1 text-xs text-violet-800">
+                Commission <b className="tabular-nums">{taka(b.commission.amount)}</b>
+                {b.commission.kind === "percent" && ` (${b.commission.value}%)`} to {b.commission.name}
+                <span className="text-violet-600">· {b.commission.to === "agency" ? "Agency" : "Person"}</span>
+                {b.commission.phone && <span className="text-violet-600">· {b.commission.phone}</span>}
+              </p>
+            </div>
+          )}
           <ProcessSteps db={db} b={b} />
         </div>
 
@@ -310,11 +292,19 @@ export default function BookingDetail({ id }: { id: string }) {
                   <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
                     <BedDouble className="size-4 text-sky-600" /> Stay
                   </h2>
-                  {(upcoming || b.status === "checked-in") && (
-                    <button onClick={() => setRooms("assign")} className={hbtn.small}>
-                      {b.status === "checked-in" ? "Move room" : unitList.length ? "Change rooms" : "Assign rooms"}
-                    </button>
-                  )}
+                  <div className="flex gap-2">
+                    {/* Only while another room would be left — cancelling the last one is cancelling the booking. */}
+                    {cancellableRooms(db, b).length > 1 && (
+                      <button onClick={() => setModal("cancelRoom")} className={cn(hbtn.small, "text-rose-600 hover:border-rose-300 hover:text-rose-700")}>
+                        Cancel a room
+                      </button>
+                    )}
+                    {(upcoming || b.status === "checked-in") && (
+                      <button onClick={() => setRooms("assign")} className={hbtn.small}>
+                        {b.status === "checked-in" ? "Move room" : unitList.length ? "Change rooms" : "Assign rooms"}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <InfoTable rows={stayRows} />
                 {b.status === "checked-in" && b.checkOut < today && (
@@ -365,118 +355,144 @@ export default function BookingDetail({ id }: { id: string }) {
                 )}
               </div>
 
-              <table className="mt-4 w-full text-sm">
-                <tbody className="divide-y divide-neutral-100">
-                  <tr>
-                    <td className="py-2.5 text-neutral-700">
-                      Room charge · {taka(b.pricePerNight)} × {b.nights} night{b.nights > 1 ? "s" : ""}
-                      {b.rooms > 1 ? ` × ${b.rooms} rooms` : ""}
-                    </td>
-                    <td className="py-2.5 text-right tabular-nums">{taka(b.subtotal)}</td>
-                    <td className="w-8" />
-                  </tr>
-                  {b.discount && (
-                    <tr>
-                      <td className="py-2.5 text-neutral-700">
-                        Discount{b.discount.kind === "percent" ? ` (${b.discount.value}%)` : ""}
-                        <span className="ml-1.5 text-xs text-neutral-400">
-                          {b.discount.reason} · {b.discount.by}
-                        </span>
-                      </td>
-                      <td className="py-2.5 text-right tabular-nums text-emerald-700">−{taka(b.discount.amount)}</td>
-                      <td />
-                    </tr>
-                  )}
-                  <tr>
-                    <td className="py-2.5 text-neutral-700">Service charge ({db.settings.serviceFeeRate}%)</td>
-                    <td className="py-2.5 text-right tabular-nums">{taka(b.serviceFee)}</td>
-                    <td />
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 text-neutral-700">VAT ({db.settings.vatRate}%)</td>
-                    <td className="py-2.5 text-right tabular-nums">{taka(b.tax)}</td>
-                    <td />
-                  </tr>
-                  {b.charges.map((c) => (
-                    <tr key={c.id}>
-                      <td className="py-2.5 text-neutral-700">
-                        {c.description}
-                        <span className="ml-1.5 text-xs text-neutral-400">
-                          {chargeLabels[c.category]} · {format(new Date(c.at), "dd MMM h:mm a")} · {c.by}
-                        </span>
-                      </td>
-                      <td className={cn("py-2.5 text-right tabular-nums", c.amount < 0 && "text-emerald-700")}>{taka(c.amount)}</td>
-                      <td className="text-right">
-                        {live && (
-                          <button
-                            onClick={() => {
-                              if (!confirm(`Remove "${c.description}"?`)) return;
-                              const r = removeCharge(b.id, c.id);
-                              if (!r.ok) toast.error(r.error);
-                            }}
-                            aria-label={`Remove ${c.description}`}
-                            className={hbtn.iconDanger}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  <tr className="font-semibold">
-                    <td className="py-3 text-neutral-900">Total</td>
-                    <td className="py-3 text-right tabular-nums text-neutral-900">{taka(total)}</td>
-                    <td />
-                  </tr>
-                </tbody>
-              </table>
+              <FolioHeading>Stay</FolioHeading>
+              <ul className="divide-y divide-neutral-100">
+                <FolioLine
+                  label="Room charge"
+                  detail={`${b.roomName} · ${taka(b.pricePerNight)} × ${b.nights} night${b.nights > 1 ? "s" : ""}${b.rooms > 1 ? ` × ${b.rooms} rooms` : ""}`}
+                  amount={b.subtotal}
+                />
+                {b.discount && (
+                  <FolioLine
+                    label={`Discount${b.discount.kind === "percent" ? ` (${b.discount.value}%)` : ""}`}
+                    detail={[b.discount.reason, b.discount.by].filter(Boolean).join(" · ")}
+                    amount={-b.discount.amount}
+                  />
+                )}
+                <FolioLine label={`Service charge (${db.settings.serviceFeeRate}%)`} amount={b.serviceFee} quiet />
+                <FolioLine label={`VAT (${db.settings.vatRate}%)`} amount={b.tax} quiet />
+              </ul>
 
-              <h3 className="mt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">Payments</h3>
+              {b.charges.length > 0 && (
+                <>
+                  <FolioHeading>Extras</FolioHeading>
+                  <ul className="divide-y divide-neutral-100">
+                    {b.charges.map((c) => (
+                      <FolioLine
+                        key={c.id}
+                        label={c.description}
+                        detail={
+                          <>
+                            {chargeLabels[c.category]} · {format(new Date(c.at), "dd MMM, h:mm a")} · {c.by}
+                            {live && (
+                              <button
+                                onClick={() => {
+                                  if (!confirm(`Remove "${c.description}"?`)) return;
+                                  const r = removeCharge(b.id, c.id);
+                                  if (!r.ok) toast.error(r.error);
+                                }}
+                                aria-label={`Remove ${c.description}`}
+                                className="ml-2 inline-flex items-center gap-1 whitespace-nowrap rounded-sm font-medium text-neutral-500 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                              >
+                                <Trash2 className="size-3" aria-hidden /> Remove
+                              </button>
+                            )}
+                          </>
+                        }
+                        amount={c.amount}
+                      />
+                    ))}
+                  </ul>
+                </>
+              )}
+
+              <dl className="mt-3 space-y-1.5 rounded-lg bg-neutral-50 px-4 py-3 text-sm">
+                {b.charges.length > 0 && (
+                  <>
+                    <div className="flex justify-between text-neutral-600">
+                      <dt>Stay</dt>
+                      <dd className="tabular-nums">{taka(b.total)}</dd>
+                    </div>
+                    <div className="flex justify-between text-neutral-600">
+                      <dt>Extras</dt>
+                      <dd className="tabular-nums">{taka(total - b.total)}</dd>
+                    </div>
+                  </>
+                )}
+                <div className={cn("flex items-baseline justify-between", b.charges.length > 0 && "border-t border-neutral-200 pt-2")}>
+                  <dt className="font-semibold text-neutral-900">Total</dt>
+                  <dd className="text-lg font-bold tabular-nums text-neutral-900">{taka(total)}</dd>
+                </div>
+              </dl>
+
+              <div className="mt-6 flex items-baseline justify-between">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Payments</h3>
+                {b.payments.length > 0 && <span className="text-xs text-neutral-500">{taka(paid)} received</span>}
+              </div>
               {b.payments.length === 0 ? (
-                <p className="mt-2 text-sm text-neutral-500">No payments yet.</p>
+                <p className="mt-2 rounded-md border border-dashed border-neutral-200 px-3 py-4 text-center text-sm text-neutral-500">No payments yet.</p>
               ) : (
-                <ul className="mt-2 divide-y divide-neutral-100 text-sm">
-                  {b.payments.map((p) => (
-                    <li key={p.id} className={cn("flex items-center gap-3 py-2.5", p.void && "opacity-50")}>
-                      <span
-                        className={cn(
-                          "rounded-md px-2 py-0.5 text-xs font-semibold",
-                          p.kind === "refund" ? "bg-violet-50 text-violet-700" : p.kind === "deposit" ? "bg-sky-50 text-sky-700" : "bg-emerald-50 text-emerald-700"
-                        )}
-                      >
-                        {paymentKindLabels[p.kind]}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className={cn("block text-neutral-800", p.void && "line-through")}>
-                          {payLabels[p.method]}
-                          {p.ref && <span className="ml-1.5 font-mono text-xs text-neutral-500">{p.ref}</span>}
-                        </span>
-                        <span className="block text-xs text-neutral-400">
-                          {formatDateTime(p.at)} · {p.by}
-                          {p.note ? ` · ${p.note}` : ""}
-                          {p.void && ` · voided by ${p.void.by}: ${p.void.reason}`}
-                        </span>
-                      </span>
-                      <span className={cn("font-semibold tabular-nums", p.kind === "refund" ? "text-violet-700" : "text-neutral-900")}>
-                        {p.kind === "refund" ? "−" : ""}
-                        {taka(p.amount)}
-                      </span>
-                      {!p.void && canVoid && (
-                        <button
-                          onClick={() => {
-                            const reason = prompt(`Void ${taka(p.amount)} ${p.kind}? It stays on the folio for the audit trail.\n\nReason:`);
-                            if (!reason) return;
-                            const r = voidPayment(b.id, p.id, reason);
-                            if (r.ok) toast.success("Payment voided");
-                            else toast.error(r.error);
-                          }}
-                          className="text-xs text-neutral-400 hover:text-rose-600"
+                <ul className="mt-1 divide-y divide-neutral-100">
+                  {b.payments.map((p) => {
+                    const refund = p.kind === "refund";
+                    return (
+                      <li key={p.id} className="flex items-start gap-3 py-3">
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full",
+                            p.void ? "bg-neutral-100 text-neutral-400" : refund ? "bg-violet-50 text-violet-600" : "bg-emerald-50 text-emerald-600"
+                          )}
                         >
-                          Void
-                        </button>
-                      )}
-                    </li>
-                  ))}
+                          {refund ? <Undo2 className="size-4" /> : <Wallet className="size-4" />}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className={cn("text-sm font-medium", p.void ? "text-neutral-500 line-through" : "text-neutral-900")}>{payLabels[p.method]}</span>
+                            <span
+                              className={cn(
+                                "rounded-md px-1.5 py-0.5 text-[11px] font-semibold",
+                                refund ? "bg-violet-50 text-violet-700" : p.kind === "deposit" ? "bg-sky-50 text-sky-700" : "bg-emerald-50 text-emerald-700"
+                              )}
+                            >
+                              {paymentKindLabels[p.kind]}
+                            </span>
+                            {p.void && <span className="rounded-md bg-rose-50 px-1.5 py-0.5 text-[11px] font-semibold text-rose-700">Voided</span>}
+                          </p>
+                          {p.ref && <p className="mt-0.5 truncate font-mono text-xs text-neutral-600">{p.ref}</p>}
+                          <p className="mt-0.5 text-xs text-neutral-500">
+                            {formatDateTime(p.at)} · {p.by}
+                            {p.note ? ` · ${p.note}` : ""}
+                          </p>
+                          {p.void && (
+                            <p className="mt-0.5 text-xs text-rose-700">
+                              Voided by {p.void.by}: {p.void.reason}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 flex-col items-end gap-1">
+                          <span className={cn("text-sm font-semibold tabular-nums", p.void ? "text-neutral-400 line-through" : refund ? "text-violet-700" : "text-neutral-900")}>
+                            {refund ? "−" : ""}
+                            {taka(p.amount)}
+                          </span>
+                          {!p.void && canVoid && (
+                            <button
+                              onClick={() => {
+                                const reason = prompt(`Void ${taka(p.amount)} ${p.kind}? It stays on the folio for the audit trail.\n\nReason:`);
+                                if (!reason) return;
+                                const r = voidPayment(b.id, p.id, reason);
+                                if (r.ok) toast.success("Payment voided");
+                                else toast.error(r.error);
+                              }}
+                              className="-mr-1.5 rounded px-1.5 py-0.5 text-xs font-medium text-neutral-500 transition hover:bg-rose-50 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                            >
+                              Void
+                            </button>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </Card>
@@ -583,6 +599,7 @@ export default function BookingDetail({ id }: { id: string }) {
       {modal === "stay" &&
         (b.status === "checked-in" ? <ExtendStayModal booking={b} onClose={() => setModal(null)} /> : <ChangeStayModal booking={b} open onClose={() => setModal(null)} />)}
       {modal === "cancel" && <CancelModal booking={b} open onClose={() => setModal(null)} />}
+      {modal === "cancelRoom" && <CancelRoomModal booking={b} open onClose={() => setModal(null)} />}
       {modal === "guest" && <GuestModal booking={b} open onClose={() => setModal(null)} />}
       {modal === "checkout" && (
         <CheckoutModal
@@ -717,6 +734,26 @@ function ProcessSteps({ db, b }: { db: HotelDB; b: Booking }) {
         );
       })}
     </ol>
+  );
+}
+
+function FolioHeading({ children }: { children: React.ReactNode }) {
+  return <h3 className="mt-5 text-xs font-semibold uppercase tracking-wide text-neutral-500">{children}</h3>;
+}
+
+/** One folio line: what it is, a smaller detail underneath, and the amount. Negative amounts are credits. */
+function FolioLine({ label, detail, amount, quiet }: { label: string; detail?: React.ReactNode; amount: number; quiet?: boolean }) {
+  return (
+    <li className="flex items-start justify-between gap-4 py-2.5">
+      <div className="min-w-0">
+        <p className={cn("text-sm", quiet ? "text-neutral-600" : "text-neutral-800")}>{label}</p>
+        {detail && <p className="mt-0.5 text-xs text-neutral-500">{detail}</p>}
+      </div>
+      <span className={cn("shrink-0 text-sm tabular-nums", amount < 0 ? "text-emerald-700" : quiet ? "text-neutral-600" : "font-medium text-neutral-900")}>
+        {amount < 0 ? "−" : ""}
+        {taka(Math.abs(amount))}
+      </span>
+    </li>
   );
 }
 

@@ -148,12 +148,15 @@ export function Modal({
   title,
   children,
   wide,
+  className,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
   wide?: boolean;
+  /** Extra panel classes, e.g. a wider `max-w-*`. */
+  className?: string;
 }) {
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
@@ -197,7 +200,8 @@ export function Modal({
         tabIndex={-1}
         className={cn(
           "relative max-h-[90vh] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl outline-none",
-          wide ? "max-w-2xl" : "max-w-md"
+          wide ? "max-w-2xl" : "max-w-md",
+          className
         )}
       >
         <div className="mb-5 flex items-center justify-between">

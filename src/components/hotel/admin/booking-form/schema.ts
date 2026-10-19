@@ -347,8 +347,35 @@ export function computeStay(db: HotelDB, v: StayInput) {
       quote: quoteStay(db.settings, b.rate, n, b.rooms, discount),
     };
   });
-  const sum = (k: keyof (typeof lines)[number]["quote"]) =>
-    lines.reduce((s, l) => s + l.quote[k], 0);
+  // Rooms of one type at one rate are saved as a single booking, so money is worked out per booking:
+  // service charge and VAT round once per booking, exactly as its folio will.
+  const keyOf = (l: (typeof lines)[number]) => `${l.line.typeId}|${l.rate}`;
+  const groups = [...new Set(lines.map(keyOf))].map((key) => {
+    const members = lines.flatMap((l, i) => (keyOf(l) === key ? [i] : []));
+    const first = lines[members[0]];
+    const rooms = members.reduce((s, i) => s + lines[i].rooms, 0);
+    const flatShare = members.reduce(
+      (s, i) =>
+        s + (lines[i].discount?.kind === "amount" ? lines[i].discount!.value : 0),
+      0
+    );
+    const discount: DiscountInput | undefined =
+      first.discount?.kind === "percent"
+        ? first.discount
+        : flatShare > 0
+          ? { kind: "amount", value: flatShare }
+          : undefined;
+    return {
+      members,
+      typeId: first.line.typeId,
+      rate: first.rate,
+      rooms,
+      discount,
+      quote: quoteStay(db.settings, first.rate, n, rooms, discount),
+    };
+  });
+  const sum = (k: keyof (typeof groups)[number]["quote"]) =>
+    groups.reduce((s, g) => s + g.quote[k], 0);
   const quote = {
     subtotal: sum("subtotal"),
     discount: sum("discount"),
@@ -363,17 +390,17 @@ export function computeStay(db: HotelDB, v: StayInput) {
   const flatC =
     v.commission?.kind === "amount" ? Math.min(Math.round(cv), quote.net) : 0;
   let leftC = flatC;
-  const commissions = lines.map((l, i) => {
+  const commissions = groups.map((g, i) => {
     if (!cv) return 0;
     if (v.commission?.kind === "percent")
-      return Math.round((l.quote.net * Math.min(cv, 100)) / 100);
+      return Math.round((g.quote.net * Math.min(cv, 100)) / 100);
     const share = Math.min(
-      l.quote.net,
+      g.quote.net,
       Math.max(
         0,
-        i === lines.length - 1
+        i === groups.length - 1
           ? leftC
-          : Math.round((flatC * l.quote.net) / (quote.net || 1))
+          : Math.round((flatC * g.quote.net) / (quote.net || 1))
       )
     );
     leftC -= share;
@@ -416,6 +443,14 @@ export function computeStay(db: HotelDB, v: StayInput) {
       ...party[i],
       capacity: capacities[i],
       manual: !!manual[i],
+    })),
+    /** What gets saved: one booking per room type and rate, holding every room picked for it. */
+    groups: groups.map((g, i) => ({
+      ...g,
+      adults: g.members.reduce((s, m) => s + party[m].adults, 0),
+      children: g.members.reduce((s, m) => s + party[m].children, 0),
+      unitIds: g.members.flatMap((m) => lines[m].line.unitIds),
+      assignLater: g.members.some((m) => lines[m].line.assignLater),
       commission: commissions[i],
     })),
     commission: commissions.reduce((s, c) => s + c, 0),

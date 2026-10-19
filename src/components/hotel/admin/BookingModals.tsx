@@ -13,6 +13,7 @@ import {
   assignUnits,
   cancelBooking,
   cancellationTerms,
+  cancelRoom,
   changeStay,
   checkInBooking,
   checkOutBooking,
@@ -21,6 +22,7 @@ import {
   folioTotal,
   freeRooms,
   freeUnits,
+  groupOf,
   paidOf,
   quoteStay,
   setHousekeeping,
@@ -29,7 +31,7 @@ import {
   useCurrentStaff,
   useHotelDB,
 } from "@/src/lib/hotel-store/store";
-import type { Booking, ChargeCategory, GuestInfo, PayMethod, PaymentKind, RoomUnit } from "@/src/lib/hotel-store/types";
+import type { Booking, ChargeCategory, GuestInfo, HotelDB, PayMethod, PaymentKind, RoomUnit } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
 import { ADMIN, Field, hbtn, inputClass, Modal, textareaClass, useSaving } from "./ui";
 
@@ -182,64 +184,160 @@ export function ChargeModal({ booking, open, onClose }: { booking: Booking; open
   );
 }
 
-/** Pick physical rooms; with `checkIn` it also checks the guest in. */
+type UnitState = "free" | "held" | "taken" | "oos";
+
+const unitStateText: Record<Exclude<UnitState, "free">, string> = {
+  held: "Held for other bookings",
+  taken: "Taken",
+  oos: "Out of service",
+};
+
+/** Pick physical rooms of any type; with `checkIn` it also checks the guest in. */
 export function RoomsModal({ booking, mode, onClose }: { booking: Booking; mode: "assign" | "checkin" | null; onClose: () => void }) {
   const db = useHotelDB();
   const today = todayKey();
   const from = booking.status === "checked-in" || mode === "checkin" ? (today > booking.checkIn ? today : booking.checkIn) : booking.checkIn;
-  const free = freeUnits(db, booking.roomTypeId, from, booking.checkOut, booking.id);
-  const options = db.units.filter((u) => u.typeId === booking.roomTypeId && (free.some((f) => f.id === u.id) || booking.unitIds.includes(u.id)));
-  const others = db.units.filter((u) => u.typeId === booking.roomTypeId && !options.includes(u));
+  const freeIds = new Set(db.roomTypes.flatMap((t) => freeUnits(db, t.id, from, booking.checkOut, booking.id).map((u) => u.id)));
+  // Another type's free room can still be promised to a booking that has no room number yet.
+  const spare = new Map(db.roomTypes.map((t) => [t.id, t.id === booking.roomTypeId || freeRooms(db, t.id, from, booking.checkOut, booking.id) > 0]));
+  const stateOf = (u: RoomUnit): UnitState =>
+    booking.unitIds.includes(u.id) ? "free" : freeIds.has(u.id) ? (spare.get(u.typeId) ? "free" : "held") : u.outOfService ? "oos" : "taken";
+  // The booked type first, then the rest in their usual order. Draft rooms aren't ready for guests.
+  const groups = db.roomTypes
+    .filter((t) => t.id === booking.roomTypeId || !t.draft)
+    .sort((a, b) => Number(b.id === booking.roomTypeId) - Number(a.id === booking.roomTypeId))
+    .map((t) => ({ t, units: db.units.filter((u) => u.typeId === t.id).sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true })) }))
+    .filter((g) => g.units.length);
+  const anyFree = groups.some((g) => g.units.some((u) => stateOf(u) === "free"));
   const [picked, setPicked] = useState<string[]>(booking.unitIds);
+  const typeOf = (id: string) => db.units.find((u) => u.id === id)?.typeId;
+  // Rooms of another type move the whole booking to that type, re-priced at a rate staff can adjust.
+  const newType = picked.length ? db.roomTypes.find((t) => t.id === typeOf(picked[0]) && t.id !== booking.roomTypeId) : undefined;
+  const [rateEdit, setRateEdit] = useState<{ typeId: string; value: number } | null>(null);
+  const rate = newType ? (rateEdit?.typeId === newType.id ? rateEdit.value : newType.price) : booking.pricePerNight;
+  const quote = newType ? quoteStay(db.settings, Math.max(1, Math.round(rate)), booking.nights, booking.rooms, booking.discount) : null;
+  const diff = quote ? quote.total - booking.total : 0;
   const [error, setError] = useState("");
   const { saving, run } = useSaving();
 
   const toggle = (id: string) =>
-    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= booking.rooms ? [...p.slice(1), id] : [...p, id]));
+    setPicked((p) =>
+      p.includes(id)
+        ? p.filter((x) => x !== id)
+        : p.length && typeOf(p[0]) !== typeOf(id)
+          ? [id] // one room type per booking
+          : p.length >= booking.rooms
+            ? [...p.slice(1), id]
+            : [...p, id]
+    );
 
   const submit = () =>
     run(() => {
       setError("");
-      const r = mode === "checkin" ? checkInBooking(booking.id, picked) : assignUnits(booking.id, picked);
+      const nightly = newType ? Math.round(rate) : undefined;
+      const r = mode === "checkin" ? checkInBooking(booking.id, picked, nightly) : assignUnits(booking.id, picked, nightly);
       if (!r.ok) return setError(r.error);
       const numbers = unitNumbers(db, picked).join(", ");
-      toast.success(mode === "checkin" ? `${booking.guest.name} checked in to room ${numbers}` : picked.length ? `Room ${numbers} assigned to ${booking.guest.name}` : "Rooms updated");
+      const repriced = newType ? ` · now ${newType.name} at ${taka(Math.round(rate))}/night` : "";
+      toast.success((mode === "checkin" ? `${booking.guest.name} checked in to room ${numbers}` : picked.length ? `Room ${numbers} assigned to ${booking.guest.name}` : "Rooms updated") + repriced);
       onClose();
     });
 
   return (
     <Modal open={!!mode} onClose={onClose} title={mode === "checkin" ? `Check in · ${booking.guest.name}` : booking.status === "checked-in" ? "Move room" : "Assign rooms"} wide>
       <p className="text-sm text-neutral-500">
-        Pick {booking.rooms} {booking.roomName} room{booking.rooms > 1 ? "s" : ""} free from {from} to {booking.checkOut}.
+        Pick {booking.rooms} room{booking.rooms > 1 ? "s" : ""} free from {dateLabel(from, "EEE dd MMM")} to {dateLabel(booking.checkOut, "EEE dd MMM")}. Booked as{" "}
+        <b className="font-medium text-neutral-700">{booking.roomName}</b>.
       </p>
-      <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
-        {options.map((u) => {
-          const on = picked.includes(u.id);
+      <div className="mt-4 space-y-5">
+        {groups.map(({ t, units }) => {
+          const booked = t.id === booking.roomTypeId;
+          const freeCount = units.filter((u) => stateOf(u) === "free").length;
           return (
-            <button
-              key={u.id}
-              type="button"
-              onClick={() => toggle(u.id)}
-              aria-pressed={on}
-              className={cn(
-                "rounded-md border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500",
-                on ? "border-sky-500 bg-sky-50 ring-2 ring-sky-100" : "border-neutral-200 hover:border-sky-300"
-              )}
-            >
-              <p className="text-lg font-bold text-neutral-900">{u.number}</p>
-              <p className={cn("text-xs font-medium", u.housekeeping === "dirty" ? "text-amber-700" : "text-emerald-700")}>{housekeepingLabels[u.housekeeping]}</p>
-              <p className="text-xs text-neutral-500">Floor {u.floor}</p>
-            </button>
+            <section key={t.id} aria-label={t.name}>
+              <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <h3 className="text-sm font-semibold text-neutral-900">{t.name}</h3>
+                {booked && <span className="rounded-md bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700">Booked type</span>}
+                <span className="ml-auto text-xs text-neutral-500">
+                  {freeCount} of {units.length} free · {taka(t.price)}/night
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {units.map((u) => {
+                  const state = stateOf(u);
+                  if (state !== "free")
+                    return (
+                      <div key={u.id} className="rounded-md border border-dashed border-neutral-200 p-3 text-left opacity-60" title={state === "oos" ? u.oosReason : undefined}>
+                        <p className="text-lg font-bold text-neutral-400">{u.number}</p>
+                        <p className="text-[11px] text-neutral-400">{unitStateText[state]}</p>
+                      </div>
+                    );
+                  const on = picked.includes(u.id);
+                  return (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => toggle(u.id)}
+                      aria-pressed={on}
+                      className={cn(
+                        "rounded-md border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500",
+                        on ? "border-sky-500 bg-sky-50 ring-2 ring-sky-100" : "border-neutral-200 hover:border-sky-300"
+                      )}
+                    >
+                      <p className="text-lg font-bold text-neutral-900">{u.number}</p>
+                      <p className={cn("text-xs font-medium", u.housekeeping === "dirty" ? "text-amber-700" : "text-emerald-700")}>{housekeepingLabels[u.housekeeping]}</p>
+                      <p className="text-xs text-neutral-500">Floor {u.floor}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
           );
         })}
-        {others.map((u) => (
-          <div key={u.id} className="rounded-md border border-dashed border-neutral-200 p-3 text-left opacity-60" title={u.outOfService ? u.oosReason : "Booked for these dates"}>
-            <p className="text-lg font-bold text-neutral-400">{u.number}</p>
-            <p className="text-[11px] text-neutral-400">{u.outOfService ? "Out of service" : "Taken"}</p>
-          </div>
-        ))}
       </div>
-      {options.length === 0 && <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">No free {booking.roomName} rooms for these dates — change the stay or move another booking first.</p>}
+      {!anyFree && <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">No rooms are free for these dates — change the stay or move another booking first.</p>}
+      {newType && quote && (
+        <div className="mt-4 rounded-md border border-sky-200 bg-sky-50/60 p-3">
+          <p className="text-sm text-sky-900">
+            The booking changes from <b className="font-semibold">{booking.roomName}</b> to <b className="font-semibold">{newType.name}</b>
+            {booking.status === "checked-in" ? " — the new rate applies to every night of the stay." : "."}
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-[180px_1fr] sm:items-start">
+            <Field label="Rate per night (BDT)" hint={Math.round(rate) !== newType.price ? `Rack rate ${taka(newType.price)}` : undefined}>
+              <input
+                type="number"
+                min={1}
+                inputMode="numeric"
+                value={rate || ""}
+                onChange={(e) => setRateEdit({ typeId: newType.id, value: Number(e.target.value) })}
+                className={inputClass}
+              />
+            </Field>
+            <dl className="grid grid-cols-3 gap-2 rounded-md bg-white p-2.5 text-sm ring-1 ring-sky-100 sm:mt-5">
+              <div>
+                <dt className="text-xs text-neutral-600">Was</dt>
+                <dd className="font-semibold tabular-nums text-neutral-700">{taka(booking.total)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-neutral-600">New total</dt>
+                <dd className="font-semibold tabular-nums text-neutral-900">{taka(quote.total)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-neutral-600">Difference</dt>
+                <dd className={cn("font-semibold tabular-nums", diff > 0 ? "text-amber-800" : diff < 0 ? "text-emerald-700" : "text-neutral-700")}>
+                  {diff > 0 ? "+" : diff < 0 ? "−" : ""}
+                  {taka(Math.abs(diff))}
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <p className="mt-2 text-xs text-neutral-600">
+            {taka(Math.max(1, Math.round(rate)))} × {booking.nights} night{booking.nights > 1 ? "s" : ""}
+            {booking.rooms > 1 ? ` × ${booking.rooms} rooms` : ""}
+            {booking.discount ? ", less the discount," : ""} plus service charge and VAT.
+          </p>
+        </div>
+      )}
       {mode === "checkin" && picked.some((id) => db.units.find((u) => u.id === id)?.housekeeping === "dirty") && (
         <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">Heads up: a selected room is still marked as needing cleaning.</p>
       )}
@@ -250,7 +348,7 @@ export function RoomsModal({ booking, mode, onClose }: { booking: Booking; mode:
         <button onClick={onClose} className={hbtn.outline}>
           Cancel
         </button>
-        <button onClick={submit} disabled={saving || (mode === "checkin" && picked.length < booking.rooms)} className={mode === "checkin" ? hbtn.success : hbtn.primary}>
+        <button onClick={submit} disabled={saving || (mode === "checkin" && picked.length < booking.rooms) || (!!newType && !(rate >= 1))} className={mode === "checkin" ? hbtn.success : hbtn.primary}>
           {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
           {saving ? "Saving…" : mode === "checkin" ? `Check in to ${picked.length ? db.units.filter((u) => picked.includes(u.id)).map((u) => u.number).join(", ") : "…"}` : "Save rooms"}
         </button>
@@ -383,6 +481,153 @@ export function CancelModal({ booking, open, onClose }: { booking: Booking; open
             Cancel booking
           </button>
         </div>
+      </div>
+    </Modal>
+  );
+}
+
+type RoomChoice = { key: string; booking: Booking; unitId?: string; number?: string };
+
+/** Rooms that can still be cancelled: every room, before check-in, on this booking and the ones made with it. */
+export function cancellableRooms(db: HotelDB, booking: Booking): RoomChoice[] {
+  const upcoming = (x: Booking) => x.status === "pending" || x.status === "confirmed";
+  return [booking, ...groupOf(db, booking)].filter(upcoming).flatMap((x) => [
+    ...x.unitIds.map((unitId) => ({ key: `${x.id}:${unitId}`, booking: x, unitId, number: unitNumbers(db, [unitId])[0] })),
+    ...Array.from({ length: Math.max(0, x.rooms - x.unitIds.length) }, (_, i) => ({ key: `${x.id}:open${i}`, booking: x })),
+  ]);
+}
+
+/** Cancel one room and keep the rest. The last room on a booking cancels that booking. */
+export function CancelRoomModal({ booking, open, onClose }: { booking: Booking; open: boolean; onClose: () => void }) {
+  const db = useHotelDB();
+  const choices = cancellableRooms(db, booking);
+  const [key, setKey] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
+  const [fee, setFee] = useState("");
+  const [adults, setAdults] = useState(0);
+  const [children, setChildren] = useState(0);
+  const [error, setError] = useState("");
+  const { saving, run } = useSaving();
+
+  const pick = choices.find((c) => c.key === key);
+  const x = pick?.booking;
+  const whole = !!x && x.rooms === 1;
+  const after = x && !whole ? quoteStay(db.settings, x.pricePerNight, x.nights, x.rooms - 1, x.discount) : null;
+  const paid = x ? paidOf(x) : 0;
+  const capacity = (c: RoomChoice) => (db.roomTypes.find((t) => t.id === c.booking.roomTypeId)?.capacity ?? 0) * (c.booking.rooms - 1);
+
+  // Fee and guests start from the policy and what still fits; staff can change both.
+  const choose = (c: RoomChoice) => {
+    const terms = cancellationTerms(db, c.booking);
+    const left = c.booking.rooms > 1 ? quoteStay(db.settings, c.booking.pricePerNight, c.booking.nights, c.booking.rooms - 1, c.booking.discount).total : 0;
+    const share = c.booking.total - left;
+    const cap = capacity(c);
+    const a = Math.max(c.booking.groupId ? 0 : 1, Math.min(c.booking.adults, cap));
+    setKey(c.key);
+    setFee(String(c.booking.rooms === 1 ? terms.fee : terms.free ? 0 : Math.ceil((share * db.settings.lateCancellationFeeRate) / 100)));
+    setAdults(a);
+    setChildren(Math.max(0, Math.min(c.booking.children, cap - a)));
+    setError("");
+  };
+
+  const submit = () =>
+    run(() => {
+      if (!pick || !x) return;
+      setError("");
+      const r = whole
+        ? cancelBooking(x.id, { reason: reason.trim() || "Cancelled by hotel", fee: Number(fee) || 0 })
+        : cancelRoom(x.id, { unitId: pick.unitId, reason, fee: Number(fee) || 0, adults, children });
+      if (!r.ok) return setError(r.error);
+      toast.success(`${pick.number ? `Room ${pick.number}` : "Room"} cancelled${whole ? ` — ${x.code} is cancelled` : ""}`);
+      onClose();
+    });
+
+  return (
+    <Modal open={open} onClose={onClose} title="Cancel a room" wide>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Which room?</p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {choices.map((c) => {
+          const on = c.key === key;
+          return (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => choose(c)}
+              aria-pressed={on}
+              className={cn(
+                "rounded-md border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500",
+                on ? "border-rose-500 bg-rose-50 ring-2 ring-rose-100" : "border-neutral-200 hover:border-rose-300"
+              )}
+            >
+              <p className="text-lg font-bold text-neutral-900">{c.number ?? "—"}</p>
+              <p className="text-xs text-neutral-600">{c.number ? c.booking.roomName : `${c.booking.roomName} · not assigned`}</p>
+              {c.booking.id !== booking.id && <p className="mt-1 font-mono text-[11px] text-neutral-500">{c.booking.code}</p>}
+            </button>
+          );
+        })}
+      </div>
+
+      {x && (
+        <div className="mt-5 space-y-4">
+          <dl className="divide-y divide-neutral-100 rounded-md border border-neutral-200 text-sm">
+            {whole ? (
+              <div className="flex justify-between gap-3 px-3 py-2">
+                <dt className="text-neutral-600">{x.code}</dt>
+                <dd className="font-medium text-rose-700">Cancelled</dd>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-between gap-3 px-3 py-2">
+                  <dt className="text-neutral-600">Rooms on {x.code}</dt>
+                  <dd className="font-medium tabular-nums text-neutral-900">
+                    {x.rooms} → {x.rooms - 1}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3 px-3 py-2">
+                  <dt className="text-neutral-600">Room total</dt>
+                  <dd className="tabular-nums">
+                    <span className="mr-2 text-neutral-400 line-through">{taka(x.total)}</span>
+                    <span className="font-medium text-neutral-900">{taka(after!.total)}</span>
+                  </dd>
+                </div>
+              </>
+            )}
+            <div className="flex justify-between gap-3 px-3 py-2">
+              <dt className="text-neutral-600">Paid so far</dt>
+              <dd className="font-medium tabular-nums text-neutral-900">{taka(paid)}</dd>
+            </div>
+          </dl>
+
+          {!whole && (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Adults staying">
+                <input type="number" min={x.groupId ? 0 : 1} value={adults} onChange={(e) => setAdults(Math.max(0, Number(e.target.value)))} className={inputClass} />
+              </Field>
+              <Field label="Children staying">
+                <input type="number" min={0} value={children} onChange={(e) => setChildren(Math.max(0, Number(e.target.value)))} className={inputClass} />
+              </Field>
+            </div>
+          )}
+          <Field label="Reason (the guest sees this)">
+            <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} className={textareaClass} placeholder="e.g. Guest needs one room less" />
+          </Field>
+          <Field label="Cancellation fee (BDT)" hint={cancellationTerms(db, x).free ? "Free cancellation period" : `Late cancellation · policy ${db.settings.lateCancellationFeeRate}%`}>
+            <input type="number" min={0} max={whole ? paid : undefined} value={fee} onChange={(e) => setFee(e.target.value)} className={inputClass} />
+          </Field>
+        </div>
+      )}
+
+      <div className="mt-3">
+        <FormError text={error} />
+      </div>
+      <div className="mt-5 flex justify-end gap-2">
+        <button type="button" onClick={onClose} className={hbtn.outline}>
+          Keep rooms
+        </button>
+        <button type="button" onClick={submit} disabled={!pick || saving} className={cn(hbtn.danger, "border-rose-600 bg-rose-600 text-white hover:bg-rose-700")}>
+          {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
+          {pick ? `Cancel ${pick.number ? `room ${pick.number}` : "this room"}` : "Cancel room"}
+        </button>
       </div>
     </Modal>
   );

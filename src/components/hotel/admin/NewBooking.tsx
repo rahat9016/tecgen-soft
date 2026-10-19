@@ -292,9 +292,9 @@ function NewBookingForm() {
     }
 
     const s = computeStay(db, values);
-    // Paid extras sit on the first room type's folio; the payment is shared by what each folio owes.
-    const dues = s.lines.map(
-      (l, i) => l.quote.total + (i === 0 ? s.extras : 0)
+    // Paid extras sit on the first booking's folio; the payment is shared by what each folio owes.
+    const dues = s.groups.map(
+      (g, i) => g.quote.total + (i === 0 ? s.extras : 0)
     );
     const pays = splitAmount(receivedOf(values, s), dues);
     const requested = !values.payCollected ? planAmountOf(values, s) : 0;
@@ -313,36 +313,37 @@ function NewBookingForm() {
     ]
       .filter(Boolean)
       .join("\n");
-    // One linked booking per room type; the party, discount and payment are shared out between them.
+    // One booking per room type and rate holding all its rooms; different types become linked bookings
+    // that share out the party, discount and payment.
     const r = createStaffBookings(
-      s.lines.map((l, i) => ({
-        roomTypeId: l.line.typeId,
+      s.groups.map((g, i) => ({
+        roomTypeId: g.typeId,
         checkIn: values.checkIn,
         checkOut: values.checkOut,
-        rooms: l.rooms,
-        adults: l.adults,
-        children: l.children,
+        rooms: g.rooms,
+        adults: g.adults,
+        children: g.children,
         guest,
         userId,
         source: values.source,
         agentName: agent ? c.name : undefined,
         commission:
-          agent && l.commission > 0
+          agent && g.commission > 0
             ? {
                 to: "agency",
                 name: c.name,
                 phone: c.phone,
                 kind: c.kind,
-                value: c.kind === "percent" ? toNum(c.value) : l.commission,
+                value: c.kind === "percent" ? toNum(c.value) : g.commission,
               }
             : undefined,
-        pricePerNight: l.rate,
+        pricePerNight: g.rate,
         discount:
-          l.discount && l.discount.value > 0
-            ? { ...l.discount, reason }
+          g.discount && g.discount.value > 0
+            ? { ...g.discount, reason }
             : undefined,
-        unitIds: l.line.unitIds,
-        assignLater: l.line.assignLater,
+        unitIds: g.unitIds,
+        assignLater: g.assignLater,
         charges:
           i === 0 && s.extras > 0
             ? [

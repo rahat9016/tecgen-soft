@@ -759,6 +759,44 @@ export type StaffBookingInput = {
   internalNote?: string;
 };
 
+/** A booking's money re-quoted for a new rate, length or room count; the discount and commission follow the new room charge. */
+function requote(s: HotelDB, b: Booking, rate: number, nights: number, rooms: number) {
+  const q = quoteStay(s.settings, rate, nights, rooms, b.discount);
+  return {
+    pricePerNight: rate,
+    nights,
+    subtotal: q.subtotal,
+    discount: b.discount && (q.discount ? { ...b.discount, amount: q.discount } : undefined),
+    commission: b.commission && {
+      ...b.commission,
+      amount: b.commission.kind === "percent" ? Math.round((q.net * b.commission.value) / 100) : Math.min(b.commission.value, q.net),
+    },
+    serviceFee: q.serviceFee,
+    tax: q.tax,
+    total: q.total,
+  };
+}
+
+/**
+ * Picking rooms of another type moves the whole booking to that type at `rate` (its rack rate by default).
+ * Returns the booking as it would be, or why it can't move.
+ */
+function retypeForUnits(s: HotelDB, b: Booking, unitIds: string[], from: string, rate?: number): Booking | string {
+  const typeIds = [...new Set(unitIds.map((id) => s.units.find((u) => u.id === id)?.typeId))];
+  if (typeIds.length > 1) return "Pick rooms of one type — a booking holds a single room type.";
+  const typeId = typeIds[0];
+  if (!typeId || typeId === b.roomTypeId) return b;
+  const type = s.roomTypes.find((t) => t.id === typeId);
+  const problem = validateStay(s, type, { checkIn: from, checkOut: b.checkOut, rooms: b.rooms, adults: b.adults, children: b.children }, b.id, true, !!b.groupId);
+  if (problem || !type) return problem ?? "Room unavailable.";
+  const nightly = Math.max(1, Math.round(rate ?? type.price));
+  return { ...b, roomTypeId: type.id, roomName: type.name, ...requote(s, b, nightly, b.nights, b.rooms) };
+}
+
+/** Log text for a room change that also moved the booking to another type. */
+const retypeNote = (before: Booking, after: Booking) =>
+  after.roomTypeId === before.roomTypeId ? "" : ` — now ${after.roomName} at ${money(after.pricePerNight)}/night (total ${money(before.total)} → ${money(after.total)})`;
+
 function validateUnits(s: HotelDB, typeId: string, unitIds: string[], checkIn: string, checkOut: string, ignoreId?: string): string | null {
   for (const id of unitIds) {
     const u = s.units.find((x) => x.id === id);
@@ -790,8 +828,16 @@ function addStaffBooking(s: HotelDB, input: StaffBookingInput, groupId?: string)
   if (input.checkInNow && input.checkIn !== today) {
     return "Only a stay starting today can be checked in now.";
   }
-  const chosen =
-    input.unitIds?.length || input.assignLater ? (input.unitIds ?? []).slice(0, input.rooms) : suggestUnits(s, type.id, input.checkIn, input.checkOut, input.rooms);
+  // Rooms picked by hand are kept; any still missing are filled with the best free ones unless they're for later.
+  const given = (input.unitIds ?? []).slice(0, input.rooms);
+  const chosen = input.assignLater
+    ? given
+    : [
+        ...given,
+        ...suggestUnits(s, type.id, input.checkIn, input.checkOut, input.rooms)
+          .filter((u) => !given.includes(u))
+          .slice(0, input.rooms - given.length),
+      ];
   const unitProblem = validateUnits(s, type.id, chosen, input.checkIn, input.checkOut);
   if (unitProblem) {
     return unitProblem;
@@ -956,7 +1002,8 @@ export function confirmBooking(id: string) {
   );
 }
 
-export function checkInBooking(id: string, unitIds?: string[]) {
+/** `rate` is the nightly rate to charge if the rooms picked are of another type. */
+export function checkInBooking(id: string, unitIds?: string[], rate?: number) {
   return patchBooking(
     id,
     (b, s) => {
@@ -966,11 +1013,13 @@ export function checkInBooking(id: string, unitIds?: string[]) {
       if (b.checkOut <= today) return "This stay has already ended — mark it as a no-show or change the dates.";
       const ids = unitIds ?? b.unitIds;
       if (ids.length < b.rooms) return `Assign ${b.rooms} room${b.rooms > 1 ? "s" : ""} before check-in.`;
-      const problem = validateUnits(s, b.roomTypeId, ids, today, b.checkOut, b.id);
+      const next = retypeForUnits(s, b, ids, today, rate);
+      if (typeof next === "string") return next;
+      const problem = validateUnits(s, next.roomTypeId, ids, today, b.checkOut, b.id);
       if (problem) return problem;
       const occupied = ids.map((unitId) => s.bookings.find((x) => x.id !== b.id && x.status === "checked-in" && x.unitIds.includes(unitId))).find(Boolean);
       if (occupied) return `${occupied.guest.name} (${occupied.code}) hasn't checked out of that room yet.`;
-      return { ...b, unitIds: ids, status: "checked-in", checkedInAt: nowIso(), log: logged(b, `Checked in to room ${unitNumbers(s, ids).join(", ")}`) };
+      return { ...next, unitIds: ids, status: "checked-in", checkedInAt: nowIso(), log: logged(b, `Checked in to room ${unitNumbers(s, ids).join(", ")}${retypeNote(b, next)}`) };
     },
     (b, s) =>
       guestNotice(s, b, "checkin", `Welcome! You're in room ${unitNumbers(s, b.unitIds).join(", ")}`, `Check-out is ${b.checkOut} by ${s.settings.checkOutTime}. Dial 0 for the front desk any time.`)
@@ -1021,6 +1070,41 @@ export function cancelBooking(id: string, opts: { reason: string; fee?: number; 
   );
 }
 
+/**
+ * Takes one room off a booking that has several, before check-in. The booking is re-priced for the rooms left;
+ * `unitId` names the room (none = one not assigned yet) and any fee goes on the folio.
+ */
+export function cancelRoom(id: string, opts: { unitId?: string; reason: string; fee?: number; adults: number; children: number }) {
+  return patchBooking(id, (b, s) => {
+    if (b.status !== "pending" && b.status !== "confirmed") return "Rooms can only be cancelled before check-in.";
+    if (b.rooms < 2) return "This is the booking's only room — cancel the booking instead.";
+    if (opts.unitId && !b.unitIds.includes(opts.unitId)) return "That room isn't on this booking.";
+    if (!opts.unitId && b.unitIds.length >= b.rooms) return "Pick which room to cancel.";
+    const rooms = b.rooms - 1;
+    const type = s.roomTypes.find((t) => t.id === b.roomTypeId);
+    const problem = validateStay(s, type, { checkIn: b.checkIn, checkOut: b.checkOut, rooms, adults: opts.adults, children: opts.children }, b.id, true, !!b.groupId);
+    if (problem) return problem;
+    const unitIds = opts.unitId ? b.unitIds.filter((u) => u !== opts.unitId) : b.unitIds;
+    const label = opts.unitId ? `Room ${unitNumbers(s, [opts.unitId])[0]}` : "An unassigned room";
+    const fee = Math.max(0, Math.round(opts.fee ?? 0));
+    const by = actor();
+    const charges = fee
+      ? [...b.charges, { id: uid("c"), category: "other" as const, description: `Cancellation fee — ${label.toLowerCase()}`, amount: fee, at: nowIso(), by }]
+      : b.charges;
+    const reason = opts.reason.trim() || "Cancelled by hotel";
+    return {
+      ...b,
+      ...requote(s, b, b.pricePerNight, b.nights, rooms),
+      rooms,
+      unitIds,
+      adults: opts.adults,
+      children: opts.children,
+      charges,
+      log: logged(b, `${label} cancelled — ${reason}${fee ? ` (fee ${money(fee)})` : ""}`),
+    };
+  });
+}
+
 export function cancelOwnBooking(id: string): Result<Booking> {
   const db = read() ?? getState();
   const ses = getSession();
@@ -1039,15 +1123,18 @@ export function markNoShow(id: string) {
   });
 }
 
-export function assignUnits(id: string, unitIds: string[]) {
+/** `rate` is the nightly rate to charge if the rooms picked are of another type. */
+export function assignUnits(id: string, unitIds: string[], rate?: number) {
   return patchBooking(id, (b, s) => {
     if (!isLive(b) || b.status === "checked-out") return "Rooms can only be changed on upcoming or in-house bookings.";
     if (unitIds.length > b.rooms) return `This booking has ${b.rooms} room${b.rooms > 1 ? "s" : ""}.`;
     const from = b.status === "checked-in" ? todayKey() : b.checkIn;
-    const problem = validateUnits(s, b.roomTypeId, unitIds, from, b.checkOut, b.id);
+    const next = retypeForUnits(s, b, unitIds, from, rate);
+    if (typeof next === "string") return next;
+    const problem = validateUnits(s, next.roomTypeId, unitIds, from, b.checkOut, b.id);
     if (problem) return problem;
     const text = unitIds.length ? `${b.status === "checked-in" ? "Moved to" : "Assigned"} room ${unitNumbers(s, unitIds).join(", ")}` : "Rooms unassigned";
-    return { ...b, unitIds, log: logged(b, text) };
+    return { ...next, unitIds, log: logged(b, text + retypeNote(b, next)) };
   });
 }
 
@@ -1063,8 +1150,7 @@ export function changeStay(id: string, change: StayChange) {
     const problem = validateStay(s, type, change, b.id, b.status === "checked-in", !!b.groupId);
     if (problem || !type) return problem ?? "Room unavailable.";
     const nights = nightsBetween(change.checkIn, change.checkOut);
-    const rate = Math.max(1, Math.round(change.pricePerNight));
-    const q = quoteStay(s.settings, rate, nights, change.rooms, b.discount);
+    const priced = requote(s, b, Math.max(1, Math.round(change.pricePerNight)), nights, change.rooms);
     const keep =
       change.roomTypeId === b.roomTypeId
         ? b.unitIds.filter((unitId) => !validateUnits(s, type.id, [unitId], b.status === "checked-in" ? todayKey() : change.checkIn, change.checkOut, b.id)).slice(0, change.rooms)
@@ -1075,20 +1161,10 @@ export function changeStay(id: string, change: StayChange) {
     return {
       ...b,
       ...change,
-      pricePerNight: rate,
+      ...priced,
       roomName: type.name,
-      nights,
-      subtotal: q.subtotal,
-      discount: b.discount && (q.discount ? { ...b.discount, amount: q.discount } : undefined),
-      commission: b.commission && {
-        ...b.commission,
-        amount: b.commission.kind === "percent" ? Math.round((q.net * b.commission.value) / 100) : Math.min(b.commission.value, q.net),
-      },
-      serviceFee: q.serviceFee,
-      tax: q.tax,
-      total: q.total,
       unitIds,
-      log: logged(b, `Stay changed to ${type.name}${change.rooms > 1 ? ` ×${change.rooms}` : ""}, ${change.checkIn} → ${change.checkOut} (${money(q.total)})`),
+      log: logged(b, `Stay changed to ${type.name}${change.rooms > 1 ? ` ×${change.rooms}` : ""}, ${change.checkIn} → ${change.checkOut} (${money(priced.total)})`),
     };
   });
 }
