@@ -1238,16 +1238,6 @@ export function setHousekeeping(unitId: string, housekeeping: Housekeeping) {
   update((s) => ({ ...s, units: s.units.map((u) => (u.id === unitId ? { ...u, housekeeping } : u)) }));
 }
 
-export function setOutOfService(unitId: string, outOfService: boolean, reason = ""): Result<true> {
-  const db = read() ?? getState();
-  if (outOfService) {
-    const inHouse = db.bookings.find((b) => b.status === "checked-in" && b.unitIds.includes(unitId));
-    if (inHouse) return fail(`${inHouse.guest.name} is staying in this room — move them first.`);
-  }
-  update((s) => ({ ...s, units: s.units.map((u) => (u.id === unitId ? { ...u, outOfService, oosReason: outOfService ? reason : undefined } : u)) }));
-  return { ok: true, value: true };
-}
-
 /* ───────────── content, gallery, reviews, settings ───────────── */
 
 export function saveContent(patch: Partial<Content>) {

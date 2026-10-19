@@ -6,7 +6,7 @@ import { taka } from "@/src/lib/hotel-store/format";
 import { cn } from "@/src/lib/utils";
 import { ADMIN } from "../ui";
 import type { Row } from "./model";
-import { EditButton, OosReason, RoomMenu, TonightChip, WebChip } from "./parts";
+import { EditButton, HousekeepingChip, OosReason, RoomMenu, TonightChip, WebChip } from "./parts";
 
 export function Thumb({ row, className }: { row: Row; className?: string }) {
   const src = row.t?.images[0];
@@ -70,6 +70,7 @@ export function RoomCard({ row }: { row: Row }) {
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <WebChip web={web} />
           <TonightChip tonight={tonight} />
+          <HousekeepingChip row={row} />
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <EditButton row={row} />

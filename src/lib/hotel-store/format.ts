@@ -123,16 +123,6 @@ export const statusStyles: Record<BookingStatus, string> = {
   "no-show": "bg-neutral-800 text-white ring-neutral-800",
 };
 
-/** Bar colours on the calendar. */
-export const statusBar: Record<BookingStatus, string> = {
-  pending: "bg-amber-100 text-amber-900 ring-amber-300",
-  confirmed: "bg-sky-100 text-sky-900 ring-sky-300",
-  "checked-in": "bg-emerald-500 text-white ring-emerald-600",
-  "checked-out": "bg-neutral-200 text-neutral-600 ring-neutral-300",
-  cancelled: "bg-rose-50 text-rose-700 ring-rose-200",
-  "no-show": "bg-neutral-700 text-white ring-neutral-800",
-};
-
 export const sourceLabels: Record<BookingSource, string> = {
   website: "Website",
   "walk-in": "Walk-in",

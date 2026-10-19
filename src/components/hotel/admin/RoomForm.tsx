@@ -501,7 +501,7 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
                       </label>
                     ))}
                   </div>
-                  <p className="mt-1.5 text-xs text-neutral-600">{v.outOfService ? "Can’t be booked by anyone, online or at the desk — use for repairs or renovation." : "Ready for guests. Whether it’s free on a given date is shown on the booking calendar."}</p>
+                  <p className="mt-1.5 text-xs text-neutral-600">{v.outOfService ? "Can’t be booked by anyone, online or at the desk — use for repairs or renovation." : "Ready for guests. Whether it’s free on a given date is checked when you make a booking."}</p>
                   {v.outOfService && (
                     <input {...register("oosReason")} aria-label="Reason (optional)" maxLength={80} placeholder="Reason (optional), e.g. AC repair" className={cn(ctl(), "mt-2")} />
                   )}

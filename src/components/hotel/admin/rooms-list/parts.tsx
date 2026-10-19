@@ -1,10 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, ExternalLink, Eye, EyeOff, MoreHorizontal, Pencil, Wrench } from "lucide-react";
+import { Brush, CalendarDays, ExternalLink, Eye, EyeOff, MoreHorizontal, Pencil, Wrench } from "lucide-react";
 import { toast } from "react-toastify";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/src/components/ui/dropdown-menu";
-import { saveRoomType } from "@/src/lib/hotel-store/store";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/src/components/ui/dropdown-menu";
+import { housekeepingLabels } from "@/src/lib/hotel-store/format";
+import { saveRoomType, setHousekeeping } from "@/src/lib/hotel-store/store";
+import type { Housekeeping } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
 import { ADMIN } from "../ui";
 import { tonightStyles, webStyles, type Row, type Tonight, type Web } from "./model";
@@ -26,6 +37,16 @@ export function TonightChip({ tonight }: { tonight: Tonight }) {
   return (
     <span className={cn(chipClass, s.chip)}>
       <span className={cn("size-1.5 rounded-full", s.dot)} aria-hidden /> {s.label}
+    </span>
+  );
+}
+
+/** Flags a room that needs cleaning before anyone can check in. */
+export function HousekeepingChip({ row }: { row: Row }) {
+  if (row.u.housekeeping !== "dirty" || row.tonight === "oos") return null;
+  return (
+    <span className={cn(chipClass, "bg-amber-50 text-amber-900 ring-amber-300")}>
+      <Brush className="size-3" aria-hidden /> {housekeepingLabels.dirty}
     </span>
   );
 }
@@ -54,7 +75,7 @@ export function EditButton({ row }: { row: Row }) {
   );
 }
 
-/** Secondary actions. Guest workflows stay on the Rooms board and booking pages. */
+/** Secondary actions, including housekeeping. Guest workflows stay on the booking pages. */
 export function RoomMenu({ row }: { row: Row }) {
   const { u, t, web, booking } = row;
   const toggle = () => {
@@ -62,6 +83,10 @@ export function RoomMenu({ row }: { row: Row }) {
     const res = saveRoomType({ ...t, active: !t.active });
     if (res.ok) toast.success(t.active ? `Room ${u.number} hidden from the website` : `Room ${u.number} published`);
     else toast.error(res.error);
+  };
+  const markHousekeeping = (hk: string) => {
+    setHousekeeping(u.id, hk as Housekeeping);
+    toast.success(`Room ${u.number} marked ${housekeepingLabels[hk as Housekeeping].toLowerCase()}`);
   };
   return (
     <DropdownMenu modal={false}>
@@ -92,6 +117,15 @@ export function RoomMenu({ row }: { row: Row }) {
             </Link>
           </DropdownMenuItem>
         )}
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-xs text-neutral-500">Housekeeping</DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={u.housekeeping} onValueChange={markHousekeeping}>
+          {(Object.keys(housekeepingLabels) as Housekeeping[]).map((hk) => (
+            <DropdownMenuRadioItem key={hk} value={hk} className="cursor-pointer">
+              {housekeepingLabels[hk]}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
         {web !== "draft" && (
           <>
             <DropdownMenuSeparator />
