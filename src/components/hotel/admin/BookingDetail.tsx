@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { toast } from "react-toastify";
 import {
+  AlertTriangle,
   ArrowLeft,
   BadgeCheck,
   Ban,
@@ -631,15 +632,15 @@ function PaymentState({ b }: { b: Booking }) {
 
 type StepState = "done" | "part" | "now" | "warn" | "todo";
 
-const stepDot: Record<StepState, string> = {
-  done: "bg-emerald-600 text-white",
-  part: "bg-sky-100 text-sky-700 ring-2 ring-sky-500",
-  now: "bg-sky-600 text-white ring-4 ring-sky-100",
-  warn: "bg-rose-50 text-rose-700 ring-2 ring-rose-400",
-  todo: "bg-neutral-100 text-neutral-500",
+const stepStyles: Record<StepState, { dot: string; title: string; note: string; label: string }> = {
+  done: { dot: "border-emerald-600 bg-emerald-600 text-white", title: "text-neutral-900", note: "text-neutral-500", label: "done" },
+  part: { dot: "border-sky-600 bg-white text-sky-700", title: "text-neutral-900", note: "text-sky-800", label: "in progress" },
+  now: { dot: "border-sky-600 bg-sky-600 text-white ring-4 ring-sky-100", title: "text-sky-800", note: "text-neutral-600", label: "current step" },
+  warn: { dot: "border-rose-600 bg-rose-600 text-white ring-4 ring-rose-100", title: "text-rose-800", note: "text-rose-700", label: "needs attention" },
+  todo: { dot: "border-neutral-300 bg-white text-neutral-500", title: "text-neutral-500", note: "text-neutral-500", label: "not started" },
 };
 
-/** Where the booking is in the front-desk process — booked, paid, checked in, checked out — and the next thing to do. */
+/** Where the booking is in the front-desk process — booked, paid, checked in, checked out. */
 function ProcessSteps({ db, b }: { db: HotelDB; b: Booking }) {
   const today = todayKey();
   const { checkInTime, checkOutTime } = db.settings;
@@ -685,46 +686,37 @@ function ProcessSteps({ db, b }: { db: HotelDB; b: Booking }) {
     },
   ];
 
-  const next =
-    b.status === "pending"
-      ? "Confirm the booking."
-      : out
-        ? due > 0
-          ? `Collect the ${taka(due)} still owed.`
-          : "Stay complete."
-        : inHouse
-          ? b.checkOut < today
-            ? "Past the check-out date — extend the stay or check the guest out."
-            : due > 0
-              ? `Collect ${taka(due)} before check-out on ${dateLabel(b.checkOut, "EEE dd MMM")}.`
-              : `Check out on ${dateLabel(b.checkOut, "EEE dd MMM")} by ${checkOutTime}.`
-          : arriving
-            ? blockers.length
-              ? `Sort this out before check-in: ${blockers.map((k) => k.text).join(" ")}`
-              : `Check the guest in${due > 0 ? ` — ${taka(due)} can be collected now or at check-out` : ""}.`
-            : due > 0
-              ? `Collect ${taka(due)} now, or at check-in on ${dateLabel(b.checkIn, "EEE dd MMM")}.`
-              : `Guest arrives ${dateLabel(b.checkIn, "EEE dd MMM")} — nothing to do until then.`;
-
   return (
-    <div className="mt-4 rounded-md border border-neutral-200 bg-white p-4">
-      <ol className="grid gap-4 sm:grid-cols-4">
-        {steps.map((st, i) => (
-          <li key={st.label} className="flex items-start gap-3">
-            <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold", stepDot[st.state])}>
-              {st.state === "done" ? <Check className="size-4" aria-label="Done" /> : i + 1}
+    <ol className="mt-4 flex flex-col rounded-md border border-neutral-200 bg-white p-4 md:flex-row md:gap-4 md:px-5">
+      {steps.map((st, i) => {
+        const s = stepStyles[st.state];
+        const last = i === steps.length - 1;
+        // The connector after a step fills in once that step is finished.
+        const line = st.state === "done" ? "bg-emerald-500" : "bg-neutral-200";
+        return (
+          <li
+            key={st.label}
+            aria-current={st.state === "now" || st.state === "warn" ? "step" : undefined}
+            className={cn("relative flex gap-3", last ? "md:flex-none" : "pb-5 md:flex-1 md:pb-0")}
+          >
+            {!last && <span aria-hidden className={cn("absolute bottom-1 left-4 top-9 w-0.5 -translate-x-1/2 rounded-full md:hidden", line)} />}
+            <span aria-hidden className={cn("flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold", s.dot)}>
+              {st.state === "done" ? <Check className="size-4" strokeWidth={3} /> : st.state === "warn" ? <AlertTriangle className="size-4" /> : i + 1}
             </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold text-neutral-900">{st.label}</span>
-              <span className={cn("block text-xs", st.state === "warn" ? "text-rose-700" : "text-neutral-500")}>{st.detail}</span>
-            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex h-8 items-center gap-3">
+                <span className={cn("whitespace-nowrap text-sm font-semibold", s.title)}>
+                  {st.label}
+                  <span className="sr-only">, {s.label}</span>
+                </span>
+                {!last && <span aria-hidden className={cn("hidden h-0.5 flex-1 rounded-full md:block", line)} />}
+              </div>
+              <p className={cn("-mt-1 text-xs leading-snug", s.note)}>{st.detail}</p>
+            </div>
           </li>
-        ))}
-      </ol>
-      <p className={cn("mt-4 rounded-md px-3 py-2 text-sm", blockers.length || (inHouse && b.checkOut < today) ? "bg-rose-50 text-rose-800" : "bg-sky-50 text-sky-900")}>
-        <b>Next:</b> {next}
-      </p>
-    </div>
+        );
+      })}
+    </ol>
   );
 }
 
