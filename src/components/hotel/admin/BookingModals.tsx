@@ -37,50 +37,126 @@ import { ADMIN, Field, hbtn, inputClass, Modal, textareaClass, useSaving } from 
 
 const methods: PayMethod[] = ["cash", "card", "bkash", "nagad", "rocket", "bank"];
 
+const mobileWallets: PayMethod[] = ["bkash", "nagad", "rocket"];
+const refLabel = (m: PayMethod) => (m === "card" ? "Card / auth reference" : m === "bank" ? "Bank reference" : "Transaction ID (TrxID)");
+
+/** Field-level checks, shown under each field once the user has tried to submit (or touched it). */
+function paymentErrors(input: { amount: string; method: PayMethod; ref: string; note: string; isRefund: boolean; max: number }) {
+  const e: { amount?: string; ref?: string; note?: string } = {};
+  const raw = input.amount.trim();
+  const n = Number(raw);
+  if (!raw) e.amount = "Enter an amount.";
+  else if (!Number.isFinite(n) || n <= 0) e.amount = "Amount must be more than ৳0.";
+  else if (!Number.isInteger(n)) e.amount = "Use whole taka — no paisa.";
+  else if (input.max <= 0) e.amount = input.isRefund ? "Nothing has been paid, so nothing can be refunded." : "Nothing is due on this bill.";
+  else if (n > input.max) e.amount = input.isRefund ? `Can't refund more than ${taka(input.max)}.` : `Can't be more than the balance due (${taka(input.max)}).`;
+
+  const ref = input.ref.trim();
+  if (input.method !== "cash") {
+    if (!ref) e.ref = `Enter the ${refLabel(input.method).toLowerCase()}.`;
+    else if (mobileWallets.includes(input.method) && !/^[A-Z0-9]{8,12}$/i.test(ref)) e.ref = "TrxID is 8–12 letters and numbers, e.g. 9F3K2L1M0P.";
+    else if (ref.length < 4) e.ref = "Reference looks too short.";
+  }
+
+  if (input.isRefund && !input.note.trim()) e.note = "Add a reason for the refund.";
+  else if (input.note.length > 200) e.note = "Keep the note under 200 characters.";
+  return e;
+}
+
 export function PaymentModal({ booking, kind, onClose }: { booking: Booking; kind: PaymentKind | null; onClose: () => void }) {
+  const db = useHotelDB();
   const isRefund = kind === "refund";
-  const suggested = isRefund ? creditOf(booking) || paidOf(booking) : dueOf(booking);
+  const due = dueOf(booking);
+  const paid = paidOf(booking);
+  const credit = creditOf(booking);
+  const max = isRefund ? paid : due;
+  const suggested = isRefund ? credit || paid : due;
   const firstMethod = booking.payments.find((p) => !p.void && p.kind !== "refund")?.method;
   const [amount, setAmount] = useState(String(suggested || ""));
   const [method, setMethod] = useState<PayMethod>(isRefund && firstMethod ? firstMethod : "cash");
   const [ref, setRef] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
+  const [tried, setTried] = useState(false);
   const { saving, run } = useSaving();
+
+  const errors = paymentErrors({ amount, method, ref, note, isRefund, max });
+  const show = (k: keyof typeof errors) => (tried ? errors[k] : undefined);
+  const value = Number(amount) || 0;
+  const after = isRefund ? paid - value : due - value;
+  const rooms = unitNumbers(db, booking.unitIds);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    setTried(true);
+    if (Object.keys(errors).length) return;
     run(() => {
       setError("");
-      const r = addPayment(booking.id, { amount: Number(amount), method, kind: kind ?? "payment", ref, note });
+      const r = addPayment(booking.id, { amount: value, method, kind: kind ?? "payment", ref, note });
       if (!r.ok) return setError(r.error);
-      toast.success(isRefund ? `Refunded ${taka(Number(amount))}` : `Received ${taka(Number(amount))} via ${payLabels[method]}`);
+      toast.success(isRefund ? `Refunded ${taka(value)}` : `Received ${taka(value)} via ${payLabels[method]}`);
       onClose();
     });
   };
 
   return (
     <Modal open={!!kind} onClose={onClose} title={isRefund ? `Refund · ${booking.guest.name}` : `Collect payment · ${booking.guest.name}`}>
-      <form onSubmit={submit} className="space-y-4">
-        <div className="grid grid-cols-3 gap-2 rounded-md bg-neutral-50 p-3 text-center text-sm">
-          <div>
-            <p className="text-[13px] text-neutral-600">Paid</p>
-            <p className="font-semibold tabular-nums text-neutral-900">{taka(paidOf(booking))}</p>
+      <form onSubmit={submit} noValidate className="space-y-5">
+        <dl className="divide-y divide-neutral-100 rounded-md border border-neutral-200 text-sm">
+          <div className="flex justify-between px-3.5 py-2">
+            <dt className="text-neutral-600">Bill total{rooms.length > 0 && ` · Room ${rooms.join(", ")}`}</dt>
+            <dd className="tabular-nums text-neutral-900">{taka(folioTotal(booking))}</dd>
           </div>
-          <div>
-            <p className="text-[13px] text-neutral-600">Balance due</p>
-            <p className="font-semibold tabular-nums text-amber-800">{taka(dueOf(booking))}</p>
+          <div className="flex justify-between px-3.5 py-2">
+            <dt className="text-neutral-600">Paid so far</dt>
+            <dd className="tabular-nums text-emerald-700">{taka(paid)}</dd>
           </div>
-          <div>
-            <p className="text-[13px] text-neutral-600">Refundable</p>
-            <p className="font-semibold tabular-nums text-violet-700">{taka(creditOf(booking))}</p>
+          {credit > 0 && (
+            <div className="flex justify-between px-3.5 py-2">
+              <dt className="text-neutral-600">Overpaid (refundable)</dt>
+              <dd className="tabular-nums text-violet-700">{taka(credit)}</dd>
+            </div>
+          )}
+          <div className="flex justify-between bg-neutral-50 px-3.5 py-2.5 font-medium">
+            <dt className="text-neutral-900">Balance due</dt>
+            <dd className={cn("tabular-nums", due > 0 ? "text-rose-600" : "text-emerald-600")}>{taka(due)}</dd>
           </div>
+        </dl>
+
+        <div>
+          <label htmlFor="pay-amount" className="mb-1 block text-xs font-medium text-neutral-600">
+            {isRefund ? "Refund amount" : "Amount received"}
+          </label>
+          <div className="relative">
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-lg font-medium text-neutral-500">৳</span>
+            <input
+              id="pay-amount"
+              type="number"
+              min={1}
+              step={1}
+              inputMode="numeric"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              aria-invalid={!!show("amount")}
+              aria-describedby="pay-amount-msg"
+              className={cn(inputClass, "h-12 pl-8 text-lg font-medium tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none", show("amount") && "border-rose-400 focus:border-rose-500 focus:ring-rose-200")}
+              autoFocus
+            />
+          </div>
+          <p id="pay-amount-msg" className={cn("mt-1.5 text-xs", show("amount") ? "font-medium text-rose-600" : "text-neutral-500")}>
+            {show("amount") ??
+              (value > 0 && after >= 0
+                ? isRefund
+                  ? `Paid after refund: ${taka(after)}`
+                  : after === 0
+                    ? "Clears the balance in full."
+                    : `Still due after this: ${taka(after)}`
+                : "\u00a0")}
+          </p>
         </div>
-        <Field label="Amount (৳)">
-          <input type="number" min={1} inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} className={inputClass} autoFocus />
-        </Field>
+
         <fieldset>
-          <legend className="mb-1 block text-xs font-medium text-neutral-600">{isRefund ? "Refund to" : "Method"}</legend>
+          <legend className="mb-1 block text-xs font-medium text-neutral-600">{isRefund ? "Refund to" : "Payment method"}</legend>
           <div className="grid grid-cols-3 gap-2">
             {methods.map((m) => (
               <button
@@ -89,31 +165,58 @@ export function PaymentModal({ booking, kind, onClose }: { booking: Booking; kin
                 onClick={() => setMethod(m)}
                 aria-pressed={method === m}
                 className={cn(
-                  "h-10 rounded-md border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500",
-                  method === m ? "border-sky-500 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-700 hover:border-sky-300"
+                  "relative h-10 rounded-md border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500",
+                  method === m ? "border-sky-600 bg-sky-50 text-sky-800 ring-1 ring-sky-600" : "border-neutral-200 text-neutral-700 hover:border-sky-300"
                 )}
               >
+                {method === m && <Check className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-sky-600" aria-hidden />}
                 {payLabels[m]}
               </button>
             ))}
           </div>
         </fieldset>
+
         {method !== "cash" && (
-          <Field label={method === "card" ? "Card / auth reference" : method === "bank" ? "Bank reference" : "Transaction ID (TrxID)"}>
-            <input value={ref} onChange={(e) => setRef(e.target.value)} className={inputClass} placeholder={method === "card" ? "•••• 4242 · Auth 123456" : "e.g. 9F3K2L1M0P"} />
-          </Field>
+          <div>
+            <label htmlFor="pay-ref" className="mb-1 block text-xs font-medium text-neutral-600">
+              {refLabel(method)}
+            </label>
+            <input
+              id="pay-ref"
+              value={ref}
+              onChange={(e) => setRef(e.target.value)}
+              aria-invalid={!!show("ref")}
+              className={cn(inputClass, show("ref") && "border-rose-400")}
+              placeholder={method === "card" ? "•••• 4242 · Auth 123456" : method === "bank" ? "e.g. DBBL-20261019-001" : "e.g. 9F3K2L1M0P"}
+            />
+            {show("ref") && <p className="mt-1 text-xs font-medium text-rose-600">{show("ref")}</p>}
+          </div>
         )}
-        <Field label="Note (optional)">
-          <input value={note} onChange={(e) => setNote(e.target.value)} className={inputClass} placeholder={isRefund ? "Reason for the refund" : "e.g. Paid at check-out"} />
-        </Field>
+
+        <div>
+          <label htmlFor="pay-note" className="mb-1 block text-xs font-medium text-neutral-600">
+            {isRefund ? "Reason" : "Note"} {!isRefund && <span className="font-normal text-neutral-400">(optional)</span>}
+          </label>
+          <input
+            id="pay-note"
+            value={note}
+            maxLength={200}
+            onChange={(e) => setNote(e.target.value)}
+            aria-invalid={!!show("note")}
+            className={cn(inputClass, show("note") && "border-rose-400")}
+            placeholder={isRefund ? "Reason for the refund" : "e.g. Paid at check-out"}
+          />
+          {show("note") && <p className="mt-1 text-xs font-medium text-rose-600">{show("note")}</p>}
+        </div>
+
         <FormError text={error} />
-        <div className="flex justify-end gap-2 pt-1">
+        <div className="flex justify-end gap-2 border-t border-neutral-100 pt-4">
           <button type="button" onClick={onClose} className={hbtn.outline}>
             Cancel
           </button>
-          <button type="submit" disabled={saving} className={isRefund ? hbtn.dark : hbtn.primary}>
-            {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
-            {saving ? "Saving…" : isRefund ? "Refund" : "Record payment"}
+          <button type="submit" disabled={saving || max <= 0} className={cn(isRefund ? hbtn.dark : hbtn.primary, "min-w-40")}>
+            {saving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Wallet className="size-4" aria-hidden />}
+            {saving ? "Saving…" : `${isRefund ? "Refund" : "Record"} ${value > 0 && !errors.amount ? taka(value) : "payment"}`}
           </button>
         </div>
       </form>

@@ -23,11 +23,8 @@ export default function CommissionPanel() {
 
   return (
     <div className="mt-5 rounded-md border border-neutral-200 bg-neutral-50/60 p-4">
-      <p className="mb-3 flex items-center justify-between gap-3 text-sm font-semibold text-neutral-900">
+      <p className="mb-3 text-sm font-semibold text-neutral-900">
         Agent &amp; commission
-        <span className="text-xs font-normal text-neutral-600">
-          Paid by the hotel · not on the guest&rsquo;s bill
-        </span>
       </p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.3fr)]">
         <FormField label="Agency name" name="commission.name">
@@ -52,7 +49,7 @@ export default function CommissionPanel() {
           hint={
             stay.commission > 0
               ? `= ${taka(stay.commission)} on the room charge`
-              : "On the room charge after discount"
+              : undefined
           }
           className="sm:col-span-2 lg:col-span-1"
         >

@@ -118,6 +118,7 @@ function initialValues(
     guest: user ? guestFromUser(user, lastId) : emptyGuest,
     updateProfile: false,
     extraBeds: 0,
+    extraBedRate: EXTRA_BED_RATE,
     discountKind: "amount",
     discountValue: "",
     discountReason: "",
@@ -349,7 +350,7 @@ function NewBookingForm() {
             ? [
                 {
                   category: "extra-bed" as const,
-                  description: `Extra bed × ${s.extraBeds} (${taka(EXTRA_BED_RATE)} × ${s.nights} night${s.nights > 1 ? "s" : ""})`,
+                  description: `Extra bed × ${s.extraBeds} (${taka(s.extraBedRate)} × ${s.nights} night${s.nights > 1 ? "s" : ""})`,
                   amount: s.extras,
                 },
               ]

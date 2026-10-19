@@ -99,12 +99,17 @@ export default function BookingDetail({ id }: { id: string }) {
   const today = todayKey();
   const user = db.users.find((u) => u.id === b.userId);
   const linked = groupOf(db, b);
+  // This bill plus its live linked bills (rooms of other types booked together), in room order.
+  const group = [b, ...linked.filter(isLive)].sort((x, y) => x.code.localeCompare(y.code));
+  const groupDue = group.reduce((n, x) => n + dueOf(x), 0);
+  const multi = group.length > 1;
   const otherStays = user ? db.bookings.filter((x) => x.userId === user.id && x.id !== b.id) : [];
   const unitList = unitNumbers(db, b.unitIds);
   const due = dueOf(b);
   const credit = creditOf(b);
   const paid = paidOf(b);
   const total = folioTotal(b);
+  const settled = due === 0 && paid > 0;
   const live = isLive(b);
   const upcoming = b.status === "pending" || b.status === "confirmed";
   const terms = cancellationTerms(db, b);
@@ -284,9 +289,10 @@ export default function BookingDetail({ id }: { id: string }) {
           <ProcessSteps db={db} b={b} />
         </div>
 
-        <div className="grid items-start gap-6 xl:grid-cols-[1fr_360px]">
-          <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          {/* Container query: the cards sit side by side only when this column (not the viewport) is wide enough. */}
+          <div className="@container min-w-0 space-y-6">
+            <div className="grid gap-6 @3xl:grid-cols-2">
               <Card>
                 <div className="flex items-center justify-between">
                   <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
@@ -343,7 +349,13 @@ export default function BookingDetail({ id }: { id: string }) {
                 </h2>
                 {live && (
                   <div className="flex gap-2">
-                    <button onClick={() => setModal("charge")} className={hbtn.small}>
+                    {/* Bill is settled: no more charges or discounts on it. */}
+                    <button
+                      onClick={() => setModal("charge")}
+                      disabled={settled}
+                      title={settled ? "Bill is fully paid — no more charges or discounts" : undefined}
+                      className={cn(hbtn.small, "disabled:cursor-not-allowed disabled:opacity-50")}
+                    >
                       <Plus className="size-3.5" /> Charge / discount
                     </button>
                     {due > 0 && (
@@ -500,30 +512,78 @@ export default function BookingDetail({ id }: { id: string }) {
 
           <div className="space-y-6">
             <Card>
-              <p className="text-sm text-neutral-500">{credit > 0 ? "Refund due to guest" : due > 0 ? "Balance due" : "Balance"}</p>
-              <p className={cn("mt-1 text-3xl font-bold tabular-nums", credit > 0 ? "text-violet-700" : due > 0 ? "text-rose-600" : "text-emerald-600")}>
-                {taka(credit > 0 ? credit : due)}
-              </p>
-              <dl className="mt-4 space-y-1.5 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-neutral-500">Folio total</dt>
-                  <dd className="tabular-nums">{taka(total)}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-neutral-500">Paid (net)</dt>
-                  <dd className="tabular-nums">{taka(paid)}</dd>
-                </div>
-                {!live && (
-                  <div className="flex justify-between">
-                    <dt className="text-neutral-500">Cancellation fee kept</dt>
-                    <dd className="tabular-nums">{taka(b.cancellationFee ?? 0)}</dd>
-                  </div>
-                )}
-              </dl>
+              {multi ? (
+                <>
+                  {/* Each room keeps its own bill: what each still owes, then the whole stay. */}
+                  <ul className="-mt-2.5 divide-y divide-neutral-100 border-b border-neutral-100 text-sm">
+                    {group.map((x) => {
+                      const nums = unitNumbers(db, x.unitIds).join(", ");
+                      const xPaid = paidOf(x);
+                      return (
+                        <li key={x.id} className="flex items-center justify-between gap-3 py-2.5">
+                          <span className="min-w-0">
+                            {x.id === b.id ? (
+                              <b className="text-neutral-900">Room {nums || "—"}</b>
+                            ) : (
+                              <Link href={`${ADMIN}/bookings/${x.id}`} title={`Open ${x.code}`} className="font-semibold text-sky-700 hover:underline">
+                                Room {nums || x.code}
+                              </Link>
+                            )}
+                            <span className="block truncate text-xs text-neutral-500">
+                              {x.roomName}
+                              {xPaid > 0 && ` · ${taka(xPaid)} paid`}
+                            </span>
+                          </span>
+                          <span className={cn("shrink-0 font-semibold tabular-nums", dueOf(x) > 0 ? "text-neutral-900" : "text-emerald-600")}>
+                            {dueOf(x) > 0 ? taka(dueOf(x)) : "Paid"}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <dl className="mt-3 space-y-1.5 font-medium text-neutral-900">
+                    <div className="flex justify-between">
+                      <dt>Total bill</dt>
+                      <dd className="tabular-nums">{taka(group.reduce((n, x) => n + folioTotal(x), 0))}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt>Paid</dt>
+                      <dd className="tabular-nums text-emerald-700">{taka(group.reduce((n, x) => n + paidOf(x), 0))}</dd>
+                    </div>
+                    <div className={cn("flex justify-between border-t border-neutral-200 pt-2 text-lg", groupDue > 0 ? "text-rose-600" : "text-emerald-600")}>
+                      <dt>{groupDue > 0 ? "Balance due" : "Fully paid"}</dt>
+                      <dd className="tabular-nums">{taka(groupDue)}</dd>
+                    </div>
+                  </dl>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-neutral-500">{credit > 0 ? "Refund due to guest" : due > 0 ? "Balance due" : "Balance"}</p>
+                  <p className={cn("mt-1 text-3xl font-bold tabular-nums", credit > 0 ? "text-violet-700" : due > 0 ? "text-rose-600" : "text-emerald-600")}>
+                    {taka(credit > 0 ? credit : due)}
+                  </p>
+                  <dl className="mt-4 space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-neutral-500">Folio total</dt>
+                      <dd className="tabular-nums">{taka(total)}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-neutral-500">Paid (net)</dt>
+                      <dd className="tabular-nums">{taka(paid)}</dd>
+                    </div>
+                    {!live && (
+                      <div className="flex justify-between">
+                        <dt className="text-neutral-500">Cancellation fee kept</dt>
+                        <dd className="tabular-nums">{taka(b.cancellationFee ?? 0)}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </>
+              )}
               <PaymentState b={b} />
               {live && due > 0 && (
                 <button onClick={() => setPayKind("payment")} className={cn(hbtn.primary, "mt-4 h-11 w-full text-base")}>
-                  <Wallet className="size-4" /> Collect payment
+                  <Wallet className="size-4" /> Collect payment{multi && unitList.length > 0 && ` · Room ${unitList.join(", ")}`}
                 </button>
               )}
               {upcoming && (
@@ -623,24 +683,22 @@ function PaymentState({ b }: { b: Booking }) {
   const credit = creditOf(b);
   const received = paidOf(b) + refundedOf(b);
   const last = b.payments.filter((p) => !p.void && p.kind !== "refund").sort((x, y) => x.at.localeCompare(y.at)).at(-1);
+  // Nothing paid yet: the balance above already says it all.
+  if (credit <= 0 && due > 0 && received <= 0) return null;
   const state =
     credit > 0
       ? { label: "Refund due", tone: "bg-violet-50 text-violet-700 ring-violet-200" }
       : due === 0
         ? { label: "Paid in full", tone: "bg-emerald-50 text-emerald-700 ring-emerald-200" }
-        : received > 0
-          ? { label: "Partially paid", tone: "bg-sky-50 text-sky-700 ring-sky-200" }
-          : { label: "Not paid yet", tone: "bg-neutral-100 text-neutral-700 ring-neutral-300" };
+        : { label: "Partially paid", tone: "bg-sky-50 text-sky-700 ring-sky-200" };
   return (
     <div className="mt-4 border-t border-neutral-100 pt-3">
       <span className={cn("inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset", state.tone)}>{state.label}</span>
       <p className="mt-2 text-xs text-neutral-500">
-        {last ? (
+        {last && (
           <>
             Last payment <b className="font-semibold text-neutral-700">{taka(last.amount)}</b> · {payLabels[last.method]} · {formatDateTime(last.at)}
           </>
-        ) : (
-          "No payment received yet."
         )}
       </p>
     </div>
@@ -766,7 +824,7 @@ function InfoTable({ rows }: { rows: InfoRow[] }) {
       <tbody className="divide-y divide-neutral-100 border-y border-neutral-100">
         {rows.map(({ icon: Icon, label, value, href }) => (
           <tr key={label} className="align-top">
-            <th scope="row" className="w-36 whitespace-nowrap py-2.5 pr-3 text-left font-normal text-neutral-500">
+            <th scope="row" className="w-32 whitespace-nowrap py-2.5 pr-3 sm:w-36 text-left font-normal text-neutral-500">
               <span className="inline-flex items-center gap-2">
                 <Icon className="size-4 shrink-0 text-neutral-400" />
                 {label}

@@ -42,12 +42,10 @@ import {
   arrivalOptions,
   composeGuest,
   computeStay,
-  EXTRA_BED_RATE,
   emptyGuest,
   guestFromUser,
   MAX_EXTRA_BEDS,
   requestOptions,
-  titles,
   type BookingFormValues,
 } from "./schema";
 
@@ -189,23 +187,12 @@ export default function GuestSection({ step }: { step: number }) {
         </FormField>
 
         <FormField label="Full name" name="guest.fullName">
-          <div className="flex gap-2">
-            <select
-              {...register("guest.title")}
-              aria-label="Title"
-              className={cn(inputClass, "w-[72px] shrink-0 px-2")}
-            >
-              {titles.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
-            <input
-              {...register("guest.fullName")}
-              placeholder="e.g. Tamim Rahman"
-              autoComplete="off"
-              className={cn(inputClass, "min-w-0", err.fullName)}
-            />
-          </div>
+          <input
+            {...register("guest.fullName")}
+            placeholder="e.g. Tamim Rahman"
+            autoComplete="off"
+            className={cn(inputClass, "min-w-0", err.fullName)}
+          />
         </FormField>
       </div>
 
@@ -275,7 +262,7 @@ export default function GuestSection({ step }: { step: number }) {
 
       {user && <GuestCard user={user} onClear={clearPick} />}
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
+      <div className="mt-4 grid gap-4">
         <FormField
           label={
             <>
@@ -309,12 +296,9 @@ export default function GuestSection({ step }: { step: number }) {
       </div>
 
       {checkingIn && (
-        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50/50 p-3.5">
+        <div className="mt-4 rounded-md border border-neutral-200 bg-neutral-50/60 p-3.5">
           <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-neutral-900">
-            <IdCard className="size-4 text-amber-700" /> Identification{" "}
-            <span className="text-xs font-medium text-amber-800">
-              · Required for check-in
-            </span>
+            <IdCard className="size-4 text-neutral-500" /> Identification
           </p>
           <IdFields />
         </div>
@@ -331,7 +315,7 @@ export default function GuestSection({ step }: { step: number }) {
             .join(" · ")}
           forceOpen={extraHasError}
         >
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4">
             <FormField label="Country of residence" name="guest.country">
               <select
                 {...register("guest.country", {
@@ -409,7 +393,6 @@ function IdFields() {
       <FormField
         label={idKind === "nid" ? "NID number" : "Passport number"}
         name="guest.idNumber"
-        className="sm:max-w-xs"
       >
         <input
           {...register("guest.idNumber")}
@@ -435,7 +418,8 @@ function ArrivalAndRequests() {
   const v = useWatch({ control }) as BookingFormValues;
   const requests = useController({ control, name: "guest.requests" }).field;
   const picked: string[] = requests.value ?? [];
-  const { extraBeds, extras, nights } = computeStay(db, v);
+  const { extraBeds, extraBedRate, extras, nights } = computeStay(db, v);
+  const rateErr = useErrorClass("extraBedRate");
   const summary = [
     v.guest.arrivalTime && `Arrives ${v.guest.arrivalTime.split(" (")[0]}`,
     picked.length > 0 &&
@@ -458,13 +442,9 @@ function ArrivalAndRequests() {
         </FormField>
       )}
 
-      <p className={fieldLabel}>
-        Requests{" "}
-        <span className="font-normal text-neutral-500">
-          — noted for the team, not guaranteed
-        </span>
-      </p>
-      <div className="flex flex-wrap gap-1.5">
+      <p className={fieldLabel}>Requests</p>
+      {/* Chips stretch to fill each row, spaced edge to edge. */}
+      <div className="flex flex-wrap justify-between gap-1.5">
         {requestOptions.map((r) => {
           const on = picked.includes(r);
           return (
@@ -479,7 +459,7 @@ function ArrivalAndRequests() {
                 )
               }
               className={cn(
-                "inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[13px] transition",
+                "inline-flex h-8 flex-auto items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 text-[13px] transition",
                 on
                   ? "border-sky-500 bg-sky-50 text-sky-900"
                   : "border-neutral-200 text-neutral-700 hover:border-sky-300",
@@ -518,8 +498,26 @@ function ArrivalAndRequests() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="text-sm text-neutral-800">
             Extra bed
-            <span className="block text-xs text-neutral-600">
-              {taka(EXTRA_BED_RATE)} per bed per night
+            <span className="mt-1 flex items-center gap-1.5 text-xs text-neutral-600">
+              <span className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-2 flex items-center text-neutral-500">
+                  ৳
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  step={50}
+                  inputMode="numeric"
+                  {...register("extraBedRate")}
+                  aria-label="Extra bed price per bed per night"
+                  className={cn(
+                    inputClass,
+                    "h-8 w-24 pl-5 text-sm tabular-nums",
+                    rateErr
+                  )}
+                />
+              </span>
+              per bed / night
             </span>
           </span>
           <span className="flex items-center gap-3">
@@ -544,11 +542,12 @@ function ArrivalAndRequests() {
         </div>
         {extraBeds > 0 && nights > 0 && (
           <p className="mt-1.5 text-xs text-neutral-600">
-            {extraBeds} × {taka(EXTRA_BED_RATE)} × {nights} night
+            {extraBeds} × {taka(extraBedRate)} × {nights} night
             {nights > 1 ? "s" : ""} = {taka(extras)}
           </p>
         )}
         <FieldError name="extraBeds" />
+        <FieldError name="extraBedRate" />
       </div>
     </Disclosure>
   );

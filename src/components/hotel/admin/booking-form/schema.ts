@@ -64,7 +64,6 @@ export type StayLine = {
   party: LineParty | null;
 };
 
-export const titles = ["Mr", "Ms", "Mrs", "Dr"] as const;
 export const AIRPORT_PICKUP = "Airport pickup";
 /** Asked for, not promised — the desk confirms them later. */
 export const requestOptions = [
@@ -86,7 +85,6 @@ export const arrivalOptions = [
 
 /** Same shape as the website's guest form, so staff and guests fill in the same details. */
 export type GuestForm = {
-  title: (typeof titles)[number];
   fullName: string;
   email: string;
   /** Country code, or "OTHER". */
@@ -136,6 +134,8 @@ export type BookingFormValues = {
   guest: GuestForm;
   updateProfile: boolean;
   extraBeds: number;
+  /** Per bed per night — starts at EXTRA_BED_RATE, staff can change it. */
+  extraBedRate: number | string;
   discountKind: DiscountKind;
   discountValue: number | string;
   discountReason: string;
@@ -152,7 +152,6 @@ export type BookingFormValues = {
 };
 
 export const emptyGuest: GuestForm = {
-  title: "Mr",
   fullName: "",
   email: "",
   country: "BD",
@@ -184,9 +183,7 @@ export function composeGuest(g: GuestForm): GuestInfo {
       : (getCountry(g.phoneCountry)?.dial ?? "880");
   const local = g.phone.replace(/[\s()-]/g, "").replace(/^0/, "");
   return {
-    name: g.fullName.trim()
-      ? [g.title, g.fullName.trim().replace(/\s+/g, " ")].join(" ")
-      : "",
+    name: g.fullName.trim() ? g.fullName.trim().replace(/\s+/g, " ") : "",
     email: g.email.trim(),
     phone: local ? `+${dial} ${local}` : "",
     country:
@@ -210,11 +207,6 @@ const byDialLength = [...countries].sort(
 
 /** Fills the form from a saved guest profile (and the ID they showed last time). */
 export function guestFromUser(user: User, last?: GuestInfo): GuestForm {
-  const words = user.name.trim().split(/\s+/);
-  const maybeTitle = words[0]?.replace(/\.$/, "") as GuestForm["title"];
-  const title = titles.includes(maybeTitle)
-    ? (words.shift(), maybeTitle)
-    : "Mr";
   const country =
     countries.find((c) => c.name === user.country)?.code ??
     (user.country ? "OTHER" : "BD");
@@ -234,8 +226,7 @@ export function guestFromUser(user: User, last?: GuestInfo): GuestForm {
   }
   return {
     ...emptyGuest,
-    title,
-    fullName: words.join(" "),
+    fullName: user.name.trim().replace(/\s+/g, " "),
     email: user.email,
     country,
     otherCountry: country === "OTHER" ? (user.country ?? "") : "",
@@ -294,6 +285,7 @@ type StayInput = Pick<
   | "discountValue"
 > & {
   extraBeds?: number | string;
+  extraBedRate?: number | string;
   source?: BookingFormValues["source"];
   commission?: CommissionForm;
 };
@@ -356,7 +348,8 @@ export function computeStay(db: HotelDB, v: StayInput) {
     const rooms = members.reduce((s, i) => s + lines[i].rooms, 0);
     const flatShare = members.reduce(
       (s, i) =>
-        s + (lines[i].discount?.kind === "amount" ? lines[i].discount!.value : 0),
+        s +
+        (lines[i].discount?.kind === "amount" ? lines[i].discount!.value : 0),
       0
     );
     const discount: DiscountInput | undefined =
@@ -434,7 +427,8 @@ export function computeStay(db: HotelDB, v: StayInput) {
   const party = manual.map((m, i) => m ?? auto[autoIdx.indexOf(i)]);
   const placed = party.reduce((s, p) => s + p.adults + p.children, 0);
   const extraBeds = Math.max(0, Math.round(toNum(v.extraBeds)));
-  const extras = extraBeds * EXTRA_BED_RATE * n;
+  const extraBedRate = Math.max(0, toNum(v.extraBedRate ?? EXTRA_BED_RATE));
+  const extras = extraBeds * extraBedRate * n;
   const total = quote.total + extras;
   return {
     nights,
@@ -460,6 +454,7 @@ export function computeStay(db: HotelDB, v: StayInput) {
     partyGap: lines.length ? placed - (adults + children) : 0,
     quote,
     extraBeds,
+    extraBedRate,
     extras,
     /** Room charge with tax plus paid extras — what the guest owes. */
     total,
@@ -523,10 +518,6 @@ const LOCAL_MOBILE = /^0?1[3-9]\d{8}$/;
 const INTL_NUMBER = /^\d{5,14}$/;
 
 const guestSchema = yup.object({
-  title: yup
-    .mixed<GuestForm["title"]>()
-    .oneOf([...titles])
-    .required(),
   fullName: yup.string().trim().required("Enter the guest's full name"),
   email: yup.string().trim().default("").email("Enter a valid email"),
   country: yup.string().required("Select the country"),
@@ -800,6 +791,7 @@ export const bookingSchema = yup.object({
     .integer()
     .min(0)
     .max(MAX_EXTRA_BEDS, `Up to ${MAX_EXTRA_BEDS} extra beds`),
+  extraBedRate: num("Extra bed price").min(0, "Price can't be negative"),
 
   discountKind: yup
     .mixed<DiscountKind>()
@@ -892,7 +884,7 @@ export const bookingSchema = yup.object({
 
 /** Which on-page section holds a field, so a failed submit can scroll to it. */
 export const sectionOf = (field: string) =>
-  /^(guest|userId|guestMode|updateProfile|extraBeds)/.test(field)
+  /^(guest|userId|guestMode|updateProfile|extraBed)/.test(field)
     ? "guest"
     : /^lines/.test(field)
       ? "rooms"

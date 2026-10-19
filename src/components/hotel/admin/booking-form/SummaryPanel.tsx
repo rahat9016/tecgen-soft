@@ -2,23 +2,9 @@
 
 import { useState } from "react";
 import { useFormContext, useFormState, useWatch } from "react-hook-form";
-import {
-  AlertCircle,
-  CalendarDays,
-  DoorOpen,
-  Loader2,
-  Plus,
-  UserRound,
-  Users,
-  X,
-} from "lucide-react";
-import { discountLimit } from "@/src/lib/hotel-store/auth";
+import { AlertCircle, Loader2, Plus, X } from "lucide-react";
 import { dateLabel, taka } from "@/src/lib/hotel-store/format";
-import {
-  unitNumbers,
-  useCurrentStaff,
-  useHotelDB,
-} from "@/src/lib/hotel-store/store";
+import { unitNumbers, useHotelDB } from "@/src/lib/hotel-store/store";
 import { cn } from "@/src/lib/utils";
 import { hbtn, inputClass, textareaClass } from "../ui";
 import {
@@ -33,7 +19,6 @@ import {
   computeStay,
   discountReasons,
   OTHER_REASON,
-  planAmountOf,
   receivedOf,
   toNum,
   type BookingFormValues,
@@ -67,7 +52,6 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
   const stay = computeStay(db, v);
   const { nights, quote, lines, commission, extras, extraBeds, total } = stay;
   const received = receivedOf(v, stay);
-  const planned = planAmountOf(v, stay);
   const balance = total - received;
   const adults = toNum(v.adults);
   const children = toNum(v.children);
@@ -80,72 +64,33 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
     <aside
       id="bf-summary"
       aria-label="Booking summary"
-      className="scroll-mt-24 overflow-hidden rounded-md border border-neutral-200 bg-white shadow-sm"
+      className="flex scroll-mt-24 flex-col overflow-hidden rounded-md border border-neutral-200 bg-white shadow-sm lg:max-h-[calc(100dvh-6rem)]"
     >
-      <div className="border-b border-neutral-100 px-4 py-3">
+      <div className="shrink-0 border-b border-neutral-100 px-4 py-3">
         <h2 className="text-[15px] font-semibold text-neutral-900">
           Booking summary
         </h2>
       </div>
 
-      <div className="space-y-4 p-4">
-        <ul className="space-y-2 text-sm text-neutral-800">
-          <Row icon={CalendarDays}>
-            {nights > 0 ? (
-              <>
-                <span className="block">
-                  {fullDate(v.checkIn)} → {fullDate(v.checkOut)}
-                </span>
-                <span className="text-xs text-neutral-600">
-                  {nights} night{nights > 1 ? "s" : ""}
-                </span>
-              </>
-            ) : (
-              <span className="text-neutral-500">Dates not set</span>
-            )}
-          </Row>
-          <Row icon={Users}>
-            {adults} adult{adults !== 1 ? "s" : ""}
-            {children > 0 &&
-              `, ${children} ${children === 1 ? "child" : "children"}`}
-          </Row>
-          {name && (
-            <Row icon={UserRound}>
-              <span className="font-medium">{name}</span>
-            </Row>
-          )}
-          {lines.length > 0 && (
-            <Row icon={DoorOpen}>
-              <ul className="space-y-0.5">
-                {lines.map((l, i) => {
-                  const [number] = unitNumbers(db, l.line.unitIds);
-                  return (
-                    <li key={i}>
-                      {number ? (
-                        <span className="font-medium">Room {number}</span>
-                      ) : (
-                        <span
-                          className={
-                            checkingIn
-                              ? "font-medium text-rose-700"
-                              : "text-amber-800"
-                          }
-                        >
-                          Room not assigned
-                        </span>
-                      )}
-                      <span className="block text-xs text-neutral-600">
-                        {[l.type?.beds, `sleeps ${l.capacity}`]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </Row>
-          )}
-        </ul>
+      {/* Only the details scroll — the header and the submit button stay in view however many rooms are added. */}
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
+        <table className="w-full table-fixed text-sm">
+          <tbody className="divide-y divide-neutral-100">
+            <InfoRow label="Check-in">
+              {nights > 0 ? fullDate(v.checkIn) : "Not set"}
+            </InfoRow>
+            <InfoRow label="Check-out">
+              {nights > 0 ? fullDate(v.checkOut) : "Not set"}
+            </InfoRow>
+            <InfoRow label="Nights">{nights > 0 ? nights : "—"}</InfoRow>
+            <InfoRow label="Guests">
+              {adults} adult{adults !== 1 ? "s" : ""}
+              {children > 0 &&
+                `, ${children} ${children === 1 ? "child" : "children"}`}
+            </InfoRow>
+            {name && <InfoRow label="Guest">{name}</InfoRow>}
+          </tbody>
+        </table>
 
         {!lines.length || nights <= 0 ? (
           <p className="rounded-md border border-dashed border-neutral-300 py-5 text-center text-sm text-neutral-600">
@@ -153,24 +98,65 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
           </p>
         ) : (
           <>
-            <dl className="space-y-2 border-t border-neutral-100 pt-3 text-sm">
-              {lines.map((l, i) => (
-                <Line
-                  key={i}
-                  label={
-                    <>
-                      {l.line.unitIds[0]
-                        ? `Room ${unitNumbers(db, l.line.unitIds)[0]}`
-                        : "Room (not assigned)"}
-                      <span className="block text-xs text-neutral-600">
-                        {taka(l.rate)} × {nights} night{nights > 1 ? "s" : ""}
-                        {l.rooms > 1 && ` × ${l.rooms} rooms`}
-                      </span>
-                    </>
-                  }
-                  value={taka(l.quote.subtotal)}
-                />
-              ))}
+            <table className="w-full table-fixed text-sm">
+              <thead>
+                <tr className="border-b border-neutral-200 text-xs text-neutral-600">
+                  <th scope="col" className="pb-1.5 text-left font-semibold">
+                    Room
+                  </th>
+                  <th
+                    scope="col"
+                    className="w-[38%] pb-1.5 text-right font-semibold"
+                  >
+                    Rate
+                  </th>
+                  <th
+                    scope="col"
+                    className="w-[28%] pb-1.5 text-right font-semibold"
+                  >
+                    Amount
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {lines.map((l, i) => {
+                  const [number] = unitNumbers(db, l.line.unitIds);
+                  return (
+                    <tr key={i} className="align-top">
+                      <td className="py-2 pr-2">
+                        {number ? (
+                          <span className="font-semibold text-neutral-900">
+                            {number}
+                          </span>
+                        ) : (
+                          <span
+                            className={
+                              checkingIn
+                                ? "font-medium text-rose-700"
+                                : "text-amber-800"
+                            }
+                          >
+                            Not assigned
+                          </span>
+                        )}
+                        <span className="block truncate text-xs text-neutral-600">
+                          {l.type?.beds ?? `Sleeps ${l.capacity}`}
+                        </span>
+                      </td>
+                      <td className="py-2 text-right text-xs tabular-nums text-neutral-700">
+                        {taka(l.rate)} × {nights}
+                        {l.rooms > 1 && ` × ${l.rooms}`}
+                      </td>
+                      <td className="py-2 text-right font-medium tabular-nums text-neutral-900">
+                        {taka(l.quote.subtotal)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            <dl className="space-y-2 border-t border-neutral-200 pt-3 text-sm">
               <DiscountEditor amount={quote.discount} />
               <Line
                 label={`Service charge (${serviceFeeRate}%)`}
@@ -187,49 +173,55 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
               )}
             </dl>
 
-            <div className="flex items-baseline justify-between border-t border-neutral-200 pt-3">
-              <span className="font-semibold text-neutral-900">Total</span>
-              <span className="text-2xl font-bold tabular-nums text-neutral-900">
-                {taka(total)}
-              </span>
+            <div className="overflow-hidden rounded-md border border-neutral-200">
+              <table className="w-full text-sm">
+                <tbody className="divide-y divide-neutral-200">
+                  <tr>
+                    <th
+                      scope="row"
+                      className="px-3 py-2.5 text-left font-semibold text-neutral-900"
+                    >
+                      Total
+                    </th>
+                    <td className="px-3 py-2.5 text-right text-lg font-bold tabular-nums text-neutral-900">
+                      {taka(total)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th
+                      scope="row"
+                      className="px-3 py-2 text-left font-normal text-neutral-700"
+                    >
+                      Amount received
+                    </th>
+                    <td
+                      className={cn(
+                        "px-3 py-2 text-right font-medium tabular-nums",
+                        received > 0 ? "text-emerald-700" : "text-neutral-900"
+                      )}
+                    >
+                      {taka(received)}
+                    </td>
+                  </tr>
+                  <tr
+                    className={cn(
+                      "text-white",
+                      balance > 0 ? "bg-sky-700" : "bg-emerald-600"
+                    )}
+                  >
+                    <th
+                      scope="row"
+                      className="px-3 py-2.5 text-left font-semibold"
+                    >
+                      {balance > 0 ? "Balance due" : "Fully paid"}
+                    </th>
+                    <td className="px-3 py-2.5 text-right text-base font-bold tabular-nums">
+                      {taka(Math.max(balance, 0))}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <dl className="space-y-1.5 text-sm">
-              <Line
-                label="Amount received"
-                value={received > 0 ? taka(received) : taka(0)}
-                tone={received > 0 ? "text-emerald-700" : undefined}
-              />
-              {!v.payCollected && planned > 0 && (
-                <p className="text-xs text-amber-800">
-                  {taka(planned)}{" "}
-                  {v.payPlan === "deposit" ? "deposit" : "payment"} requested —
-                  not received
-                </p>
-              )}
-              <div
-                className={cn(
-                  "flex items-baseline justify-between rounded-md px-2.5 py-2",
-                  balance > 0 ? "bg-amber-50" : "bg-emerald-50"
-                )}
-              >
-                <dt
-                  className={cn(
-                    "font-semibold",
-                    balance > 0 ? "text-amber-900" : "text-emerald-800"
-                  )}
-                >
-                  {balance > 0 ? "Balance due" : "Fully paid"}
-                </dt>
-                <dd
-                  className={cn(
-                    "text-base font-bold tabular-nums",
-                    balance > 0 ? "text-amber-900" : "text-emerald-800"
-                  )}
-                >
-                  {taka(balance)}
-                </dd>
-              </div>
-            </dl>
             {commission > 0 && (
               <p className="flex justify-between gap-3 text-xs text-neutral-600">
                 <span className="truncate">
@@ -245,7 +237,7 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
         )}
       </div>
 
-      <div className="space-y-3 border-t border-neutral-100 bg-neutral-50/70 p-4">
+      <div className="shrink-0 space-y-3 border-t border-neutral-100 bg-neutral-50/70 p-4">
         {!checkingIn && (
           <div>
             <p className="mb-1.5 text-[13px] font-medium text-neutral-800">
@@ -266,11 +258,11 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
               ]}
               className="w-full bg-white"
             />
-            <p className="mt-1 text-xs text-neutral-600">
-              {v.status === "tentative"
-                ? "Rooms are held as pending until the guest confirms or pays."
-                : "Rooms are held for the guest."}
-            </p>
+            {v.status === "tentative" && (
+              <p className="mt-1 text-xs text-neutral-600">
+                Rooms are held as pending until the guest confirms or pays.
+              </p>
+            )}
           </div>
         )}
 
@@ -313,18 +305,25 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
   );
 }
 
-function Row({
-  icon: Icon,
+function InfoRow({
+  label,
   children,
 }: {
-  icon: typeof Users;
+  label: string;
   children: React.ReactNode;
 }) {
   return (
-    <li className="flex gap-2.5">
-      <Icon className="mt-0.5 size-4 shrink-0 text-neutral-500" />
-      <span className="min-w-0">{children}</span>
-    </li>
+    <tr className="align-top">
+      <th
+        scope="row"
+        className="w-24 py-1.5 pr-2 text-left font-normal text-neutral-600"
+      >
+        {label}
+      </th>
+      <td className="py-1.5 text-right font-medium text-neutral-900 wrap-break-word">
+        {children}
+      </td>
+    </tr>
   );
 }
 
@@ -355,8 +354,6 @@ function Line({
 
 /** One input with a ৳ / % switch and a reason, hidden behind "Add discount" until needed. */
 function DiscountEditor({ amount }: { amount: number }) {
-  const staff = useCurrentStaff();
-  const limit = discountLimit(staff?.role);
   const { control, register, setValue } = useFormContext<BookingFormValues>();
   const { isSubmitted, errors } = useFormState({ control });
   const v = useWatch({ control }) as BookingFormValues;
@@ -438,9 +435,6 @@ function DiscountEditor({ amount }: { amount: number }) {
         />
       </div>
       <FieldError name="discountValue" />
-      <p className="mt-1 text-xs text-neutral-600">
-        On the room charge · your limit is {limit}%
-      </p>
       {value > 0 && (
         <div className="mt-2 space-y-2">
           <div>

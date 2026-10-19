@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { chargeLabels, dayOf, payLabels, paymentKindLabels } from "@/src/lib/hotel-store/format";
 import { cancellationTerms, creditOf, dueOf, folioTotal, isLive, paidOf, unitNumbers } from "@/src/lib/hotel-store/store";
 import type { Booking, HotelDB } from "@/src/lib/hotel-store/types";
+import { cn } from "@/src/lib/utils";
 
 const ONES = [
   "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
@@ -63,7 +64,8 @@ export default function PrintableInvoice({ booking, db }: { booking: Booking; db
   const guestsLabel = `${booking.adults} adult${booking.adults !== 1 ? "s" : ""}${
     booking.children ? `, ${booking.children} child${booking.children !== 1 ? "ren" : ""}` : ""
   }`;
-  const stamp = !live ? (booking.status === "no-show" ? "No-show" : "Cancelled") : due === 0 ? "Paid in full" : paid > 0 ? "Partly paid" : "Payment due";
+  // Paid / unpaid is the watermark; the header badge is only for closed bills.
+  const stamp = live ? "" : booking.status === "no-show" ? "No-show" : "Cancelled";
 
   const detailRow = (label: string, value: string) => (
     <tr key={label}>
@@ -77,6 +79,20 @@ export default function PrintableInvoice({ booking, db }: { booking: Booking; db
       {/* Zero page margin + padding above: identical spacing whatever margin the print dialog is set to. */}
       {/* Toast pop-ups must not land on the printed invoice. */}
       <style>{"@page { size: A4; margin: 0; } @media print { .Toastify { display: none !important; } }"}</style>
+
+      {/* Diagonal PAID / UNPAID watermark; `fixed` repeats it on every printed page. Not shown on cancelled or no-show bills. */}
+      {live && (
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center">
+          <span
+            className={cn(
+              "-rotate-30 select-none rounded-xl border-[6px] px-10 py-2 text-[120px] font-black uppercase leading-none tracking-[0.15em] opacity-[0.08]",
+              due === 0 ? "border-emerald-700 text-emerald-700" : "border-rose-700 text-rose-700"
+            )}
+          >
+            {due === 0 ? "Paid" : "Unpaid"}
+          </span>
+        </div>
+      )}
 
       <header className="flex items-start justify-between border-b-2 border-sky-700 pb-4">
         <div>
@@ -107,7 +123,7 @@ export default function PrintableInvoice({ booking, db }: { booking: Booking; db
               ))}
             </tbody>
           </table>
-          <span className="mt-2 inline-block rounded bg-sky-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white">{stamp}</span>
+          {stamp && <span className="mt-2 inline-block rounded bg-sky-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white">{stamp}</span>}
         </div>
       </header>
 
