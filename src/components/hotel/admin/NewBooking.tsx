@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import {
@@ -12,24 +11,9 @@ import {
   type Resolver,
 } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import {
-  ArrowLeft,
-  CircleCheck,
-  Eye,
-  Loader2,
-  Plus,
-  Printer,
-} from "lucide-react";
-import PrintableInvoice, {
-  printWithTitle,
-} from "@/src/components/hotel/Booking/PrintableInvoice";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { discountLimit } from "@/src/lib/hotel-store/auth";
-import {
-  dateLabel,
-  shiftDay,
-  taka,
-  todayKey,
-} from "@/src/lib/hotel-store/format";
+import { shiftDay, taka, todayKey } from "@/src/lib/hotel-store/format";
 import {
   createStaffBookings,
   findGuestMatch,
@@ -40,7 +24,7 @@ import {
   useHotelDB,
   useHydrated,
 } from "@/src/lib/hotel-store/store";
-import type { Booking, HotelDB } from "@/src/lib/hotel-store/types";
+import type { HotelDB } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
 import GuestSection from "./booking-form/GuestSection";
 import PaymentSection from "./booking-form/PaymentSection";
@@ -121,6 +105,8 @@ function initialValues(
     extraBedRate: EXTRA_BED_RATE,
     discountKind: "amount",
     discountValue: "",
+    serviceFeeRate: 0,
+    vatRate: 0,
     discountReason: "",
     discountNote: "",
     payPlan: "none",
@@ -145,7 +131,7 @@ function NewBookingForm() {
   const params = useSearchParams();
   const limit = discountLimit(staff?.role);
   const [saving, setSaving] = useState(false);
-  const [created, setCreated] = useState<Booking[] | null>(null);
+  const [created, setCreated] = useState(false);
   const [conflict, setConflict] = useState("");
   // Blocks a second submit before React re-renders the disabled button.
   const submitting = useRef(false);
@@ -172,15 +158,8 @@ function NewBookingForm() {
     mode: "onTouched",
     shouldFocusError: false,
   });
-  const {
-    control,
-    getValues,
-    setValue,
-    setError,
-    handleSubmit,
-    formState,
-    reset,
-  } = methods;
+  const { control, getValues, setValue, setError, handleSubmit, formState } =
+    methods;
   const { isDirty, isSubmitted } = formState;
   const [checkIn, checkOut, lines, status] = useWatch({
     control,
@@ -193,7 +172,7 @@ function NewBookingForm() {
   // Staff pick room numbers themselves and those are never swapped behind their back — validation flags a clash.
   // A line without a number gets the best free one, unless it's held for later (not possible when checking in now).
   const lineKey = (lines ?? [])
-    .map((l) => `${l.typeId}:${l.unitIds.join()}:${l.assignLater}`)
+    .map((l) => `${l.typeId}:${(l.unitIds ?? []).join()}:${l.assignLater}`)
     .join("|");
   useEffect(() => {
     const valid = !!checkIn && !!checkOut && checkOut > checkIn;
@@ -365,6 +344,8 @@ function NewBookingForm() {
             : undefined,
         checkInNow: values.status === "check-in",
         tentative: values.status === "tentative",
+        serviceFeeRate: s.serviceFeeRate,
+        vatRate: s.vatRate,
         internalNote: (i === 0 && internalNote) || undefined,
       }))
     );
@@ -390,8 +371,14 @@ function NewBookingForm() {
         phone: guest.phone,
         country: guest.country,
       });
-    setCreated(r.value);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Drop the unsaved-changes guard, then open the new booking.
+    setCreated(true);
+    toast.success(
+      r.value.length > 1
+        ? `${r.value.length} bookings created`
+        : `Booking ${r.value[0].code} created`
+    );
+    router.replace(`${ADMIN}/bookings/${r.value[0].id}`);
   };
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -407,18 +394,6 @@ function NewBookingForm() {
     }
   };
 
-  if (created) {
-    return (
-      <BookingCreated
-        bookings={created}
-        onAnother={() => {
-          reset(initialValues(db, new URLSearchParams()));
-          setCreated(null);
-        }}
-      />
-    );
-  }
-
   return (
     <FormProvider {...methods}>
       <form
@@ -427,36 +402,24 @@ function NewBookingForm() {
         aria-busy={saving}
         className="pb-24 lg:pb-4"
       >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={leave}
-              aria-label="Back to bookings"
-              className={cn(hbtn.outline, "size-9 px-0", focusRing)}
-            >
-              <ArrowLeft className="size-4" />
-            </button>
-            <div>
-              <h1 className="text-lg font-semibold text-neutral-900">
-                New booking
-              </h1>
-              <p className="text-[13px] text-neutral-600">
-                Walk-in, phone or agent reservation
-              </p>
-            </div>
-          </div>
-          <Link
-            href={`${ADMIN}/bookings`}
-            onClick={(e) => {
-              e.preventDefault();
-              leave();
-            }}
-            className={cn(hbtn.outline, "h-9", focusRing)}
+        <Card className="flex items-center gap-3 px-4 py-3 sm:px-5">
+          <button
+            type="button"
+            onClick={leave}
+            aria-label="Back to bookings"
+            className={cn(hbtn.outline, "size-9 bg-white px-0", focusRing)}
           >
-            Cancel
-          </Link>
-        </div>
+            <ArrowLeft className="size-4" />
+          </button>
+          <div>
+            <h1 className="text-lg font-semibold text-neutral-900">
+              New booking
+            </h1>
+            <p className="text-[13px] text-neutral-600">
+              Walk-in, phone or agent reservation
+            </p>
+          </div>
+        </Card>
 
         <div className="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(300px,3fr)]">
           <div className="min-w-0 space-y-4">
@@ -497,111 +460,5 @@ function NewBookingForm() {
         </div>
       </form>
     </FormProvider>
-  );
-}
-
-/** Shown in place of the form once the booking is saved: the booking ID and what to do next. */
-function BookingCreated({
-  bookings,
-  onAnother,
-}: {
-  bookings: Booking[];
-  onAnother: () => void;
-}) {
-  const db = useHotelDB();
-  const [first] = bookings;
-  const checkedIn = first.status === "checked-in";
-  const total = bookings.reduce(
-    (s, b) => s + b.total + b.charges.reduce((n, c) => n + c.amount, 0),
-    0
-  );
-  const paid = bookings.reduce(
-    (s, b) => s + b.payments.reduce((n, p) => n + p.amount, 0),
-    0
-  );
-  const rooms = bookings.flatMap((b) =>
-    b.unitIds
-      .map((id) => db.units.find((u) => u.id === id)?.number)
-      .filter(Boolean)
-  );
-
-  const unassigned = bookings.reduce(
-    (n, b) => n + b.rooms - b.unitIds.length,
-    0
-  );
-
-  return (
-    <>
-      <div className="print:hidden">
-        <Card className="mx-auto mt-6 max-w-xl p-6 text-center">
-          <CircleCheck className="mx-auto size-10 text-emerald-600" />
-          <h1 className="mt-3 text-lg font-semibold text-neutral-900">
-            {checkedIn
-              ? "Booking created and guest checked in"
-              : "Booking created"}
-          </h1>
-          <p className="mt-1 text-sm text-neutral-600">
-            {first.guest.name} · {dateLabel(first.checkIn, "d MMM yyyy")} →{" "}
-            {dateLabel(first.checkOut, "d MMM yyyy")}
-          </p>
-          <p className="mt-4 text-xs font-medium text-neutral-600">
-            Booking ID
-          </p>
-          <p className="text-2xl font-bold tracking-wide text-neutral-900">
-            {bookings.map((b) => b.code).join(", ")}
-          </p>
-          <dl className="mx-auto mt-4 grid max-w-sm grid-cols-3 gap-2 text-sm">
-            {[
-              [
-                "Rooms",
-                [rooms.join(", "), unassigned > 0 && `${unassigned} to assign`]
-                  .filter(Boolean)
-                  .join(" + "),
-              ],
-              ["Total", taka(total)],
-              ["Balance", taka(Math.max(0, total - paid))],
-            ].map(([k, val]) => (
-              <div key={k} className="rounded-md bg-neutral-50 px-2 py-2">
-                <dt className="text-xs text-neutral-600">{k}</dt>
-                <dd className="font-semibold tabular-nums text-neutral-900">
-                  {val}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
-            <Link
-              href={`${ADMIN}/bookings/${first.id}`}
-              className={cn(hbtn.primary, focusRing)}
-            >
-              <Eye className="size-4" /> View booking
-            </Link>
-            <button
-              type="button"
-              onClick={() =>
-                printWithTitle(`${first.code} - ${db.content.hotel.name}`)
-              }
-              className={cn(hbtn.outline, focusRing)}
-            >
-              <Printer className="size-4" /> Print confirmation
-            </button>
-            <button
-              type="button"
-              onClick={onAnother}
-              className={cn(hbtn.outline, focusRing)}
-            >
-              <Plus className="size-4" /> New booking
-            </button>
-          </div>
-        </Card>
-      </div>
-      {bookings.map((b) => (
-        <PrintableInvoice
-          key={b.id}
-          booking={db.bookings.find((x) => x.id === b.id) ?? b}
-          db={db}
-        />
-      ))}
-    </>
   );
 }

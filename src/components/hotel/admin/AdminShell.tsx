@@ -15,10 +15,11 @@ import {
   LayoutTemplate,
   LogOut,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   RotateCcw,
   Settings,
   Star,
-  Users,
   Wallet,
   X,
 } from "lucide-react";
@@ -48,6 +49,8 @@ import { cn } from "@/src/lib/utils";
 import { ADMIN, Loader, NoAccess } from "./ui";
 
 
+const COMPACT_KEY = "hotel-admin-sidebar-compact";
+
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }>; perm?: Permission; badge?: "pending" | "refunds" | "reviews" | "notices" };
 
 const groups: { title: string; items: NavItem[] }[] = [
@@ -56,7 +59,6 @@ const groups: { title: string; items: NavItem[] }[] = [
     items: [
       { href: `${ADMIN}/bookings`, label: "Bookings", icon: ClipboardList, perm: "bookings.manage", badge: "pending" },
       { href: `${ADMIN}/payments`, label: "Payments", icon: Wallet, perm: "payments.record", badge: "refunds" },
-      { href: `${ADMIN}/users`, label: "Guests & staff", icon: Users, perm: "guests.view" },
     ],
   },
   {
@@ -214,6 +216,22 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  // Desktop only: an 85px icon rail instead of the full menu, remembered in this browser.
+  // The shell renders only after hydration, so reading storage up front can't mismatch the server HTML.
+  const [compact, setCompact] = useState(() => {
+    try {
+      return typeof window !== "undefined" && localStorage.getItem(COMPACT_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleCompact = () =>
+    setCompact((c) => {
+      try {
+        localStorage.setItem(COMPACT_KEY, c ? "0" : "1");
+      } catch {}
+      return !c;
+    });
   const isLogin = pathname === `${ADMIN}/login`;
 
   useStaffAlerts((n) => {
@@ -243,46 +261,47 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const current = [...allItems].sort((a, b) => b.href.length - a.href.length).find((i) => isActive(i.href, pathname));
   const allowed = !current?.perm || can(staff.role, current.perm);
 
-  const sidebar = (
+  const sidebar = (rail: boolean) => (
     <nav className="flex h-full flex-col">
-      <Link href={`${ADMIN}/bookings`} className="block px-5 pb-1 pt-5" onClick={() => setOpen(false)}>
-        <Image src="/TripWaveLogo-light.webp" alt="TripWave" width={614} height={192} className="h-10 w-auto" />
+      <Link href={`${ADMIN}/bookings`} className={cn("block", rail ? "px-2 pb-1 pt-4" : "px-5 pb-1 pt-5")} onClick={() => setOpen(false)}>
+        <Image src="/TripWaveLogo-light.webp" alt="TripWave" width={614} height={192} className={rail ? "h-auto w-full object-contain" : "h-10 w-auto"} />
       </Link>
-      <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/50">Hotel admin</p>
-      <div className="mt-5 flex-1 space-y-5 overflow-y-auto px-3 pb-4">
-        {groups.map((g) => {
+      {!rail && <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/50">Hotel admin</p>}
+      <div className={cn("mt-5 flex-1 overflow-y-auto pb-4", rail ? "space-y-2 px-1.5" : "space-y-5 px-3")}>
+        {groups.map((g, gi) => {
           const items = g.items.filter((i) => !i.perm || can(staff.role, i.perm));
           if (!items.length) return null;
           return (
-            <div key={g.title}>
-              <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-200/40">{g.title}</p>
+            <div key={g.title} className={cn(rail && gi > 0 && "border-t border-white/10 pt-2")}>
+              {!rail && <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-200/40">{g.title}</p>}
               <ul className="space-y-0.5">
                 {items.map((item) => {
                   const active = isActive(item.href, pathname);
                   const count = item.badge ? badges[item.badge] : 0;
+                  const badgeTone = item.badge === "notices" ? "bg-rose-500 text-white" : active ? "bg-sky-600 text-white" : "bg-amber-400 text-sky-950";
                   return (
                     <li key={item.href}>
                       <Link
                         href={item.href}
                         onClick={() => setOpen(false)}
                         aria-current={active ? "page" : undefined}
+                        title={rail ? item.label : undefined}
                         className={cn(
-                          "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition",
+                          "rounded-md text-sm transition",
+                          rail ? "flex flex-col items-center gap-1 px-0.5 py-2 text-center" : "flex items-center gap-3 px-3 py-2.5",
                           active ? "bg-white font-semibold text-sky-950 shadow-sm" : "text-sky-100/80 hover:bg-white/5 hover:text-white"
                         )}
                       >
-                        <item.icon className={cn("size-4", active ? "text-sky-600" : "")} />
-                        {item.label}
-                        {count > 0 && (
-                          <span
-                            className={cn(
-                              "ml-auto rounded-md px-1.5 text-[10px] font-bold tabular-nums",
-                              item.badge === "notices" ? "bg-rose-500 text-white" : active ? "bg-sky-600 text-white" : "bg-amber-400 text-sky-950"
-                            )}
-                          >
-                            {count}
-                          </span>
-                        )}
+                        <span className="relative">
+                          <item.icon className={cn(rail ? "size-5" : "size-4", active ? "text-sky-600" : "")} />
+                          {rail && count > 0 && (
+                            <span className={cn("absolute -right-2 -top-1.5 min-w-4 rounded-full px-1 text-center text-[9px] font-bold leading-4 tabular-nums", badgeTone)}>
+                              {count}
+                            </span>
+                          )}
+                        </span>
+                        <span className={cn(rail && "w-full truncate text-[10px] leading-tight")}>{item.label}</span>
+                        {!rail && count > 0 && <span className={cn("ml-auto rounded-md px-1.5 text-[10px] font-bold tabular-nums", badgeTone)}>{count}</span>}
                       </Link>
                     </li>
                   );
@@ -292,9 +311,17 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           );
         })}
       </div>
-      <div className="space-y-0.5 border-t border-white/10 p-3">
-        <Link href="/hotel-management" target="_blank" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sky-100/80 hover:bg-white/5 hover:text-white">
-          <ExternalLink className="size-4" /> View website
+      <div className={cn("space-y-0.5 border-t border-white/10", rail ? "p-1.5" : "p-3")}>
+        <Link
+          href="/hotel-management"
+          target="_blank"
+          title={rail ? "View website" : undefined}
+          className={cn(
+            "rounded-md text-sm text-sky-100/80 hover:bg-white/5 hover:text-white",
+            rail ? "flex flex-col items-center gap-1 px-0.5 py-1.5 text-[10px]" : "flex items-center gap-3 px-3 py-2"
+          )}
+        >
+          <ExternalLink className="size-4" /> {rail ? "Website" : "View website"}
         </Link>
         {can(staff.role, "settings.manage") && (
           <button
@@ -304,9 +331,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 toast.success("Demo data reset");
               }
             }}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-sky-100/80 hover:bg-white/5 hover:text-white"
+            title={rail ? "Reset demo data" : undefined}
+            className={cn(
+              "w-full rounded-md text-sm text-sky-100/80 hover:bg-white/5 hover:text-white",
+              rail ? "flex flex-col items-center gap-1 px-0.5 py-1.5 text-[10px]" : "flex items-center gap-3 px-3 py-2"
+            )}
           >
-            <RotateCcw className="size-4" /> Reset demo data
+            <RotateCcw className="size-4" /> {rail ? "Reset" : "Reset demo data"}
           </button>
         )}
       </div>
@@ -315,7 +346,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="min-h-screen bg-neutral-50 print:bg-white">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 bg-gradient-to-b from-sky-950 to-slate-950 lg:block print:hidden">{sidebar}</aside>
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-30 hidden bg-gradient-to-b from-sky-950 to-slate-950 transition-[width] duration-200 lg:block print:hidden",
+          compact ? "w-[85px]" : "w-64"
+        )}
+      >
+        {sidebar(compact)}
+      </aside>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden print:hidden">
           <button aria-label="Close menu" className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
@@ -323,11 +361,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <button onClick={() => setOpen(false)} aria-label="Close menu" className="absolute right-3 top-5 text-white">
               <X className="size-5" />
             </button>
-            {sidebar}
+            {sidebar(false)}
           </aside>
         </div>
       )}
-      <div className="min-w-0 lg:pl-64 print:pl-0">
+      <div className={cn("min-w-0 transition-[padding] duration-200 print:pl-0", compact ? "lg:pl-[85px]" : "lg:pl-64")}>
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-neutral-200 bg-white/90 px-4 backdrop-blur sm:px-6 xl:px-8 print:hidden">
           <button
             onClick={() => setOpen(true)}
@@ -335,6 +373,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             className="flex size-10 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-700 lg:hidden"
           >
             <Menu className="size-5" />
+          </button>
+          <button
+            onClick={toggleCompact}
+            aria-label={compact ? "Expand sidebar" : "Collapse sidebar"}
+            title={compact ? "Expand sidebar" : "Collapse sidebar"}
+            className="hidden size-10 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-700 hover:text-sky-700 lg:flex"
+          >
+            {compact ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}
           </button>
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <NotificationBell />
@@ -372,7 +418,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           </div>
         </header>
         {/* The root layout already provides <main>. */}
-        <div className="p-4 sm:p-6 xl:p-8 print:p-0">{allowed ? children : <NoAccess />}</div>
+        <div className="p-4 print:p-0">{allowed ? children : <NoAccess />}</div>
       </div>
     </div>
   );

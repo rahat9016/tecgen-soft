@@ -138,6 +138,9 @@ export type BookingFormValues = {
   extraBedRate: number | string;
   discountKind: DiscountKind;
   discountValue: number | string;
+  /** Service charge and VAT percent for this booking only; start at 0. */
+  serviceFeeRate: number | string;
+  vatRate: number | string;
   discountReason: string;
   discountNote: string;
   payPlan: PayPlan;
@@ -284,6 +287,8 @@ type StayInput = Pick<
   | "discountKind"
   | "discountValue"
 > & {
+  serviceFeeRate?: number | string;
+  vatRate?: number | string;
   extraBeds?: number | string;
   extraBedRate?: number | string;
   source?: BookingFormValues["source"];
@@ -301,6 +306,12 @@ export function computeStay(db: HotelDB, v: StayInput) {
   const nights =
     v.checkIn && v.checkOut ? nightsBetween(v.checkIn, v.checkOut) : 0;
   const n = Math.max(0, nights);
+  const pct = (x?: number | string) => Math.min(100, Math.max(0, toNum(x)));
+  const settings = {
+    ...db.settings,
+    serviceFeeRate: pct(v.serviceFeeRate),
+    vatRate: pct(v.vatRate),
+  };
   const base = (v.lines ?? []).map((line) => {
     const type = db.roomTypes.find((t) => t.id === line.typeId);
     const rate =
@@ -336,7 +347,7 @@ export function computeStay(db: HotelDB, v: StayInput) {
     return {
       ...b,
       discount,
-      quote: quoteStay(db.settings, b.rate, n, b.rooms, discount),
+      quote: quoteStay(settings, b.rate, n, b.rooms, discount),
     };
   });
   // Rooms of one type at one rate are saved as a single booking, so money is worked out per booking:
@@ -364,7 +375,7 @@ export function computeStay(db: HotelDB, v: StayInput) {
       rate: first.rate,
       rooms,
       discount,
-      quote: quoteStay(db.settings, first.rate, n, rooms, discount),
+      quote: quoteStay(settings, first.rate, n, rooms, discount),
     };
   });
   const sum = (k: keyof (typeof groups)[number]["quote"]) =>
@@ -453,6 +464,9 @@ export function computeStay(db: HotelDB, v: StayInput) {
     /** Guests placed in rooms minus the party size; non-zero when a hand split doesn't add up. */
     partyGap: lines.length ? placed - (adults + children) : 0,
     quote,
+    /** Percent applied, after clamping to 0–100. */
+    serviceFeeRate: settings.serviceFeeRate,
+    vatRate: settings.vatRate,
     extraBeds,
     extraBedRate,
     extras,
@@ -818,6 +832,12 @@ export const bookingSchema = yup.object({
         })
       );
     }),
+  serviceFeeRate: num("Service charge")
+    .min(0, "Can't be negative")
+    .max(100, "Can't be more than 100%"),
+  vatRate: num("VAT")
+    .min(0, "Can't be negative")
+    .max(100, "Can't be more than 100%"),
   discountReason: yup
     .string()
     .default("")

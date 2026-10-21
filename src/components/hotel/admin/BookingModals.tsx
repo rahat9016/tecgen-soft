@@ -25,6 +25,7 @@ import {
   groupOf,
   paidOf,
   quoteStay,
+  ratesFor,
   setHousekeeping,
   unitNumbers,
   updateBookingGuest,
@@ -318,7 +319,7 @@ export function RoomsModal({ booking, mode, onClose }: { booking: Booking; mode:
   const newType = picked.length ? db.roomTypes.find((t) => t.id === typeOf(picked[0]) && t.id !== booking.roomTypeId) : undefined;
   const [rateEdit, setRateEdit] = useState<{ typeId: string; value: number } | null>(null);
   const rate = newType ? (rateEdit?.typeId === newType.id ? rateEdit.value : newType.price) : booking.pricePerNight;
-  const quote = newType ? quoteStay(db.settings, Math.max(1, Math.round(rate)), booking.nights, booking.rooms, booking.discount) : null;
+  const quote = newType ? quoteStay(ratesFor(db.settings, booking), Math.max(1, Math.round(rate)), booking.nights, booking.rooms, booking.discount) : null;
   const diff = quote ? quote.total - booking.total : 0;
   const [error, setError] = useState("");
   const { saving, run } = useSaving();
@@ -474,7 +475,7 @@ export function ChangeStayModal({ booking, open, onClose }: { booking: Booking; 
   });
   const type = db.roomTypes.find((t) => t.id === form.roomTypeId);
   const nights = nightsBetween(form.checkIn, form.checkOut);
-  const q = quoteStay(db.settings, form.pricePerNight, nights, form.rooms, booking.discount);
+  const q = quoteStay(ratesFor(db.settings, booking), form.pricePerNight, nights, form.rooms, booking.discount);
   const free = nights > 0 ? freeRooms(db, form.roomTypeId, form.checkIn, form.checkOut, booking.id) : 0;
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -615,14 +616,14 @@ export function CancelRoomModal({ booking, open, onClose }: { booking: Booking; 
   const pick = choices.find((c) => c.key === key);
   const x = pick?.booking;
   const whole = !!x && x.rooms === 1;
-  const after = x && !whole ? quoteStay(db.settings, x.pricePerNight, x.nights, x.rooms - 1, x.discount) : null;
+  const after = x && !whole ? quoteStay(ratesFor(db.settings, x), x.pricePerNight, x.nights, x.rooms - 1, x.discount) : null;
   const paid = x ? paidOf(x) : 0;
   const capacity = (c: RoomChoice) => (db.roomTypes.find((t) => t.id === c.booking.roomTypeId)?.capacity ?? 0) * (c.booking.rooms - 1);
 
   // Fee and guests start from the policy and what still fits; staff can change both.
   const choose = (c: RoomChoice) => {
     const terms = cancellationTerms(db, c.booking);
-    const left = c.booking.rooms > 1 ? quoteStay(db.settings, c.booking.pricePerNight, c.booking.nights, c.booking.rooms - 1, c.booking.discount).total : 0;
+    const left = c.booking.rooms > 1 ? quoteStay(ratesFor(db.settings, c.booking), c.booking.pricePerNight, c.booking.nights, c.booking.rooms - 1, c.booking.discount).total : 0;
     const share = c.booking.total - left;
     const cap = capacity(c);
     const a = Math.max(c.booking.groupId ? 0 : 1, Math.min(c.booking.adults, cap));

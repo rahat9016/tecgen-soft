@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useFormContext, useFormState, useWatch } from "react-hook-form";
-import { AlertCircle, Loader2, Plus, X } from "lucide-react";
+import { AlertCircle, Loader2, Plus, Trash2, X } from "lucide-react";
 import { dateLabel, taka } from "@/src/lib/hotel-store/format";
 import { unitNumbers, useHotelDB } from "@/src/lib/hotel-store/store";
 import { cn } from "@/src/lib/utils";
@@ -56,9 +56,15 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
   const adults = toNum(v.adults);
   const children = toNum(v.children);
   const errorCount = isSubmitted ? countErrors(errors) : 0;
+  const opts = { shouldDirty: true, shouldValidate: isSubmitted };
+  const removeLine = (i: number) =>
+    setValue(
+      "lines",
+      v.lines.filter((_, j) => j !== i),
+      opts
+    );
   const checkingIn = v.status === "check-in";
   const name = v.guest?.fullName?.trim() ? composeGuest(v.guest).name : "";
-  const { serviceFeeRate, vatRate } = db.settings;
 
   return (
     <aside
@@ -92,41 +98,19 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
           </tbody>
         </table>
 
-        {!lines.length || nights <= 0 ? (
-          <p className="rounded-md border border-dashed border-neutral-300 py-5 text-center text-sm text-neutral-600">
-            Select dates and a room to see the price
-          </p>
-        ) : (
+        {lines.length > 0 && nights > 0 && (
           <>
-            <table className="w-full table-fixed text-sm">
-              <thead>
-                <tr className="border-b border-neutral-200 text-xs text-neutral-600">
-                  <th scope="col" className="pb-1.5 text-left font-semibold">
-                    Room
-                  </th>
-                  <th
-                    scope="col"
-                    className="w-[38%] pb-1.5 text-right font-semibold"
-                  >
-                    Rate
-                  </th>
-                  <th
-                    scope="col"
-                    className="w-[28%] pb-1.5 text-right font-semibold"
-                  >
-                    Amount
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {lines.map((l, i) => {
-                  const [number] = unitNumbers(db, l.line.unitIds);
-                  return (
-                    <tr key={i} className="align-top">
-                      <td className="py-2 pr-2">
+            <ul className="divide-y divide-neutral-100 border-t border-neutral-200">
+              {lines.map((l, i) => {
+                const [number] = unitNumbers(db, l.line.unitIds);
+                const label = number ? `room ${number}` : l.type?.name;
+                return (
+                  <li key={i} className="py-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="min-w-0 text-sm">
                         {number ? (
                           <span className="font-semibold text-neutral-900">
-                            {number}
+                            Room {number}
                           </span>
                         ) : (
                           <span
@@ -139,31 +123,82 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
                             Not assigned
                           </span>
                         )}
-                        <span className="block truncate text-xs text-neutral-600">
-                          {l.type?.beds ?? `Sleeps ${l.capacity}`}
+                        <span className="block text-xs text-neutral-600">
+                          {[l.type?.beds, `Sleeps ${l.capacity}`]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </span>
-                      </td>
-                      <td className="py-2 text-right text-xs tabular-nums text-neutral-700">
-                        {taka(l.rate)} × {nights}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => removeLine(i)}
+                        aria-label={`Remove ${label}`}
+                        className={cn(
+                          hbtn.iconDanger,
+                          "-mr-1.5 size-7 shrink-0",
+                          focusRing
+                        )}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <div className="relative w-28 shrink-0">
+                        <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-500">
+                          ৳
+                        </span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={l.line.rate ?? ""}
+                          onChange={(e) =>
+                            setValue(`lines.${i}.rate`, e.target.value, opts)
+                          }
+                          aria-label={`Rate per night for ${label}`}
+                          className={cn(
+                            inputClass,
+                            "h-8 pl-6 pr-2 text-sm tabular-nums"
+                          )}
+                        />
+                      </div>
+                      <span className="whitespace-nowrap text-xs tabular-nums text-neutral-600">
+                        × {nights} night{nights > 1 ? "s" : ""}
                         {l.rooms > 1 && ` × ${l.rooms}`}
-                      </td>
-                      <td className="py-2 text-right font-medium tabular-nums text-neutral-900">
+                      </span>
+                      <span className="ml-auto text-sm font-semibold tabular-nums text-neutral-900">
                         {taka(l.quote.subtotal)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </span>
+                    </div>
+                    {l.type && l.rate !== l.type.price && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setValue(`lines.${i}.rate`, l.type!.price, opts)
+                        }
+                        className={cn(
+                          "mt-1 text-xs font-medium text-sky-700 hover:underline",
+                          focusRing
+                        )}
+                      >
+                        Reset to {taka(l.type.price)}
+                      </button>
+                    )}
+                    <FieldError name={`lines.${i}.rate`} />
+                    <FieldError name={`lines.${i}.unitIds`} />
+                    <FieldError name={`lines.${i}.party`} />
+                  </li>
+                );
+              })}
+            </ul>
 
             <dl className="space-y-2 border-t border-neutral-200 pt-3 text-sm">
               <DiscountEditor amount={quote.discount} />
-              <Line
-                label={`Service charge (${serviceFeeRate}%)`}
-                value={taka(quote.serviceFee)}
-                muted
+              <RateLine
+                name="serviceFeeRate"
+                label="Service charge"
+                amount={quote.serviceFee}
               />
-              <Line label={`VAT (${vatRate}%)`} value={taka(quote.tax)} muted />
+              <RateLine name="vatRate" label="VAT" amount={quote.tax} />
               {extras > 0 && (
                 <Line
                   label={`Extra bed × ${extraBeds} · ${nights} night${nights > 1 ? "s" : ""}`}
@@ -254,13 +289,14 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
               }
               options={[
                 { value: "confirmed", label: "Confirmed" },
-                { value: "tentative", label: "Tentative" },
+                { value: "tentative", label: "On hold" },
               ]}
               className="w-full bg-white"
             />
             {v.status === "tentative" && (
               <p className="mt-1 text-xs text-neutral-600">
-                Rooms are held as pending until the guest confirms or pays.
+                Room is kept for the guest but not confirmed yet. It shows as
+                “Awaiting confirmation” until they confirm or pay.
               </p>
             )}
           </div>
@@ -324,6 +360,57 @@ function InfoRow({
         {children}
       </td>
     </tr>
+  );
+}
+
+/** A percent the desk can set for this booking, with the amount it comes to. */
+function RateLine({
+  name,
+  label,
+  amount,
+}: {
+  name: "serviceFeeRate" | "vatRate";
+  label: string;
+  amount: number;
+}) {
+  const { control, setValue } = useFormContext<BookingFormValues>();
+  const { isSubmitted } = useFormState({ control });
+  const value = useWatch({ control, name });
+  const err = useErrorClass(name);
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 text-neutral-700">
+        <dt className="flex items-center gap-2">
+          {label}
+          <span className="relative w-16">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={0.5}
+              value={value ?? ""}
+              onChange={(e) =>
+                setValue(name, e.target.value, {
+                  shouldDirty: true,
+                  shouldValidate: isSubmitted,
+                })
+              }
+              aria-label={`${label} percent`}
+              className={cn(
+                inputClass,
+                "h-7 pl-2 pr-5 text-right text-xs tabular-nums",
+                err
+              )}
+            />
+            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-neutral-500">
+              %
+            </span>
+          </span>
+        </dt>
+        <dd className="shrink-0 tabular-nums">{taka(amount)}</dd>
+      </div>
+      <FieldError name={name} />
+    </div>
   );
 }
 

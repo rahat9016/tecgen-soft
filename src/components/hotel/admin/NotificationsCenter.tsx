@@ -85,7 +85,7 @@ export default function NotificationsCenter() {
           <ul className="divide-y divide-neutral-100">
             {page.rows.map((n) => {
               const b = db.bookings.find((x) => x.id === n.bookingId);
-              const href = b ? `${ADMIN}/bookings/${b.id}` : n.kind === "review" ? `${ADMIN}/reviews` : n.kind === "user" ? `${ADMIN}/users` : undefined;
+              const href = b ? `${ADMIN}/bookings/${b.id}` : n.kind === "review" ? `${ADMIN}/reviews` : undefined;
               return (
                 <li key={n.id} className={cn("flex items-start gap-3 px-4 py-3", !n.read && "bg-sky-50/40")}>
                   <span className={cn("mt-2 size-2 shrink-0 rounded-full", n.read ? "bg-transparent" : "bg-sky-500")} />

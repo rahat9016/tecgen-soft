@@ -535,11 +535,11 @@ export default function BookingConfirmation({
                     </div>
                   )}
                   <div className="flex justify-between text-neutral-600">
-                    <span>Service fee ({db.settings.serviceFeeRate}%)</span>
+                    <span>Service fee ({booking.serviceFeeRate ?? db.settings.serviceFeeRate}%)</span>
                     <span>BDT {booking.serviceFee.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-neutral-600">
-                    <span>VAT ({db.settings.vatRate}%)</span>
+                    <span>VAT ({booking.vatRate ?? db.settings.vatRate}%)</span>
                     <span>BDT {booking.tax.toLocaleString()}</span>
                   </div>
                   {booking.charges.map((c) => (

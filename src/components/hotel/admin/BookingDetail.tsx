@@ -334,9 +334,6 @@ export default function BookingDetail({ id }: { id: string }) {
                       {user.passwordHash ? "Registered guest account" : "Guest profile (no login)"} · {otherStays.length} other booking{otherStays.length === 1 ? "" : "s"}
                     </p>
                     {user.note && <p className="mt-1 font-medium text-neutral-800">Note: {user.note}</p>}
-                    <Link href={`${ADMIN}/users?guest=${user.id}`} className="mt-1 inline-block font-semibold text-sky-700 hover:underline">
-                      Open guest profile
-                    </Link>
                   </div>
                 )}
               </Card>
@@ -381,8 +378,8 @@ export default function BookingDetail({ id }: { id: string }) {
                     amount={-b.discount.amount}
                   />
                 )}
-                <FolioLine label={`Service charge (${db.settings.serviceFeeRate}%)`} amount={b.serviceFee} quiet />
-                <FolioLine label={`VAT (${db.settings.vatRate}%)`} amount={b.tax} quiet />
+                <FolioLine label={`Service charge (${b.serviceFeeRate ?? db.settings.serviceFeeRate}%)`} amount={b.serviceFee} quiet />
+                <FolioLine label={`VAT (${b.vatRate ?? db.settings.vatRate}%)`} amount={b.tax} quiet />
               </ul>
 
               {b.charges.length > 0 && (

@@ -140,6 +140,9 @@ export type Booking = {
   subtotal: number;
   discount?: StayDiscount;
   commission?: Commission;
+  /** Service charge and VAT percent used for this booking; older bookings without them use Settings. */
+  serviceFeeRate?: number;
+  vatRate?: number;
   serviceFee: number;
   tax: number;
   /** Room charge less discount, plus service fee and VAT. Extras live in `charges`. */

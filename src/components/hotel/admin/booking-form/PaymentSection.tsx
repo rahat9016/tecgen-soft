@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useFormContext, useFormState, useWatch } from "react-hook-form";
-import { Banknote, CircleCheck, Clock, Landmark } from "lucide-react";
+import { Banknote, CircleCheck, Landmark } from "lucide-react";
 import { paymentMethodInfo } from "@/src/lib/hotelPayment";
 import { taka } from "@/src/lib/hotel-store/format";
 import { useHotelDB } from "@/src/lib/hotel-store/store";
@@ -48,14 +48,14 @@ export default function PaymentSection({ step }: { step: number }) {
   const collecting = plan !== "none";
 
   const plans: { value: PayPlan; title: string; amount?: number }[] = [
-    { value: "none", title: "No payment collected" },
+    { value: "none", title: "Nothing now — pays at the hotel" },
     {
       value: "deposit",
       title: `Deposit (${db.settings.depositRate}%)`,
       amount: stay.deposit,
     },
-    { value: "full", title: "Full amount", amount: stay.total },
-    { value: "custom", title: "Custom amount" },
+    { value: "full", title: "Full payment", amount: stay.total },
+    { value: "custom", title: "Other amount" },
   ];
 
   const choosePlan = (p: PayPlan) => {
@@ -86,135 +86,52 @@ export default function PaymentSection({ step }: { step: number }) {
       title="Payment"
       sub={`Total ${taka(stay.total)}`}
     >
+      <p className={fieldLabel}>How much is the guest paying now?</p>
       <div
         role="radiogroup"
         aria-label="Payment"
-        className="grid grid-cols-2 gap-2 lg:grid-cols-4"
+        className="grid gap-2 sm:grid-cols-2"
       >
         {plans.map((p) => {
           const on = plan === p.value;
           return (
-            <button
+            <div
               key={p.value}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              onClick={() => choosePlan(p.value)}
               className={cn(
-                "flex min-h-15 flex-col justify-center rounded-md border px-3 py-2 text-left transition",
+                "flex min-h-12 items-center gap-3 rounded-md border px-3.5 py-2 transition",
                 on
                   ? "border-sky-600 bg-sky-50 ring-1 ring-sky-600"
-                  : "border-neutral-200 bg-white hover:border-sky-300",
-                focusRing
+                  : "border-neutral-200 bg-white hover:border-sky-300"
               )}
             >
-              <span className="flex items-center gap-2 text-[13px] font-semibold text-neutral-900">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => choosePlan(p.value)}
+                className={cn(
+                  "flex flex-1 items-center gap-3 self-stretch text-left text-sm",
+                  on ? "font-medium text-neutral-900" : "text-neutral-700",
+                  focusRing
+                )}
+              >
                 <span
                   className={cn(
-                    "flex size-3.5 shrink-0 items-center justify-center rounded-full border-2",
-                    on ? "border-sky-600" : "border-neutral-400"
+                    "flex size-4 shrink-0 items-center justify-center rounded-full border-2",
+                    on ? "border-sky-600" : "border-neutral-300"
                   )}
                 >
-                  {on && <span className="size-1.5 rounded-full bg-sky-600" />}
+                  {on && <span className="size-2 rounded-full bg-sky-600" />}
                 </span>
                 {p.title}
-              </span>
-              {p.amount !== undefined && (
-                <span className="mt-0.5 pl-5.5 text-sm font-semibold tabular-nums text-neutral-700">
-                  {taka(p.amount)}
-                </span>
-              )}
-              {p.value === "custom" && (
-                <span className="mt-0.5 pl-5.5 text-xs text-neutral-600">
-                  {plan === "custom" ? taka(planned) : "Enter any amount"}
-                </span>
-              )}
-              {p.value === "none" && (
-                <span className="mt-0.5 pl-5.5 text-xs text-neutral-600">
-                  Pays at the hotel
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {!collecting ? (
-        <p className="mt-4 flex items-center justify-between gap-3 rounded-md bg-neutral-50 px-3.5 py-2.5 text-sm text-neutral-700">
-          Nothing recorded now. The guest pays at the hotel.
-          <span className="shrink-0 font-semibold tabular-nums text-neutral-900">
-            Balance {taka(stay.total)}
-          </span>
-        </p>
-      ) : (
-        <div className="mt-4 rounded-md border border-neutral-200">
-          {/* Choosing an amount only plans it; money counts as paid once staff say it's in hand. */}
-          <div
-            role="radiogroup"
-            aria-label="Has the money been received?"
-            className="grid grid-cols-2 border-b border-neutral-200 text-sm"
-          >
-            {[
-              {
-                value: true,
-                title: "Received now",
-                text: "Record the payment",
-                icon: CircleCheck,
-              },
-              {
-                value: false,
-                title: "Not received yet",
-                text:
-                  plan === "deposit"
-                    ? "Deposit is requested only"
-                    : "Amount is requested only",
-                icon: Clock,
-              },
-            ].map((o) => {
-              const on = v.payCollected === o.value;
-              return (
-                <button
-                  key={String(o.value)}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onClick={() => setValue("payCollected", o.value, opts)}
-                  className={cn(
-                    "flex items-start gap-2 px-3.5 py-2.5 text-left transition first:rounded-tl-md last:rounded-tr-md first:border-r first:border-neutral-200",
-                    on
-                      ? o.value
-                        ? "bg-emerald-50 text-emerald-900"
-                        : "bg-amber-50 text-amber-900"
-                      : "bg-white text-neutral-700 hover:bg-neutral-50",
-                    focusRing
-                  )}
-                >
-                  <o.icon
-                    className={cn(
-                      "mt-0.5 size-4 shrink-0",
-                      on
-                        ? o.value
-                          ? "text-emerald-700"
-                          : "text-amber-700"
-                        : "text-neutral-400"
-                    )}
-                  />
-                  <span>
-                    <span className="block font-semibold">{o.title}</span>
-                    <span className="block text-xs opacity-80">{o.text}</span>
+                {p.amount !== undefined && (
+                  <span className="ml-auto font-semibold tabular-nums text-neutral-900">
+                    {taka(p.amount)}
                   </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="space-y-4 p-3.5">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                label={v.payCollected ? "Amount received" : "Amount requested"}
-                name="payAmount"
-              >
-                <div className="relative">
+                )}
+              </button>
+              {p.value === "custom" && on && (
+                <div className="relative w-36 shrink-0">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500">
                     ৳
                   </span>
@@ -222,87 +139,99 @@ export default function PaymentSection({ step }: { step: number }) {
                     type="number"
                     min={0}
                     inputMode="numeric"
-                    value={plan === "custom" ? v.payAmount : planned}
+                    autoFocus
+                    value={v.payAmount}
                     onChange={(e) => setAmount(e.target.value)}
                     name="payAmount"
                     placeholder="0"
+                    aria-label="Other amount"
                     className={cn(
                       inputClass,
-                      "pl-7 font-semibold tabular-nums",
+                      "h-9 pl-7 text-right font-semibold tabular-nums",
                       errAmount
                     )}
                   />
                 </div>
-              </FormField>
-              <div>
-                <span className={fieldLabel}>Remaining balance</span>
-                <p className="flex h-10 items-center justify-between rounded-md bg-neutral-50 px-3 text-sm">
-                  <span className="text-neutral-600">
-                    {taka(stay.total)} − {taka(received)}
-                  </span>
-                  <span
-                    className={cn(
-                      "font-semibold tabular-nums",
-                      balance > 0 ? "text-amber-800" : "text-emerald-700"
-                    )}
-                  >
-                    {taka(balance)}
-                  </span>
-                </p>
-              </div>
+              )}
             </div>
+          );
+        })}
+      </div>
+      <FieldError name="payAmount" />
 
-            {v.payCollected ? (
-              <>
-                <div>
-                  <span className={fieldLabel}>Payment method</span>
-                  <div
-                    role="radiogroup"
-                    aria-label="Payment method"
-                    className="grid grid-cols-3 gap-2 sm:grid-cols-5"
-                  >
-                    {payMethods.map((m) => {
-                      const info = paymentMethodInfo[m];
-                      const Icon = methodIcons[m];
-                      const on = v.payMethod === m;
-                      return (
-                        <button
-                          key={m}
-                          type="button"
-                          role="radio"
-                          aria-checked={on}
-                          onClick={() => setValue("payMethod", m, opts)}
-                          className={cn(
-                            "flex h-10 items-center justify-center gap-1.5 rounded-md border px-2 text-[13px] font-semibold text-neutral-800 transition",
-                            on
-                              ? "border-sky-600 bg-sky-50 ring-1 ring-sky-600"
-                              : "border-neutral-200 hover:border-sky-300",
-                            focusRing
-                          )}
-                        >
-                          {info.logos.length ? (
-                            <Image
-                              src={info.logos[0]}
-                              alt=""
-                              width={36}
-                              height={20}
-                              className="max-h-4 w-auto object-contain"
-                            />
-                          ) : Icon ? (
-                            <Icon className="size-4 text-neutral-600" />
-                          ) : null}
-                          {info.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+      {collecting && (
+        <div className="mt-5 space-y-4">
+          {/* Choosing an amount only plans it; money counts as paid once staff say it's in hand. */}
+          <label className="flex cursor-pointer items-start gap-2.5 text-sm text-neutral-800">
+            <input
+              type="checkbox"
+              checked={!v.payCollected}
+              onChange={(e) =>
+                setValue("payCollected", !e.target.checked, opts)
+              }
+              className="mt-0.5 size-4 rounded border-neutral-300 accent-sky-600"
+            />
+            <span>
+              Not received yet — collect later
+              <span className="block text-xs text-neutral-500">
+                {v.payCollected
+                  ? "Leave unticked when the money is in hand now."
+                  : `${taka(planned)} is noted as ${plan === "deposit" ? "the deposit" : "the amount"} to collect. Nothing is recorded as paid.`}
+              </span>
+            </span>
+          </label>
+
+          {v.payCollected && (
+            <>
+              <div>
+                <span className={fieldLabel}>Paid by</span>
+                <div
+                  role="radiogroup"
+                  aria-label="Payment method"
+                  className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5"
+                >
+                  {payMethods.map((m) => {
+                    const info = paymentMethodInfo[m];
+                    const Icon = methodIcons[m];
+                    const on = v.payMethod === m;
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => setValue("payMethod", m, opts)}
+                        className={cn(
+                          "flex h-10 min-w-0 items-center justify-center gap-2 rounded-md border bg-white px-3 text-[13px] font-medium text-neutral-800 transition",
+                          on
+                            ? "border-sky-600 bg-sky-50 ring-1 ring-sky-600"
+                            : "border-neutral-200 hover:border-sky-300",
+                          focusRing
+                        )}
+                      >
+                        {info.logos.length ? (
+                          <Image
+                            src={info.logos[0]}
+                            alt=""
+                            width={40}
+                            height={16}
+                            className="h-4 w-10 shrink-0 object-contain"
+                          />
+                        ) : Icon ? (
+                          <Icon className="size-4 shrink-0 text-neutral-500" />
+                        ) : null}
+                        <span className="truncate">{info.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-                {v.payMethod !== "cash" && (
-                  <FormField
-                    label="Transaction reference"
-                    name="payRef"
-                    className="sm:max-w-sm"
-                  >
+              </div>
+              {v.payMethod !== "cash" && (
+                <FormField label="Transaction reference" name="payRef">
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base text-neutral-500">
+                      ৳
+                    </span>
                     <input
                       {...register("payRef")}
                       placeholder={
@@ -314,25 +243,42 @@ export default function PaymentSection({ step }: { step: number }) {
                       }
                       className={cn(
                         inputClass,
-                        "uppercase placeholder:normal-case",
+                        "h-11 pl-9 uppercase placeholder:normal-case",
                         errRef
                       )}
                     />
-                  </FormField>
-                )}
-              </>
-            ) : (
-              <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                {taka(planned)} is noted as{" "}
-                {plan === "deposit"
-                  ? "the deposit to collect"
-                  : "the amount to collect"}
-                . Nothing is recorded as paid until it&rsquo;s received.
-              </p>
-            )}
-          </div>
+                  </div>
+                </FormField>
+              )}
+            </>
+          )}
         </div>
       )}
+
+      <div className="mt-5 flex items-center justify-between gap-3 border-t border-neutral-200 pt-3.5">
+        <span className="text-sm text-neutral-700">
+          Balance due
+          {received > 0 && (
+            <span className="ml-2 text-xs tabular-nums text-neutral-500">
+              {taka(stay.total)} − {taka(received)} paid
+            </span>
+          )}
+        </span>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 text-base font-semibold tabular-nums",
+            balance > 0 ? "text-neutral-900" : "text-emerald-700"
+          )}
+        >
+          {balance > 0 ? (
+            taka(balance)
+          ) : (
+            <>
+              Fully paid <CircleCheck className="size-4" />
+            </>
+          )}
+        </span>
+      </div>
       <FieldError name="payPlan" />
     </Section>
   );

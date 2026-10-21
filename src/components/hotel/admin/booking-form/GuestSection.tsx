@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   Ban,
   Check,
-  ExternalLink,
   IdCard,
   UserCheck,
   X,
@@ -142,11 +141,6 @@ export default function GuestSection({ step }: { step: number }) {
       id="guest"
       step={step}
       title="Guest details"
-      sub={
-        user
-          ? undefined
-          : "Type the mobile number first — returning guests appear automatically"
-      }
     >
       <div className="grid gap-4 md:grid-cols-2">
         <FormField label="Mobile number" name="guest.phone">
@@ -621,13 +615,6 @@ function GuestCard({ user, onClear }: { user: User; onClear: () => void }) {
           </p>
         </div>
         <div className="flex gap-1.5">
-          <Link
-            href={`${ADMIN}/users?guest=${user.id}`}
-            target="_blank"
-            className={cn(hbtn.small, focusRing)}
-          >
-            Profile <ExternalLink className="size-3" />
-          </Link>
           <button
             type="button"
             onClick={onClear}

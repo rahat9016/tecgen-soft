@@ -183,7 +183,7 @@ export default function PrintableInvoice({ booking, db }: { booking: Booking; db
           <tr className="border-b border-neutral-200">
             <td className="px-3 py-2.5 text-neutral-500">2</td>
             <td className="px-3 py-2.5">Service charge</td>
-            <td className="px-3 py-2.5 text-right">{settings.serviceFeeRate}%</td>
+            <td className="px-3 py-2.5 text-right">{booking.serviceFeeRate ?? settings.serviceFeeRate}%</td>
             <td className="px-3 py-2.5 text-right">—</td>
             <td className="px-3 py-2.5 text-right font-medium text-neutral-900">{money(booking.serviceFee)}</td>
           </tr>
@@ -222,7 +222,7 @@ export default function PrintableInvoice({ booking, db }: { booking: Booking; db
               </tr>
             )}
             <tr>
-              <td className="py-1 text-neutral-500">VAT ({settings.vatRate}% on room charge)</td>
+              <td className="py-1 text-neutral-500">VAT ({booking.vatRate ?? settings.vatRate}% on room charge)</td>
               <td className="py-1 text-right">BDT {money(booking.tax)}</td>
             </tr>
             <tr className="border-t-2 border-neutral-900">

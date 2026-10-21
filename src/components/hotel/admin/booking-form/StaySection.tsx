@@ -18,7 +18,7 @@ import {
   PopoverTrigger,
 } from "@/src/components/ui/popover";
 import { parseDayKey, toDayKey } from "@/src/lib/hotelDates";
-import { nightsBetween, todayKey } from "@/src/lib/hotel-store/format";
+import { todayKey } from "@/src/lib/hotel-store/format";
 import { cn } from "@/src/lib/utils";
 import CommissionPanel from "./CommissionPanel";
 import {
@@ -43,8 +43,6 @@ export function StaySection({ step }: { step: number }) {
     name: ["source", "checkIn", "checkOut", "status"],
   });
   const opts = { shouldDirty: true, shouldValidate: isSubmitted };
-  const nights =
-    checkIn && checkOut ? Math.max(0, nightsBetween(checkIn, checkOut)) : 0;
   const isToday = checkIn === todayKey();
   const checkingIn = status === "check-in";
 
@@ -66,7 +64,7 @@ export function StaySection({ step }: { step: number }) {
         />
       }
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <div className="sm:col-span-2 lg:col-span-1">
           <StayDates
             checkIn={checkIn}
@@ -79,20 +77,6 @@ export function StaySection({ step }: { step: number }) {
           />
           <FieldError name="checkIn" />
           <FieldError name="checkOut" />
-        </div>
-        <div>
-          <span className={fieldLabel}>Nights</span>
-          <p
-            aria-live="polite"
-            className={cn(
-              "flex h-10 items-center rounded-md border px-3 text-sm font-semibold tabular-nums",
-              nights
-                ? "border-sky-200 bg-sky-50 text-sky-900"
-                : "border-neutral-200 bg-neutral-50 text-neutral-500"
-            )}
-          >
-            {nights ? `${nights} night${nights > 1 ? "s" : ""}` : "—"}
-          </p>
         </div>
         <FormField label="Adults" name="adults">
           <Stepper name="adults" label="adults" min={1} max={60} />

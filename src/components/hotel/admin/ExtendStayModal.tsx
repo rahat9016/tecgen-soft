@@ -6,7 +6,7 @@ import { ArrowRight, BedDouble, CalendarPlus, Loader2 } from "lucide-react";
 import { Calendar } from "@/src/components/ui/calendar";
 import { parseDayKey, toDayKey } from "@/src/lib/hotelDates";
 import { dateLabel, nightsBetween, payLabels, shiftDay, taka, todayKey } from "@/src/lib/hotel-store/format";
-import { addPayment, changeStay, dueOf, groupOf, quoteStay, unitBookingOn, unitNumbers, useHotelDB } from "@/src/lib/hotel-store/store";
+import { addPayment, changeStay, dueOf, groupOf, quoteStay, ratesFor, unitBookingOn, unitNumbers, useHotelDB } from "@/src/lib/hotel-store/store";
 import type { Booking, HotelDB, PayMethod } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
 import { hbtn, inputClass, Modal } from "./ui";
@@ -59,7 +59,7 @@ export default function ExtendStayModal({ booking: b, onClose }: { booking: Book
   const nights = nightsBetween(b.checkIn, checkOut);
   const added = nightsBetween(b.checkOut, checkOut);
   const priced = targets.map((x) => {
-    const q = quoteStay(db.settings, rates[x.id] || x.pricePerNight, nightsBetween(x.checkIn, checkOut), x.rooms, x.discount);
+    const q = quoteStay(ratesFor(db.settings, x), rates[x.id] || x.pricePerNight, nightsBetween(x.checkIn, checkOut), x.rooms, x.discount);
     return { x, q, diff: q.total - x.total };
   });
   const diff = priced.reduce((s, p) => s + p.diff, 0);

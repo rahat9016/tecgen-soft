@@ -241,6 +241,13 @@ export function quoteStay(settings: Settings, price: number, nights: number, roo
   return { subtotal, discount: off, net, serviceFee, tax, total, deposit: Math.ceil((total * settings.depositRate) / 100) };
 }
 
+/** Settings with a booking's own service charge and VAT percent, so its money keeps the rates it was made at. */
+export const ratesFor = (settings: Settings, b?: { serviceFeeRate?: number; vatRate?: number }): Settings => ({
+  ...settings,
+  serviceFeeRate: b?.serviceFeeRate ?? settings.serviceFeeRate,
+  vatRate: b?.vatRate ?? settings.vatRate,
+});
+
 /** Discount as a percent of the room charge, for checking against a staff member's limit. */
 export const discountRate = (subtotal: number, amount: number) => (subtotal > 0 ? (amount / subtotal) * 100 : 0);
 
@@ -686,6 +693,8 @@ export function createOnlineBooking(input: OnlineBookingInput): Result<Booking> 
       children: input.children,
       pricePerNight: type.price,
       subtotal: q.subtotal,
+      serviceFeeRate: s.settings.serviceFeeRate,
+      vatRate: s.settings.vatRate,
       serviceFee: q.serviceFee,
       tax: q.tax,
       total: q.total,
@@ -757,11 +766,14 @@ export type StaffBookingInput = {
   checkInNow?: boolean;
   tentative?: boolean;
   internalNote?: string;
+  /** Percent for this booking; Settings when left out. */
+  serviceFeeRate?: number;
+  vatRate?: number;
 };
 
 /** A booking's money re-quoted for a new rate, length or room count; the discount and commission follow the new room charge. */
 function requote(s: HotelDB, b: Booking, rate: number, nights: number, rooms: number) {
-  const q = quoteStay(s.settings, rate, nights, rooms, b.discount);
+  const q = quoteStay(ratesFor(s.settings, b), rate, nights, rooms, b.discount);
   return {
     pricePerNight: rate,
     nights,
@@ -849,7 +861,8 @@ function addStaffBooking(s: HotelDB, input: StaffBookingInput, groupId?: string)
   const { users, user } = ensureGuest(s, input.guest, input.userId);
   const nights = nightsBetween(input.checkIn, input.checkOut);
   const rate = input.pricePerNight && input.pricePerNight > 0 ? Math.round(input.pricePerNight) : type.price;
-  const q = quoteStay(s.settings, rate, nights, input.rooms, input.discount);
+  const rates = ratesFor(s.settings, input);
+  const q = quoteStay(rates, rate, nights, input.rooms, input.discount);
   let discount: StayDiscount | undefined;
   if (q.discount > 0 && input.discount) {
     const reason = input.discount.reason.trim();
@@ -899,6 +912,8 @@ function addStaffBooking(s: HotelDB, input: StaffBookingInput, groupId?: string)
     subtotal: q.subtotal,
     discount,
     commission,
+    serviceFeeRate: rates.serviceFeeRate,
+    vatRate: rates.vatRate,
     serviceFee: q.serviceFee,
     tax: q.tax,
     total: q.total,
