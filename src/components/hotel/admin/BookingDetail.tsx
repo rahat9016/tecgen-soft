@@ -266,8 +266,8 @@ export default function BookingDetail({ id }: { id: string }) {
   return (
     <>
       <PrintableInvoice booking={b} db={db} />
-      <div className="space-y-6 print:hidden">
-        <div>
+      <div className="space-y-4 print:hidden">
+        <Card className="p-4 sm:p-5">
           {/* Status, payment, room and dates are on the steps and cards below. */}
           <h1 className="sr-only">Booking {b.code}</h1>
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -287,12 +287,12 @@ export default function BookingDetail({ id }: { id: string }) {
             </div>
           )}
           <ProcessSteps db={db} b={b} />
-        </div>
+        </Card>
 
-        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
           {/* Container query: the cards sit side by side only when this column (not the viewport) is wide enough. */}
-          <div className="@container min-w-0 space-y-6">
-            <div className="grid gap-6 @3xl:grid-cols-2">
+          <div className="@container min-w-0 space-y-4">
+            <div className="grid gap-4 @3xl:grid-cols-2">
               <Card>
                 <div className="flex items-center justify-between">
                   <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
@@ -507,7 +507,7 @@ export default function BookingDetail({ id }: { id: string }) {
             </Card>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             <Card>
               {multi ? (
                 <>
@@ -759,7 +759,7 @@ function ProcessSteps({ db, b }: { db: HotelDB; b: Booking }) {
   ];
 
   return (
-    <ol className="mt-4 flex flex-col rounded-md border border-neutral-200 bg-white p-4 md:flex-row md:gap-4 md:px-5">
+    <ol className="mt-4 flex flex-col border-t border-neutral-100 pt-4 md:flex-row md:gap-4">
       {steps.map((st, i) => {
         const s = stepStyles[st.state];
         const last = i === steps.length - 1;

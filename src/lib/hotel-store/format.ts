@@ -115,12 +115,22 @@ export const statusLabels: Record<BookingStatus, string> = {
 };
 
 export const statusStyles: Record<BookingStatus, string> = {
-  pending: "bg-amber-50 text-amber-700 ring-amber-200",
+  pending: "bg-violet-50 text-violet-700 ring-violet-200",
   confirmed: "bg-sky-50 text-sky-700 ring-sky-200",
   "checked-in": "bg-emerald-50 text-emerald-700 ring-emerald-200",
   "checked-out": "bg-neutral-100 text-neutral-600 ring-neutral-200",
   cancelled: "bg-rose-50 text-rose-600 ring-rose-200",
-  "no-show": "bg-neutral-800 text-white ring-neutral-800",
+  "no-show": "bg-slate-100 text-slate-700 ring-slate-300",
+};
+
+/** Dot in front of each status label. */
+export const statusDots: Record<BookingStatus, string> = {
+  pending: "bg-violet-500",
+  confirmed: "bg-sky-500",
+  "checked-in": "bg-emerald-500",
+  "checked-out": "bg-neutral-400",
+  cancelled: "bg-rose-500",
+  "no-show": "bg-slate-500",
 };
 
 export const sourceLabels: Record<BookingSource, string> = {

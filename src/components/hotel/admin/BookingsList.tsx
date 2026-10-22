@@ -293,7 +293,7 @@ export default function BookingsList() {
 
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[880px] text-sm">
-                <thead className="border-b border-neutral-200 bg-neutral-50 text-left text-[13px] font-medium text-neutral-600">
+                <thead className="border-b border-neutral-200 bg-neutral-50/80 text-left text-xs uppercase tracking-wide text-neutral-500">
                   <tr>
                     <th className="py-3 pl-4 pr-3 font-medium">Guest</th>
                     <th className="px-3 py-3 font-medium">Stay</th>
@@ -311,7 +311,7 @@ export default function BookingsList() {
                     const leavesToday = b.checkOut === today && b.status === "checked-in";
                     return (
                       <tr key={b.id} onClick={() => router.push(detail(b))} className="group cursor-pointer transition hover:bg-sky-50/50">
-                        <td className="py-3.5 pl-4 pr-3">
+                        <td className="py-4 pl-4 pr-3">
                           <div className="flex items-center gap-3">
                             <Avatar name={b.guest.name} />
                             <div className="min-w-0">
@@ -331,7 +331,7 @@ export default function BookingsList() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-3.5">
+                        <td className="px-3 py-4">
                           <p className="flex flex-wrap items-center gap-1.5 whitespace-nowrap text-neutral-900">
                             {rangeLabel(b.checkIn, b.checkOut)}
                             {arrivesToday && <TodayTag>Arrives today</TodayTag>}
@@ -339,16 +339,16 @@ export default function BookingsList() {
                           </p>
                           <p className="text-[13px] text-neutral-600">{nightsGuests(b)}</p>
                         </td>
-                        <td className="px-3 py-3.5">
+                        <td className="px-3 py-4">
                           <RoomCell b={b} />
                         </td>
-                        <td className="px-3 py-3.5">
+                        <td className="px-3 py-4">
                           <StatusBadge status={b.status} />
                         </td>
-                        <td className="px-3 py-3.5">
+                        <td className="px-3 py-4">
                           <PayLine b={b} />
                         </td>
-                        <td className="py-3.5 pr-4">
+                        <td className="py-4 pr-4">
                           <div className="flex items-center justify-end gap-2">
                             <RowAction b={b} today={today} from={here} />
                             <ChevronRight className="size-4 text-neutral-400 transition group-hover:translate-x-0.5 group-hover:text-sky-700" aria-hidden />
@@ -394,7 +394,7 @@ function ViewPills({ tab, counts, onChange }: { tab: Tab; counts: Record<Tab, nu
                 <span
                   className={cn(
                     "min-w-6 rounded-full px-1.5 text-center text-[13px] font-semibold tabular-nums leading-5",
-                    selected ? "bg-white/20 text-white" : v.tab === "pending" && n > 0 ? "bg-amber-100 text-amber-900" : "bg-neutral-100 text-neutral-700"
+                    selected ? "bg-white/20 text-white" : v.tab === "pending" && n > 0 ? "bg-violet-100 text-violet-800" : "bg-neutral-100 text-neutral-700"
                   )}
                 >
                   {n}
@@ -489,9 +489,9 @@ function RoomCell({ b }: { b: Booking }) {
   const missing = rooms.length < b.rooms && b.status !== "cancelled" && b.status !== "no-show";
   return (
     <div className="min-w-0">
-      <p className={missing && !rooms.length ? "font-medium text-amber-800" : "font-medium text-neutral-900"}>
+      <p className={missing && !rooms.length ? "font-medium text-rose-700" : "font-medium text-neutral-900"}>
         {rooms.length ? `Room ${rooms.join(", ")}` : "Not assigned"}
-        {missing && rooms.length > 0 && <span className="ml-1.5 text-[13px] font-medium text-amber-800">+{b.rooms - rooms.length} to assign</span>}
+        {missing && rooms.length > 0 && <span className="ml-1.5 text-[13px] font-medium text-rose-700">+{b.rooms - rooms.length} to assign</span>}
       </p>
       <p className="text-[13px] text-neutral-600">
         {b.roomName}
@@ -515,8 +515,8 @@ function PayLine({ b }: { b: Booking }) {
         : due === 0
           ? ["Paid in full", "text-emerald-700"]
           : paid > 0
-            ? [`${taka(due)} due`, "text-amber-800"]
-            : ["Not paid", "text-amber-800"];
+            ? [`${taka(due)} due`, "text-rose-700"]
+            : ["Not paid", "text-rose-700"];
   return (
     <div className="whitespace-nowrap">
       <p className="font-semibold tabular-nums text-neutral-900">{taka(folioTotal(b))}</p>
@@ -525,10 +525,13 @@ function PayLine({ b }: { b: Booking }) {
   );
 }
 
-const actionBtn = cn(
-  "inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-sky-300 bg-white px-3 text-sm font-semibold text-sky-800 transition hover:border-sky-500 hover:bg-sky-50",
-  focusRing
-);
+const actionBase = cn("inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold shadow-sm transition active:scale-[0.98]", focusRing);
+const actionBtn = cn(actionBase, "bg-sky-600 text-white hover:bg-sky-700");
+const actionTones = {
+  confirm: cn(actionBase, "bg-emerald-600 text-white hover:bg-emerald-700"),
+  checkout: cn(actionBase, "bg-neutral-900 text-white hover:bg-neutral-700"),
+  collect: cn(actionBase, "border border-neutral-300 bg-white text-neutral-800 shadow-none hover:border-sky-400 hover:text-sky-800"),
+};
 
 /** The one thing the desk most likely wants to do with this booking next. */
 function RowAction({ b, today, from }: { b: Booking; today: string; from: string }) {
@@ -549,7 +552,7 @@ function RowAction({ b, today, from }: { b: Booking; today: string; from: string
           if (r.ok) toast.success(`${b.code} confirmed`);
           else toast.error(r.error);
         }}
-        className={actionBtn}
+        className={actionTones.confirm}
       >
         <BadgeCheck className="size-4" aria-hidden /> Confirm
       </button>
@@ -562,14 +565,14 @@ function RowAction({ b, today, from }: { b: Booking; today: string; from: string
     );
   if (b.status === "checked-in" && b.checkOut <= today)
     return (
-      <button type="button" onClick={(e) => go(e, "checkout")} className={actionBtn}>
+      <button type="button" onClick={(e) => go(e, "checkout")} className={actionTones.checkout}>
         <LogOut className="size-4" aria-hidden /> Check out
       </button>
     );
   // Upcoming stays settle at check-in, so collecting is offered once the guest has arrived.
   if ((b.status === "checked-in" || b.status === "checked-out") && dueOf(b) > 0)
     return (
-      <button type="button" onClick={(e) => go(e, "pay")} className={cn(actionBtn, "border-neutral-300 text-neutral-800 hover:border-sky-400 hover:text-sky-800")}>
+      <button type="button" onClick={(e) => go(e, "pay")} className={actionTones.collect}>
         <Wallet className="size-4" aria-hidden /> Collect
       </button>
     );

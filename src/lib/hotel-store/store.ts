@@ -217,7 +217,7 @@ export function paymentStatus(b: Booking): { label: string; tone: string } {
   if (!isLive(b)) return refundedOf(b) > 0 ? { label: "Refunded", tone: "bg-neutral-100 text-neutral-600 ring-neutral-200" } : { label: paid > 0 ? "Fee kept" : "No charge", tone: "bg-neutral-100 text-neutral-600 ring-neutral-200" };
   if (dueOf(b) === 0) return { label: "Paid", tone: "bg-emerald-50 text-emerald-700 ring-emerald-200" };
   if (paid > 0) return { label: "Partly paid", tone: "bg-sky-50 text-sky-700 ring-sky-200" };
-  return { label: "Unpaid", tone: "bg-amber-50 text-amber-700 ring-amber-200" };
+  return { label: "Unpaid", tone: "bg-rose-50 text-rose-700 ring-rose-200" };
 }
 
 export type DiscountInput = { kind: DiscountKind; value: number };

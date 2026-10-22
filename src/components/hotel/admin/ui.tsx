@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, ShieldAlert } from "lucide-react";
-import { statusLabels, statusStyles } from "@/src/lib/hotel-store/format";
+import { statusDots, statusLabels, statusStyles } from "@/src/lib/hotel-store/format";
 import { paymentStatus } from "@/src/lib/hotel-store/store";
 import type { Booking, BookingStatus } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
@@ -113,8 +113,8 @@ export function Field({ label, hint, className, children }: { label: string; hin
 
 export function StatusBadge({ status, className }: { status: BookingStatus; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset", statusStyles[status], className)}>
-      {status === "checked-in" && <LiveDot className="size-1.5" />}
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset", statusStyles[status], className)}>
+      {status === "checked-in" ? <LiveDot className="size-1.5" /> : <span aria-hidden className={cn("size-1.5 rounded-full", statusDots[status])} />}
       {statusLabels[status]}
     </span>
   );

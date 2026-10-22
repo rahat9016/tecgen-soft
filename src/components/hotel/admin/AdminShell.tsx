@@ -266,7 +266,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <Link href={`${ADMIN}/bookings`} className={cn("block", rail ? "px-2 pb-1 pt-4" : "px-5 pb-1 pt-5")} onClick={() => setOpen(false)}>
         <Image src="/TripWaveLogo-light.webp" alt="TripWave" width={614} height={192} className={rail ? "h-auto w-full object-contain" : "h-10 w-auto"} />
       </Link>
-      {!rail && <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/50">Hotel admin</p>}
       <div className={cn("mt-5 flex-1 overflow-y-auto pb-4", rail ? "space-y-2 px-1.5" : "space-y-5 px-3")}>
         {groups.map((g, gi) => {
           const items = g.items.filter((i) => !i.perm || can(staff.role, i.perm));
@@ -278,7 +277,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 {items.map((item) => {
                   const active = isActive(item.href, pathname);
                   const count = item.badge ? badges[item.badge] : 0;
-                  const badgeTone = item.badge === "notices" ? "bg-rose-500 text-white" : active ? "bg-sky-600 text-white" : "bg-amber-400 text-sky-950";
+                  const badgeTone = item.badge === "notices" ? "bg-rose-500 text-white" : active ? "bg-sky-600 text-white" : "bg-sky-500 text-white";
                   return (
                     <li key={item.href}>
                       <Link
