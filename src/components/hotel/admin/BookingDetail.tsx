@@ -63,7 +63,7 @@ import { cn } from "@/src/lib/utils";
 import PrintableInvoice, { invoiceNumber, printWithTitle } from "@/src/components/hotel/Booking/PrintableInvoice";
 import { CancelModal, CancelRoomModal, cancellableRooms, ChangeStayModal, ChargeModal, CheckInModal, CheckoutModal, GuestModal, PaymentModal, RoomsModal } from "./BookingModals";
 import ExtendStayModal from "./ExtendStayModal";
-import { ADMIN, Card, Empty, hbtn, StatusBadge, textareaClass } from "./ui";
+import { ADMIN, Card, Empty, hbtn, textareaClass } from "./ui";
 
 export default function BookingDetail({ id }: { id: string }) {
   const t = useT();
@@ -104,7 +104,6 @@ export default function BookingDetail({ id }: { id: string }) {
   const group = [b, ...linked.filter(isLive)].sort((x, y) => x.code.localeCompare(y.code));
   const groupDue = group.reduce((n, x) => n + dueOf(x), 0);
   const multi = group.length > 1;
-  const otherStays = user ? db.bookings.filter((x) => x.userId === user.id && x.id !== b.id) : [];
   const unitList = unitNumbers(db, b.unitIds);
   const due = dueOf(b);
   const paid = paidOf(b);
@@ -297,9 +296,7 @@ export default function BookingDetail({ id }: { id: string }) {
                 <ArrowLeft className="size-4" />
               </Link>
               <div className="min-w-0">
-                <h1 className="flex items-center gap-2 font-mono text-base font-bold text-sky-800">
-                  {b.code} <StatusBadge status={b.status} className="font-sans" />
-                </h1>
+                <h1 className="font-mono text-base font-bold text-sky-800">{b.code}</h1>
                 <p className="truncate text-sm text-neutral-600">{b.guest.name}</p>
               </div>
               <div className="ml-auto sm:hidden">{actionMenu}</div>
@@ -358,14 +355,7 @@ export default function BookingDetail({ id }: { id: string }) {
                   </button>
                 </div>
                 <InfoTable rows={guestRows} />
-                {user && (
-                  <div className="mt-4 rounded-md bg-neutral-50 p-3 text-xs text-neutral-600">
-                    <p>
-                      {user.passwordHash ? t("Registered guest account") : t("Guest profile (no login)")} · {t(otherStays.length === 1 ? "{n} other booking" : "{n} other bookings", { n: otherStays.length })}
-                    </p>
-                    {user.note && <p className="mt-1 font-medium text-neutral-800">{t("Note")}: {user.note}</p>}
-                  </div>
-                )}
+                {user?.note && <p className="mt-4 rounded-md bg-neutral-50 p-3 text-xs font-medium text-neutral-800">{t("Note")}: {user.note}</p>}
               </Card>
             </div>
 
@@ -569,41 +559,27 @@ export default function BookingDetail({ id }: { id: string }) {
                       );
                     })}
                   </ul>
-                  <dl className="mt-3 space-y-1.5 font-medium text-neutral-900">
-                    <div className="flex justify-between">
-                      <dt>{t("Total bill")}</dt>
-                      <dd className="tabular-nums">{taka(group.reduce((n, x) => n + folioTotal(x), 0))}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt>{t("Paid")}</dt>
-                      <dd className="tabular-nums text-emerald-700">{taka(group.reduce((n, x) => n + paidOf(x), 0))}</dd>
-                    </div>
-                    <div className={cn("flex justify-between border-t border-neutral-200 pt-2 text-lg", groupDue > 0 ? "text-rose-600" : "text-emerald-600")}>
-                      <dt>{groupDue > 0 ? t("Balance due") : t("Fully paid")}</dt>
-                      <dd className="tabular-nums">{taka(groupDue)}</dd>
-                    </div>
-                  </dl>
+                  <BalanceTable
+                    className="mt-3"
+                    rows={[
+                      [t("Total bill"), taka(group.reduce((n, x) => n + folioTotal(x), 0))],
+                      [t("Paid"), taka(group.reduce((n, x) => n + paidOf(x), 0)), "text-emerald-700"],
+                    ]}
+                    label={groupDue > 0 ? t("Balance due") : t("Fully paid")}
+                    amount={groupDue}
+                  />
                 </>
               ) : (
                 <>
-                  <p className="text-sm text-neutral-500">{due > 0 ? t("Balance due") : t("Balance")}</p>
-                  <p className={cn("mt-1 text-3xl font-bold tabular-nums", due > 0 ? "text-rose-600" : "text-emerald-600")}>{taka(due)}</p>
-                  <dl className="mt-4 space-y-1.5 text-sm">
-                    <div className="flex justify-between">
-                      <dt className="text-neutral-500">{t("Folio total")}</dt>
-                      <dd className="tabular-nums">{taka(total)}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-neutral-500">{t("Paid (net)")}</dt>
-                      <dd className="tabular-nums">{taka(paid)}</dd>
-                    </div>
-                    {!live && (
-                      <div className="flex justify-between">
-                        <dt className="text-neutral-500">{t("Cancellation fee kept")}</dt>
-                        <dd className="tabular-nums">{taka(b.cancellationFee ?? 0)}</dd>
-                      </div>
-                    )}
-                  </dl>
+                  <BalanceTable
+                    rows={[
+                      [t("Folio total"), taka(total)],
+                      [t("Paid (net)"), taka(paid), "text-emerald-700"],
+                      ...(!live ? [[t("Cancellation fee kept"), taka(b.cancellationFee ?? 0)] as [string, string]] : []),
+                    ]}
+                    label={due > 0 ? t("Balance due") : t("Fully paid")}
+                    amount={due}
+                  />
                 </>
               )}
               {live && due > 0 && (
@@ -807,6 +783,32 @@ function ProcessSteps({ db, b }: { db: HotelDB; b: Booking }) {
       })}
     </ol>
     </>
+  );
+}
+
+/** Money rows in a bordered table, ending in a light tinted row: blue while something is owed, green once settled. */
+function BalanceTable({ rows, label, amount, className }: { rows: [string, string, string?][]; label: string; amount: number; className?: string }) {
+  return (
+    <div className={cn("overflow-hidden rounded-md border border-neutral-200", className)}>
+      <table className="w-full text-sm">
+        <tbody className="divide-y divide-neutral-200">
+          {rows.map(([k, v, tone]) => (
+            <tr key={k}>
+              <th scope="row" className="px-3 py-2.5 text-left font-normal text-neutral-700">
+                {k}
+              </th>
+              <td className={cn("px-3 py-2.5 text-right font-medium tabular-nums", tone ?? "text-neutral-900")}>{v}</td>
+            </tr>
+          ))}
+          <tr className={amount > 0 ? "bg-sky-50 text-sky-900" : "bg-emerald-50 text-emerald-800"}>
+            <th scope="row" className="px-3 py-3 text-left font-semibold">
+              {label}
+            </th>
+            <td className="px-3 py-3 text-right text-lg font-bold tabular-nums">{taka(amount)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   );
 }
 

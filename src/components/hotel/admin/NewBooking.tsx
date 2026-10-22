@@ -417,7 +417,7 @@ function NewBookingForm() {
             <h1 className="text-lg font-semibold text-neutral-900">
               {t("New booking")}
             </h1>
-            <p className="text-[13px] text-neutral-600">
+            <p className="hidden text-[13px] text-neutral-600 sm:block">
               {t("Walk-in, phone or agent reservation")}
             </p>
           </div>

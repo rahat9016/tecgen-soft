@@ -63,11 +63,12 @@ export function StaySection({ step }: { step: number }) {
             { value: "phone", label: "Phone", icon: Phone },
             { value: "agent", label: "Agent", icon: Building2 },
           ]}
+          className="w-full sm:w-auto"
         />
       }
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="sm:col-span-2 lg:col-span-1">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="col-span-2 lg:col-span-1">
           <StayDates
             checkIn={checkIn}
             checkOut={checkOut}
@@ -88,12 +89,12 @@ export function StaySection({ step }: { step: number }) {
         </FormField>
       </div>
 
-      <div className="mt-5">
-        <span className={fieldLabel}>Arrival</span>
+      <div className="mt-4 sm:mt-5">
+        <span className={fieldLabel}>{t("Arrival")}</span>
         <div
           role="radiogroup"
           aria-label={t("Arrival")}
-          className="grid gap-2 sm:grid-cols-2"
+          className="grid grid-cols-2 gap-2"
         >
           <ArrivalOption
             on={!checkingIn}
@@ -147,7 +148,7 @@ function ArrivalOption({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex items-start gap-3 rounded-md border px-3.5 py-3 text-left transition disabled:cursor-not-allowed disabled:bg-neutral-50",
+        "flex items-start gap-2.5 rounded-md border px-3 py-2.5 sm:gap-3 sm:px-3.5 sm:py-3 text-left transition disabled:cursor-not-allowed disabled:bg-neutral-50",
         on
           ? "border-sky-500 bg-sky-50 ring-1 ring-sky-500"
           : "border-neutral-200 bg-white hover:border-sky-300",
@@ -171,7 +172,7 @@ function ArrivalOption({
         >
           <Icon className="size-4" /> {t(title)}
         </span>
-        <span className="mt-0.5 block text-xs text-neutral-600">{t(text)}</span>
+        <span className="mt-0.5 hidden text-xs text-neutral-600 sm:block">{t(text)}</span>
       </span>
     </button>
   );
