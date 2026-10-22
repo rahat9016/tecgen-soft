@@ -191,7 +191,7 @@ export default function RoomDetail({ id }: { id: string }) {
               <div className="flex items-center justify-between">
                 <span className="text-neutral-500">Guest rating</span>
                 <span className="flex items-center gap-1 font-medium text-neutral-800">
-                  <Star className="size-4 fill-amber-400 text-amber-400" />
+                  <Star className="size-4 fill-sky-500 text-sky-500" />
                   {rating.reviewsCount ? `${rating.rating} (${rating.reviewsCount} reviews)` : "No reviews yet"}
                 </span>
               </div>

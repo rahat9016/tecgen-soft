@@ -5,6 +5,7 @@ import { useFormContext, useFormState, useWatch } from "react-hook-form";
 import { AlertCircle, Loader2, Plus, Trash2, X } from "lucide-react";
 import { dateLabel, taka } from "@/src/lib/hotel-store/format";
 import { unitNumbers, useHotelDB } from "@/src/lib/hotel-store/store";
+import { useT } from "@/src/lib/hotel-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { hbtn, inputClass, textareaClass } from "../ui";
 import {
@@ -45,6 +46,7 @@ const fullDate = (key: string) => dateLabel(key, "EEE, d MMM yyyy");
 
 /** Sticky summary: what's booked, what it costs, what's been paid — and the submit button. */
 export default function SummaryPanel({ saving }: { saving: boolean }) {
+  const t = useT();
   const db = useHotelDB();
   const { control, register, setValue } = useFormContext<BookingFormValues>();
   const { errors, isSubmitted } = useFormState({ control });
@@ -69,12 +71,12 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
   return (
     <aside
       id="bf-summary"
-      aria-label="Booking summary"
+      aria-label={t("Booking summary")}
       className="flex scroll-mt-24 flex-col overflow-hidden rounded-md border border-neutral-200 bg-white shadow-sm lg:max-h-[calc(100dvh-6rem)]"
     >
       <div className="shrink-0 border-b border-neutral-100 px-4 py-3">
         <h2 className="text-[15px] font-semibold text-neutral-900">
-          Booking summary
+          {t("Booking summary")}
         </h2>
       </div>
 
@@ -83,16 +85,16 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
         <table className="w-full table-fixed text-sm">
           <tbody className="divide-y divide-neutral-100">
             <InfoRow label="Check-in">
-              {nights > 0 ? fullDate(v.checkIn) : "Not set"}
+              {nights > 0 ? fullDate(v.checkIn) : t("Not set")}
             </InfoRow>
             <InfoRow label="Check-out">
-              {nights > 0 ? fullDate(v.checkOut) : "Not set"}
+              {nights > 0 ? fullDate(v.checkOut) : t("Not set")}
             </InfoRow>
             <InfoRow label="Nights">{nights > 0 ? nights : "—"}</InfoRow>
             <InfoRow label="Guests">
-              {adults} adult{adults !== 1 ? "s" : ""}
+              {t(adults !== 1 ? "{n} adults" : "{n} adult", { n: adults })}
               {children > 0 &&
-                `, ${children} ${children === 1 ? "child" : "children"}`}
+                `, ${t(children === 1 ? "{n} child" : "{n} children", { n: children })}`}
             </InfoRow>
             {name && <InfoRow label="Guest">{name}</InfoRow>}
           </tbody>
@@ -103,7 +105,7 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
             <ul className="divide-y divide-neutral-100 border-t border-neutral-200">
               {lines.map((l, i) => {
                 const [number] = unitNumbers(db, l.line.unitIds);
-                const label = number ? `room ${number}` : l.type?.name;
+                const label = number ? `${t("Room")} ${number}` : l.type?.name;
                 return (
                   <li key={i} className="py-2.5">
                     <div className="flex items-start justify-between gap-2">
@@ -120,11 +122,11 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
                                 : "text-amber-800"
                             }
                           >
-                            Not assigned
+                            {t("Not assigned")}
                           </span>
                         )}
                         <span className="block text-xs text-neutral-600">
-                          {[l.type?.beds, `Sleeps ${l.capacity}`]
+                          {[l.type?.beds, t("Sleeps {n}", { n: l.capacity })]
                             .filter(Boolean)
                             .join(" · ")}
                         </span>
@@ -132,7 +134,7 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
                       <button
                         type="button"
                         onClick={() => removeLine(i)}
-                        aria-label={`Remove ${label}`}
+                        aria-label={`${t("Remove")} ${label}`}
                         className={cn(
                           hbtn.iconDanger,
                           "-mr-1.5 size-7 shrink-0",
@@ -154,7 +156,7 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
                           onChange={(e) =>
                             setValue(`lines.${i}.rate`, e.target.value, opts)
                           }
-                          aria-label={`Rate per night for ${label}`}
+                          aria-label={`${t("Rate per night")} · ${label}`}
                           className={cn(
                             inputClass,
                             "h-8 pl-6 pr-2 text-sm tabular-nums"
@@ -162,7 +164,7 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
                         />
                       </div>
                       <span className="whitespace-nowrap text-xs tabular-nums text-neutral-600">
-                        × {nights} night{nights > 1 ? "s" : ""}
+                        × {t(nights > 1 ? "{n} nights" : "{n} night", { n: nights })}
                         {l.rooms > 1 && ` × ${l.rooms}`}
                       </span>
                       <span className="ml-auto text-sm font-semibold tabular-nums text-neutral-900">
@@ -180,7 +182,7 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
                           focusRing
                         )}
                       >
-                        Reset to {taka(l.type.price)}
+                        {t("Reset to {amount}", { amount: taka(l.type.price) })}
                       </button>
                     )}
                     <FieldError name={`lines.${i}.rate`} />
@@ -201,7 +203,7 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
               <RateLine name="vatRate" label="VAT" amount={quote.tax} />
               {extras > 0 && (
                 <Line
-                  label={`Extra bed × ${extraBeds} · ${nights} night${nights > 1 ? "s" : ""}`}
+                  label={`${t("Extra bed")} × ${extraBeds} · ${t(nights > 1 ? "{n} nights" : "{n} night", { n: nights })}`}
                   value={taka(extras)}
                   muted
                 />
@@ -216,7 +218,7 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
                       scope="row"
                       className="px-3 py-2.5 text-left font-semibold text-neutral-900"
                     >
-                      Total
+                      {t("Total")}
                     </th>
                     <td className="px-3 py-2.5 text-right text-lg font-bold tabular-nums text-neutral-900">
                       {taka(total)}
@@ -227,7 +229,7 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
                       scope="row"
                       className="px-3 py-2 text-left font-normal text-neutral-700"
                     >
-                      Amount received
+                      {t("Amount received")}
                     </th>
                     <td
                       className={cn(
@@ -248,7 +250,7 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
                       scope="row"
                       className="px-3 py-2.5 text-left font-semibold"
                     >
-                      {balance > 0 ? "Balance due" : "Fully paid"}
+                      {balance > 0 ? t("Balance due") : t("Fully paid")}
                     </th>
                     <td className="px-3 py-2.5 text-right text-base font-bold tabular-nums">
                       {taka(Math.max(balance, 0))}
@@ -276,7 +278,7 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
         {!checkingIn && (
           <div>
             <p className="mb-1.5 text-[13px] font-medium text-neutral-800">
-              Reservation status
+              {t("Reservation status")}
             </p>
             <Segmented
               label="Reservation status"
@@ -295,8 +297,7 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
             />
             {v.status === "tentative" && (
               <p className="mt-1 text-xs text-neutral-600">
-                Room is kept for the guest but not confirmed yet. It shows as
-                “Awaiting confirmation” until they confirm or pay.
+                {t("Room is kept for the guest but not confirmed yet. It shows as “Awaiting confirmation” until they confirm or pay.")}
               </p>
             )}
           </div>
@@ -304,15 +305,15 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
 
         <Disclosure
           title="Internal note"
-          summary={v.internalNote.trim() ? "Added" : "Staff only"}
+          summary={v.internalNote.trim() ? t("Added") : t("Staff only")}
           defaultOpen={!!v.internalNote}
           className="bg-white"
         >
           <textarea
             {...register("internalNote")}
             rows={2}
-            aria-label="Internal note"
-            placeholder="Visible to staff only"
+            aria-label={t("Internal note")}
+            placeholder={t("Visible to staff only")}
             className={textareaClass}
           />
         </Disclosure>
@@ -322,9 +323,8 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
             role="alert"
             className="flex items-center gap-2 text-sm font-medium text-rose-700"
           >
-            <AlertCircle className="size-4" /> {errorCount} field
-            {errorCount > 1 ? "s" : ""} need{errorCount === 1 ? "s" : ""}{" "}
-            attention
+            <AlertCircle className="size-4" />{" "}
+            {t(errorCount > 1 ? "{n} fields need attention" : "{n} field needs attention", { n: errorCount })}
           </p>
         )}
         <button
@@ -334,7 +334,7 @@ export default function SummaryPanel({ saving }: { saving: boolean }) {
           className={cn(hbtn.primary, "h-11 w-full text-[15px]", focusRing)}
         >
           {saving && <Loader2 className="size-4 animate-spin" />}
-          {saving ? "Saving…" : submitLabel(v.status)}
+          {saving ? t("Saving…") : t(submitLabel(v.status))}
         </button>
       </div>
     </aside>
@@ -348,13 +348,14 @@ function InfoRow({
   label: string;
   children: React.ReactNode;
 }) {
+  const t = useT();
   return (
     <tr className="align-top">
       <th
         scope="row"
         className="w-24 py-1.5 pr-2 text-left font-normal text-neutral-600"
       >
-        {label}
+        {t(label)}
       </th>
       <td className="py-1.5 text-right font-medium text-neutral-900 wrap-break-word">
         {children}
@@ -373,6 +374,7 @@ function RateLine({
   label: string;
   amount: number;
 }) {
+  const t = useT();
   const { control, setValue } = useFormContext<BookingFormValues>();
   const { isSubmitted } = useFormState({ control });
   const value = useWatch({ control, name });
@@ -381,7 +383,7 @@ function RateLine({
     <div>
       <div className="flex items-center justify-between gap-3 text-neutral-700">
         <dt className="flex items-center gap-2">
-          {label}
+          {t(label)}
           <span className="relative w-16">
             <input
               type="number"
@@ -395,7 +397,7 @@ function RateLine({
                   shouldValidate: isSubmitted,
                 })
               }
-              aria-label={`${label} percent`}
+              aria-label={`${t(label)} %`}
               className={cn(
                 inputClass,
                 "h-7 pl-2 pr-5 text-right text-xs tabular-nums",
@@ -425,6 +427,7 @@ function Line({
   muted?: boolean;
   tone?: string;
 }) {
+  const t = useT();
   return (
     <div
       className={cn(
@@ -433,7 +436,7 @@ function Line({
         tone
       )}
     >
-      <dt className="min-w-0">{label}</dt>
+      <dt className="min-w-0">{typeof label === "string" ? t(label) : label}</dt>
       <dd className="shrink-0 tabular-nums">{value}</dd>
     </div>
   );
@@ -441,6 +444,7 @@ function Line({
 
 /** One input with a ৳ / % switch and a reason, hidden behind "Add discount" until needed. */
 function DiscountEditor({ amount }: { amount: number }) {
+  const t = useT();
   const { control, register, setValue } = useFormContext<BookingFormValues>();
   const { isSubmitted, errors } = useFormState({ control });
   const v = useWatch({ control }) as BookingFormValues;
@@ -470,7 +474,7 @@ function DiscountEditor({ amount }: { amount: number }) {
           focusRing
         )}
       >
-        <Plus className="size-3.5" /> Add discount
+        <Plus className="size-3.5" /> {t("Add discount")}
       </button>
     );
 
@@ -478,7 +482,7 @@ function DiscountEditor({ amount }: { amount: number }) {
     <div className="rounded-md border border-neutral-200 p-2.5">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[13px] font-medium text-neutral-800">
-          Discount
+          {t("Discount")}
         </span>
         <span className="flex items-center gap-2">
           {amount > 0 && (
@@ -489,7 +493,7 @@ function DiscountEditor({ amount }: { amount: number }) {
           <button
             type="button"
             onClick={clear}
-            aria-label="Remove discount"
+            aria-label={t("Remove discount")}
             className={cn(hbtn.icon, "size-6", focusRing)}
           >
             <X className="size-3.5" />
@@ -504,7 +508,7 @@ function DiscountEditor({ amount }: { amount: number }) {
           autoFocus={open && !value}
           {...register("discountValue")}
           placeholder="0"
-          aria-label={percent ? "Discount percent" : "Discount amount in BDT"}
+          aria-label={percent ? t("Discount percent") : t("Discount amount in BDT")}
           className={cn(inputClass, "h-9 min-w-0 tabular-nums", errValue)}
         />
         <Segmented
@@ -527,13 +531,13 @@ function DiscountEditor({ amount }: { amount: number }) {
           <div>
             <select
               {...register("discountReason")}
-              aria-label="Discount reason"
+              aria-label={t("Discount reason")}
               className={cn(inputClass, "h-9", errReason)}
             >
-              <option value="">Reason for discount…</option>
+              <option value="">{t("Reason for discount…")}</option>
               {discountReasons.map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {t(r)}
                 </option>
               ))}
             </select>
@@ -545,10 +549,10 @@ function DiscountEditor({ amount }: { amount: number }) {
                 {...register("discountNote")}
                 placeholder={
                   v.discountReason === OTHER_REASON
-                    ? "Describe the reason"
-                    : "Details, e.g. promo EID10"
+                    ? t("Describe the reason")
+                    : t("Details, e.g. promo EID10")
                 }
-                aria-label="Discount details"
+                aria-label={t("Discount details")}
                 className={cn(inputClass, "h-9", errNote)}
               />
               <FieldError name="discountNote" />

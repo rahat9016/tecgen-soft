@@ -25,6 +25,7 @@ import {
   useHydrated,
 } from "@/src/lib/hotel-store/store";
 import type { HotelDB } from "@/src/lib/hotel-store/types";
+import { useT } from "@/src/lib/hotel-store/i18n";
 import { cn } from "@/src/lib/utils";
 import GuestSection from "./booking-form/GuestSection";
 import PaymentSection from "./booking-form/PaymentSection";
@@ -125,6 +126,7 @@ export default function NewBooking() {
 }
 
 function NewBookingForm() {
+  const t = useT();
   const db = useHotelDB();
   const staff = useCurrentStaff();
   const router = useRouter();
@@ -227,7 +229,7 @@ function NewBookingForm() {
   const leave = () => {
     if (
       isDirty &&
-      !confirm("Discard this booking? The details you entered will be lost.")
+      !confirm(t("Discard this booking? The details you entered will be lost."))
     )
       return;
     router.push(`${ADMIN}/bookings`);
@@ -242,8 +244,8 @@ function NewBookingForm() {
     scrollToSection(sectionOf(paths[0]), paths[0]);
     toast.error(
       paths.length > 1
-        ? `${paths.length} fields need attention`
-        : "One field needs attention"
+        ? t("{n} fields need attention", { n: paths.length })
+        : t("One field needs attention")
     );
   };
 
@@ -254,7 +256,7 @@ function NewBookingForm() {
     if (
       user?.status === "blocked" &&
       !confirm(
-        `${user.name} is blocked${user.note ? ` — ${user.note}` : ""}.\n\nBook anyway?`
+        `${t("{name} is blocked", { name: user.name })}${user.note ? ` — ${user.note}` : ""}.\n\n${t("Book anyway?")}`
       )
     )
       return;
@@ -265,7 +267,7 @@ function NewBookingForm() {
       if (
         match &&
         confirm(
-          `${match.name} already has a guest profile with this phone or email.\n\nOK — add this booking to their profile\nCancel — keep as a new guest`
+          t("{name} already has a guest profile with this phone or email.\n\nOK — add this booking to their profile\nCancel — keep as a new guest", { name: match.name })
         )
       )
         userId = match.id;
@@ -375,8 +377,8 @@ function NewBookingForm() {
     setCreated(true);
     toast.success(
       r.value.length > 1
-        ? `${r.value.length} bookings created`
-        : `Booking ${r.value[0].code} created`
+        ? t("{n} bookings created", { n: r.value.length })
+        : t("Booking {code} created", { code: r.value[0].code })
     );
     router.replace(`${ADMIN}/bookings/${r.value[0].id}`);
   };
@@ -406,17 +408,17 @@ function NewBookingForm() {
           <button
             type="button"
             onClick={leave}
-            aria-label="Back to bookings"
+            aria-label={t("Back to bookings")}
             className={cn(hbtn.outline, "size-9 bg-white px-0", focusRing)}
           >
             <ArrowLeft className="size-4" />
           </button>
           <div>
             <h1 className="text-lg font-semibold text-neutral-900">
-              New booking
+              {t("New booking")}
             </h1>
             <p className="text-[13px] text-neutral-600">
-              Walk-in, phone or agent reservation
+              {t("Walk-in, phone or agent reservation")}
             </p>
           </div>
         </Card>

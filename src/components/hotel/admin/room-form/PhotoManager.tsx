@@ -232,13 +232,13 @@ export default function PhotoManager({ photos, setPhotos, error }: { photos: Pho
       <FieldError id="field-photos-error" message={error} />
 
       {rejected.length > 0 && (
-        <div className="mt-2 flex items-start justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900" role="alert">
+        <div className="mt-2 flex items-start justify-between gap-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-900" role="alert">
           <ul className="space-y-0.5">
             {rejected.map((r) => (
               <li key={r}>{r}</li>
             ))}
           </ul>
-          <button type="button" onClick={() => setRejected([])} aria-label="Dismiss" className={cn("shrink-0 rounded text-amber-800", focusRing)}>
+          <button type="button" onClick={() => setRejected([])} aria-label="Dismiss" className={cn("shrink-0 rounded text-rose-800", focusRing)}>
             <X className="size-4" />
           </button>
         </div>

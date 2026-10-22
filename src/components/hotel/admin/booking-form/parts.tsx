@@ -8,9 +8,13 @@ import {
   useFormState,
 } from "react-hook-form";
 import { ChevronDown, Minus, Plus } from "lucide-react";
+import { useT } from "@/src/lib/hotel-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { Card } from "../ui";
 import type { BookingFormValues } from "./schema";
+
+/** Translates plain-text labels; anything richer (JSX) is passed through as is. */
+const tx = (t: ReturnType<typeof useT>, node: React.ReactNode) => (typeof node === "string" ? t(node) : node);
 
 /** Keyboard focus ring shared by the form's custom controls. */
 export const focusRing =
@@ -36,6 +40,7 @@ export function Section({
   aside?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const t = useT();
   return (
     <section
       id={`bf-${id}`}
@@ -52,11 +57,11 @@ export function Section({
               id={`bf-${id}-title`}
               className="text-[15px] font-semibold text-neutral-900"
             >
-              {title}
+              {t(title)}
             </h2>
             {sub && (
               <span className="hidden truncate text-xs text-neutral-500 sm:inline">
-                {sub}
+                {tx(t, sub)}
               </span>
             )}
           </div>
@@ -85,6 +90,7 @@ export function Disclosure({
   className?: string;
   children: React.ReactNode;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(defaultOpen);
   const id = useId();
   const shown = open || forceOpen;
@@ -101,10 +107,10 @@ export function Disclosure({
         )}
       >
         <span className="flex min-w-0 items-center gap-2">
-          {title}
+          {t(title)}
           {!shown && summary && (
             <span className="truncate text-xs font-normal text-neutral-500">
-              {summary}
+              {tx(t, summary)}
             </span>
           )}
         </span>
@@ -125,11 +131,12 @@ export function Disclosure({
 }
 
 export function FieldError({ name }: { name: string }) {
+  const t = useT();
   const { errors } = useFormState();
   const message = get(errors, name)?.message as string | undefined;
   return message ? (
     <p role="alert" className="mt-1 text-xs font-medium text-rose-600">
-      {message}
+      {t(message)}
     </p>
   ) : null;
 }
@@ -148,15 +155,16 @@ export function FormField({
   className?: string;
   children: React.ReactNode;
 }) {
+  const t = useT();
   const { errors } = useFormState();
   const hasError = !!(name && get(errors, name));
   return (
     <div className={className}>
-      <span className={fieldLabel}>{label}</span>
+      <span className={fieldLabel}>{tx(t, label)}</span>
       {children}
       {name && <FieldError name={name} />}
       {hint && !hasError && (
-        <span className="mt-1 block text-xs text-neutral-500">{hint}</span>
+        <span className="mt-1 block text-xs text-neutral-500">{tx(t, hint)}</span>
       )}
     </div>
   );
@@ -190,6 +198,7 @@ export function Stepper({
   label: string;
   size?: "sm" | "md";
 }) {
+  const t = useT();
   const { control } = useFormContext<BookingFormValues>();
   const {
     field: { ref, name: fieldName, value: raw, onChange, onBlur },
@@ -214,7 +223,7 @@ export function Stepper({
         type="button"
         onClick={() => set(value - 1)}
         disabled={value <= min}
-        aria-label={`Fewer ${label}`}
+        aria-label={`${t("Fewer")} ${t(label)}`}
         className={btn}
       >
         <Minus className="size-3.5" />
@@ -226,14 +235,14 @@ export function Stepper({
         value={value}
         onChange={(e) => set(Number(e.target.value.replace(/\D/g, "")) || 0)}
         onBlur={onBlur}
-        aria-label={label}
+        aria-label={t(label)}
         className="h-full w-full min-w-0 border-x border-neutral-100 text-center text-sm font-semibold tabular-nums outline-none focus-visible:bg-sky-50"
       />
       <button
         type="button"
         onClick={() => set(value + 1)}
         disabled={value >= max}
-        aria-label={`More ${label}`}
+        aria-label={`${t("More")} ${t(label)}`}
         className={btn}
       >
         <Plus className="size-3.5" />
@@ -261,6 +270,7 @@ export function Segmented<T extends string>({
   label?: string;
   className?: string;
 }) {
+  const t = useT();
   const enabled = options.filter((o) => !o.disabled);
   const move = (dir: 1 | -1) => {
     const i = enabled.findIndex((o) => o.value === value);
@@ -270,7 +280,7 @@ export function Segmented<T extends string>({
   return (
     <div
       role="radiogroup"
-      aria-label={label}
+      aria-label={label && t(label)}
       onKeyDown={(e) => {
         if (e.key === "ArrowRight" || e.key === "ArrowDown") {
           e.preventDefault();
@@ -305,7 +315,7 @@ export function Segmented<T extends string>({
             )}
           >
             {Icon && <Icon className="size-4" />}
-            {text}
+            {tx(t, text)}
           </button>
         );
       })}

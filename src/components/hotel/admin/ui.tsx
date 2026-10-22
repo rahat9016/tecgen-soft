@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, ShieldAlert } from "lucide-react";
 import { statusDots, statusLabels, statusStyles } from "@/src/lib/hotel-store/format";
+import { useT } from "@/src/lib/hotel-store/i18n";
 import { paymentStatus } from "@/src/lib/hotel-store/store";
 import type { Booking, BookingStatus } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
@@ -41,16 +42,17 @@ export function StatCard({
   tone?: keyof typeof statTones;
   className?: string;
 }) {
+  const tr = useT();
   return (
     <section className={cn("flex min-w-0 flex-col rounded-md border border-neutral-200 bg-white p-4", className)}>
       <div className="flex items-start justify-between gap-2">
-        <p className="min-w-0 pt-1 text-sm font-medium text-neutral-600">{label}</p>
+        <p className="min-w-0 pt-1 text-sm font-medium text-neutral-600">{tr(label)}</p>
         <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-md", statTones[tone])}>
           <Icon className="size-4.5" />
         </span>
       </div>
       <p className="mt-auto pt-3 text-2xl font-bold tabular-nums tracking-tight text-neutral-900">{value}</p>
-      {hint && <p className="mt-1 text-[13px] text-neutral-600">{hint}</p>}
+      {hint && <p className="mt-1 text-[13px] text-neutral-600">{tr(hint)}</p>}
     </section>
   );
 }
@@ -102,27 +104,30 @@ export const textareaClass =
 export const labelClass = "mb-1 block text-xs font-medium text-neutral-600";
 
 export function Field({ label, hint, className, children }: { label: string; hint?: string; className?: string; children: React.ReactNode }) {
+  const t = useT();
   return (
     <label className={cn("block", className)}>
-      <span className={labelClass}>{label}</span>
+      <span className={labelClass}>{t(label)}</span>
       {children}
-      {hint && <span className="mt-1 block text-[11px] text-neutral-400">{hint}</span>}
+      {hint && <span className="mt-1 block text-[11px] text-neutral-400">{t(hint)}</span>}
     </label>
   );
 }
 
 export function StatusBadge({ status, className }: { status: BookingStatus; className?: string }) {
+  const t = useT();
   return (
     <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset", statusStyles[status], className)}>
       {status === "checked-in" ? <LiveDot className="size-1.5" /> : <span aria-hidden className={cn("size-1.5 rounded-full", statusDots[status])} />}
-      {statusLabels[status]}
+      {t(statusLabels[status])}
     </span>
   );
 }
 
 export function PayBadge({ booking }: { booking: Booking }) {
+  const t = useT();
   const s = paymentStatus(booking);
-  return <span className={cn("inline-flex whitespace-nowrap rounded-md px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset", s.tone)}>{s.label}</span>;
+  return <span className={cn("inline-flex whitespace-nowrap rounded-md px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset", s.tone)}>{t(s.label)}</span>;
 }
 
 export function LiveDot({ className }: { className?: string }) {
@@ -143,21 +148,23 @@ export function Loader() {
 }
 
 export function NoAccess() {
+  const t = useT();
   return (
     <div className="mx-auto mt-16 flex max-w-md flex-col items-center gap-3 rounded-md border border-dashed border-neutral-300 bg-white p-10 text-center">
-      <ShieldAlert className="size-8 text-amber-500" />
-      <p className="font-semibold text-neutral-900">You don&rsquo;t have access to this page</p>
-      <p className="text-sm text-neutral-500">Ask an administrator to change your role if you need it.</p>
+      <ShieldAlert className="size-8 text-rose-500" />
+      <p className="font-semibold text-neutral-900">{t("You don’t have access to this page")}</p>
+      <p className="text-sm text-neutral-500">{t("Ask an administrator to change your role if you need it.")}</p>
     </div>
   );
 }
 
 export function Empty({ icon: Icon, title, text, children }: { icon: React.ComponentType<{ className?: string }>; title: string; text?: string; children?: React.ReactNode }) {
+  const t = useT();
   return (
     <div className="flex flex-col items-center gap-2 px-6 py-14 text-center">
       <Icon className="size-8 text-neutral-300" />
-      <p className="font-medium text-neutral-800">{title}</p>
-      {text && <p className="max-w-sm text-sm text-neutral-500">{text}</p>}
+      <p className="font-medium text-neutral-800">{t(title)}</p>
+      {text && <p className="max-w-sm text-sm text-neutral-500">{t(text)}</p>}
       {children}
     </div>
   );
@@ -175,6 +182,7 @@ export function Tabs<T extends string>({
   tabs: { value: T; label: string; count?: number; dot?: string }[];
   className?: string;
 }) {
+  const tr = useT();
   return (
     <div role="tablist" className={cn("flex gap-1 overflow-x-auto border-b border-neutral-100 px-3 [scrollbar-width:none]", className)}>
       {tabs.map((t) => {
@@ -188,7 +196,7 @@ export function Tabs<T extends string>({
             className={cn("relative flex shrink-0 items-center gap-2 px-3 py-3.5 text-sm font-medium transition", selected ? "text-neutral-900" : "text-neutral-500 hover:text-neutral-800")}
           >
             {t.dot && <span className={cn("size-2 rounded-full", t.dot)} />}
-            {t.label}
+            {tr(t.label)}
             {t.count !== undefined && (
               <span className={cn("rounded-md px-1.5 text-[11px] tabular-nums", selected ? "bg-sky-600 text-white" : "bg-neutral-100 text-neutral-500")}>{t.count}</span>
             )}
@@ -217,16 +225,17 @@ export function Pager({
   total: number;
   noun?: string;
 }) {
+  const t = useT();
   if (!total) return null;
   const nums = Array.from({ length: pages }, (_, i) => i + 1).filter((n) => n === 1 || n === pages || Math.abs(n - page) <= 1);
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 px-4 py-3 text-sm text-neutral-500">
       <p>
-        <b className="text-neutral-800">{from}</b>–<b className="text-neutral-800">{to}</b> of <b className="text-neutral-800">{total}</b> {noun}
+        <b className="text-neutral-800">{from}</b>–<b className="text-neutral-800">{to}</b> {t("of")} <b className="text-neutral-800">{total}</b> {t(noun)}
       </p>
       {pages > 1 && (
         <div className="flex items-center gap-1">
-          <button onClick={() => setPage(page - 1)} disabled={page === 1} aria-label="Previous page" className="flex size-8 items-center justify-center rounded-md border border-neutral-200 hover:border-sky-400 disabled:opacity-40">
+          <button onClick={() => setPage(page - 1)} disabled={page === 1} aria-label={t("Previous page")} className="flex size-8 items-center justify-center rounded-md border border-neutral-200 hover:border-sky-400 disabled:opacity-40">
             <ChevronLeft className="size-4" />
           </button>
           {nums.map((n, i) => (
@@ -241,7 +250,7 @@ export function Pager({
               </button>
             </span>
           ))}
-          <button onClick={() => setPage(page + 1)} disabled={page === pages} aria-label="Next page" className="flex size-8 items-center justify-center rounded-md border border-neutral-200 hover:border-sky-400 disabled:opacity-40">
+          <button onClick={() => setPage(page + 1)} disabled={page === pages} aria-label={t("Next page")} className="flex size-8 items-center justify-center rounded-md border border-neutral-200 hover:border-sky-400 disabled:opacity-40">
             <ChevronRight className="size-4" />
           </button>
         </div>
@@ -251,12 +260,13 @@ export function Pager({
 }
 
 export function SearchBox({ value, onChange, placeholder, className }: { value: string; onChange: (v: string) => void; placeholder: string; className?: string }) {
+  const t = useT();
   return (
     <input
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      aria-label={placeholder}
+      placeholder={t(placeholder)}
+      aria-label={t(placeholder)}
       type="search"
       className={cn("h-9 w-full rounded-md border border-neutral-200 bg-white px-4 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 sm:w-72", className)}
     />
@@ -276,16 +286,17 @@ export function Select<T extends string>({
   label: string;
   className?: string;
 }) {
+  const t = useT();
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
-      aria-label={label}
+      aria-label={t(label)}
       className={cn("h-9 rounded-md border border-neutral-200 bg-white px-3 text-sm text-neutral-700 outline-none focus:border-sky-500", className)}
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>
-          {o.label}
+          {t(o.label)}
         </option>
       ))}
     </select>
@@ -308,6 +319,7 @@ export function Pills<T extends string>({
   /** "md" matches the 36px search box and selects in a toolbar. */
   size?: "sm" | "md";
 }) {
+  const t = useT();
   return (
     <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none]">
       {options.map((o) => (
@@ -323,7 +335,7 @@ export function Pills<T extends string>({
             value === o.value ? "border-sky-950 bg-sky-950 text-white" : "border-neutral-200 bg-white text-neutral-600 hover:border-sky-300"
           )}
         >
-          {o.label}
+          {t(o.label)}
           {o.count !== undefined && <span className="ml-1.5 opacity-60">{o.count}</span>}
         </button>
       ))}

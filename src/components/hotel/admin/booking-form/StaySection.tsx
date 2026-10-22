@@ -19,6 +19,7 @@ import {
 } from "@/src/components/ui/popover";
 import { parseDayKey, toDayKey } from "@/src/lib/hotelDates";
 import { todayKey } from "@/src/lib/hotel-store/format";
+import { useT } from "@/src/lib/hotel-store/i18n";
 import { cn } from "@/src/lib/utils";
 import CommissionPanel from "./CommissionPanel";
 import {
@@ -36,6 +37,7 @@ const longDate = (d: Date) => format(d, "EEE, d MMM yyyy");
 const fieldDate = (d: Date) => format(d, "d MMM yyyy");
 
 export function StaySection({ step }: { step: number }) {
+  const t = useT();
   const { control, setValue } = useFormContext<BookingFormValues>();
   const { isSubmitted } = useFormState({ control });
   const [source, checkIn, checkOut, status] = useWatch({
@@ -90,7 +92,7 @@ export function StaySection({ step }: { step: number }) {
         <span className={fieldLabel}>Arrival</span>
         <div
           role="radiogroup"
-          aria-label="Arrival"
+          aria-label={t("Arrival")}
           className="grid gap-2 sm:grid-cols-2"
         >
           <ArrivalOption
@@ -136,6 +138,7 @@ function ArrivalOption({
   disabled?: boolean;
   onClick: () => void;
 }) {
+  const t = useT();
   return (
     <button
       type="button"
@@ -166,9 +169,9 @@ function ArrivalOption({
             disabled ? "text-neutral-500" : "text-neutral-900"
           )}
         >
-          <Icon className="size-4" /> {title}
+          <Icon className="size-4" /> {t(title)}
         </span>
-        <span className="mt-0.5 block text-xs text-neutral-600">{text}</span>
+        <span className="mt-0.5 block text-xs text-neutral-600">{t(text)}</span>
       </span>
     </button>
   );
@@ -196,6 +199,7 @@ function StayDates({
     setOpen(false);
   };
 
+  const t = useT();
   const half = (
     label: string,
     date: Date | null,
@@ -203,7 +207,7 @@ function StayDates({
     active: boolean
   ) => (
     <span className="min-w-0">
-      <span className={fieldLabel}>{label}</span>
+      <span className={fieldLabel}>{t(label)}</span>
       <span
         className={cn(
           "flex h-10 items-center gap-2 rounded-md border bg-white px-3 text-sm transition group-hover:border-sky-300",
@@ -221,7 +225,7 @@ function StayDates({
             date ? "font-medium text-neutral-900" : "text-neutral-500"
           )}
         >
-          {date ? fieldDate(date) : "Select date"}
+          {date ? fieldDate(date) : t("Select date")}
         </span>
       </span>
     </span>
@@ -234,8 +238,8 @@ function StayDates({
           type="button"
           aria-label={
             from && to
-              ? `Stay dates: ${longDate(from)} to ${longDate(to)}. Change dates`
-              : "Choose stay dates"
+              ? `${t("Stay dates")}: ${longDate(from)} → ${longDate(to)}`
+              : t("Choose stay dates")
           }
           className={cn(
             "group grid w-full grid-cols-2 gap-2 rounded-md text-left",
@@ -262,9 +266,9 @@ function StayDates({
         />
         <div className="flex items-center justify-between gap-3 border-t border-neutral-100 px-4 py-2.5 text-sm text-neutral-700">
           {!from
-            ? "Select the check-in date"
+            ? t("Select the check-in date")
             : !to
-              ? "Now select the check-out date"
+              ? t("Now select the check-out date")
               : `${longDate(from)} → ${longDate(to)}`}
           <button
             type="button"
@@ -274,7 +278,7 @@ function StayDates({
               focusRing
             )}
           >
-            Done
+            {t("Done")}
           </button>
         </div>
       </PopoverContent>

@@ -34,7 +34,7 @@ export const tonightStyles: Record<Tonight, { label: string; chip: string; dot: 
   occupied: { label: "Occupied now", chip: "bg-sky-50 text-sky-800 ring-sky-200", dot: "bg-sky-600" },
   reserved: { label: "Booked tonight", chip: "bg-indigo-50 text-indigo-800 ring-indigo-200", dot: "bg-indigo-500" },
   vacant: { label: "Not booked tonight", chip: "bg-white text-neutral-600 ring-neutral-200", dot: "bg-neutral-400" },
-  oos: { label: "Out of service", chip: "bg-amber-50 text-amber-900 ring-amber-300", dot: "bg-amber-500" },
+  oos: { label: "Out of service", chip: "bg-rose-50 text-rose-800 ring-rose-200", dot: "bg-rose-500" },
   draft: { label: "Not bookable", chip: "bg-neutral-50 text-neutral-600 ring-neutral-200", dot: "bg-neutral-300" },
 };
 

@@ -6,6 +6,7 @@ import { AlertTriangle, Check, Search, Users, X } from "lucide-react";
 import { taka } from "@/src/lib/hotel-store/format";
 import { freeUnits, useHotelDB } from "@/src/lib/hotel-store/store";
 import type { RoomUnit } from "@/src/lib/hotel-store/types";
+import { useT } from "@/src/lib/hotel-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { hbtn, inputClass } from "../ui";
 import { FieldError, focusRing, Section } from "./parts";
@@ -57,6 +58,7 @@ const byNumber = (a: RoomUnit, b: RoomUnit) =>
   a.number.localeCompare(b.number, undefined, { numeric: true });
 
 function UnitStatus({ state }: { state: UnitState }) {
+  const tr = useT();
   const s = unitStates[state];
   return (
     <span
@@ -66,7 +68,7 @@ function UnitStatus({ state }: { state: UnitState }) {
       )}
     >
       <span className={cn("size-1.5 shrink-0 rounded-full", s.dot)} />
-      {s.label}
+      {tr(s.label)}
     </span>
   );
 }
@@ -79,6 +81,7 @@ export function RoomsSection({
   step: number;
   conflict?: string;
 }) {
+  const tr = useT();
   const db = useHotelDB();
   const { control } = useFormContext<BookingFormValues>();
   const v = useWatch({ control }) as BookingFormValues;
@@ -122,7 +125,7 @@ export function RoomsSection({
     });
     setDropped(
       gone.length
-        ? `Room ${gone.map((g) => g.number).join(", ")} ${gone.length === 1 ? "is" : "are"} not free for the new dates and ${gone.length === 1 ? "was" : "were"} removed.`
+        ? tr("Room {rooms} not free for the new dates — removed.", { rooms: gone.map((g) => g.number).join(", ") })
         : ""
     );
     if (gone.length) remove(gone.map((g) => g.i));
@@ -143,13 +146,13 @@ export function RoomsSection({
     const n = query.trim();
     if (!n) return;
     const u = db.units.find((x) => x.number.toLowerCase() === n.toLowerCase());
-    if (!u) return setQueryError(`No room ${n}`);
-    if (lineOf(u.id) >= 0) return setQueryError(`Room ${n} is already added`);
+    if (!u) return setQueryError(tr("No room {n}", { n }));
+    if (lineOf(u.id) >= 0) return setQueryError(tr("Room {n} is already added", { n }));
     if (!selectable(u))
       return setQueryError(
         valid
-          ? `Room ${n}: ${unitStates[stateOf(u, free)].label.toLowerCase()}`
-          : "Pick dates first"
+          ? `${tr("Room")} ${n}: ${tr(unitStates[stateOf(u, free)].label)}`
+          : tr("Pick dates first")
       );
     toggle(u);
     setQuery("");
@@ -170,8 +173,8 @@ export function RoomsSection({
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-rose-600" />
           <span>
-            <b className="font-semibold">Availability changed.</b> {conflict}{" "}
-            Your other details are kept — pick another room and submit again.
+            <b className="font-semibold">{tr("Availability changed.")}</b> {conflict}{" "}
+            {tr("Your other details are kept — pick another room and submit again.")}
           </span>
         </div>
       )}
@@ -182,11 +185,11 @@ export function RoomsSection({
           className="mb-3 flex items-start gap-2.5 rounded-md border border-sky-200 bg-sky-50 px-3.5 py-2.5 text-sm text-sky-900"
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-sky-600" />
-          <span className="flex-1">{dropped} Pick another room.</span>
+          <span className="flex-1">{dropped} {tr("Pick another room.")}</span>
           <button
             type="button"
             onClick={() => setDropped("")}
-            aria-label="Dismiss"
+            aria-label={tr("Dismiss")}
             className={cn(hbtn.icon, "size-6", focusRing)}
           >
             <X className="size-3.5" />
@@ -210,8 +213,8 @@ export function RoomsSection({
               }
             }}
             inputMode="numeric"
-            placeholder="Type room no. + Enter"
-            aria-label="Add room by number"
+            placeholder={tr("Type room no. + Enter")}
+            aria-label={tr("Add room by number")}
             className={cn(inputClass, "pl-9", queryError && "border-rose-400")}
           />
         </div>
@@ -225,7 +228,7 @@ export function RoomsSection({
       <div
         className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4"
         role="group"
-        aria-label="Rooms"
+        aria-label={tr("Rooms")}
       >
         {units.map((u) => {
           const t = db.roomTypes.find((x) => x.id === u.typeId);
@@ -239,7 +242,7 @@ export function RoomsSection({
               onClick={() => toggle(u)}
               disabled={disabled}
               aria-pressed={on}
-              aria-label={`Room ${u.number}, ${t?.beds ?? ""}, sleeps ${t?.capacity ?? 0}, ${taka(t?.price ?? 0)} per night, ${valid ? unitStates[state].label : "pick dates"}${on ? ", selected" : ""}`}
+              aria-label={`${tr("Room")} ${u.number}, ${t?.beds ?? ""}, ${taka(t?.price ?? 0)}, ${valid ? tr(unitStates[state].label) : tr("Pick dates")}${on ? ` ✓` : ""}`}
               title={u.outOfService && u.oosReason ? u.oosReason : undefined}
               className={cn(
                 "relative cursor-pointer rounded-md border border-l-4 px-2.5 py-2 text-left transition disabled:cursor-not-allowed",
@@ -278,7 +281,7 @@ export function RoomsSection({
                 {valid ? (
                   <UnitStatus state={state} />
                 ) : (
-                  <span className="text-xs text-neutral-500">Pick dates</span>
+                  <span className="text-xs text-neutral-500">{tr("Pick dates")}</span>
                 )}
               </span>
             </button>

@@ -7,6 +7,7 @@ import { paymentMethodInfo } from "@/src/lib/hotelPayment";
 import { taka } from "@/src/lib/hotel-store/format";
 import { useHotelDB } from "@/src/lib/hotel-store/store";
 import type { PayMethod } from "@/src/lib/hotel-store/types";
+import { useT } from "@/src/lib/hotel-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { inputClass } from "../ui";
 import {
@@ -33,6 +34,7 @@ const methodIcons: Partial<Record<PayMethod, typeof Banknote>> = {
 };
 
 export default function PaymentSection({ step }: { step: number }) {
+  const t = useT();
   const db = useHotelDB();
   const { control, register, setValue } = useFormContext<BookingFormValues>();
   const { isSubmitted } = useFormState({ control });
@@ -51,7 +53,7 @@ export default function PaymentSection({ step }: { step: number }) {
     { value: "none", title: "Nothing now — pays at the hotel" },
     {
       value: "deposit",
-      title: `Deposit (${db.settings.depositRate}%)`,
+      title: t("Deposit ({n}%)", { n: db.settings.depositRate }),
       amount: stay.deposit,
     },
     { value: "full", title: "Full payment", amount: stay.total },
@@ -73,7 +75,7 @@ export default function PaymentSection({ step }: { step: number }) {
     return (
       <Section id="payment" step={step} title="Payment">
         <p className="rounded-md border border-dashed border-neutral-300 px-4 py-5 text-center text-sm text-neutral-600">
-          Select dates and a room to set up payment.
+          {t("Select dates and a room to set up payment.")}
         </p>
       </Section>
     );
@@ -86,7 +88,7 @@ export default function PaymentSection({ step }: { step: number }) {
       title="Payment"
       sub={`Total ${taka(stay.total)}`}
     >
-      <p className={fieldLabel}>How much is the guest paying now?</p>
+      <p className={fieldLabel}>{t("How much is the guest paying now?")}</p>
       <div
         role="radiogroup"
         aria-label="Payment"
@@ -123,7 +125,7 @@ export default function PaymentSection({ step }: { step: number }) {
                 >
                   {on && <span className="size-2 rounded-full bg-sky-600" />}
                 </span>
-                {p.title}
+                {t(p.title)}
                 {p.amount !== undefined && (
                   <span className="ml-auto font-semibold tabular-nums text-neutral-900">
                     {taka(p.amount)}
@@ -144,7 +146,7 @@ export default function PaymentSection({ step }: { step: number }) {
                     onChange={(e) => setAmount(e.target.value)}
                     name="payAmount"
                     placeholder="0"
-                    aria-label="Other amount"
+                    aria-label={t("Other amount")}
                     className={cn(
                       inputClass,
                       "h-9 pl-7 text-right font-semibold tabular-nums",
@@ -172,11 +174,11 @@ export default function PaymentSection({ step }: { step: number }) {
               className="mt-0.5 size-4 rounded border-neutral-300 accent-sky-600"
             />
             <span>
-              Not received yet — collect later
+              {t("Not received yet — collect later")}
               <span className="block text-xs text-neutral-500">
                 {v.payCollected
-                  ? "Leave unticked when the money is in hand now."
-                  : `${taka(planned)} is noted as ${plan === "deposit" ? "the deposit" : "the amount"} to collect. Nothing is recorded as paid.`}
+                  ? t("Leave unticked when the money is in hand now.")
+                  : t(plan === "deposit" ? "{amount} is noted as the deposit to collect. Nothing is recorded as paid." : "{amount} is noted as the amount to collect. Nothing is recorded as paid.", { amount: taka(planned) })}
               </span>
             </span>
           </label>
@@ -184,10 +186,10 @@ export default function PaymentSection({ step }: { step: number }) {
           {v.payCollected && (
             <>
               <div>
-                <span className={fieldLabel}>Paid by</span>
+                <span className={fieldLabel}>{t("Paid by")}</span>
                 <div
                   role="radiogroup"
-                  aria-label="Payment method"
+                  aria-label={t("Payment method")}
                   className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5"
                 >
                   {payMethods.map((m) => {
@@ -220,7 +222,7 @@ export default function PaymentSection({ step }: { step: number }) {
                         ) : Icon ? (
                           <Icon className="size-4 shrink-0 text-neutral-500" />
                         ) : null}
-                        <span className="truncate">{info.label}</span>
+                        <span className="truncate">{t(info.label)}</span>
                       </button>
                     );
                   })}
@@ -236,10 +238,10 @@ export default function PaymentSection({ step }: { step: number }) {
                       {...register("payRef")}
                       placeholder={
                         v.payMethod === "bank"
-                          ? "Cheque or transfer no."
+                          ? t("Cheque or transfer no.")
                           : v.payMethod === "card"
-                            ? "Approval code"
-                            : "TrxID, e.g. 9F7K2LQ1"
+                            ? t("Approval code")
+                            : t("TrxID, e.g. 9F7K2LQ1")
                       }
                       className={cn(
                         inputClass,
@@ -257,10 +259,10 @@ export default function PaymentSection({ step }: { step: number }) {
 
       <div className="mt-5 flex items-center justify-between gap-3 border-t border-neutral-200 pt-3.5">
         <span className="text-sm text-neutral-700">
-          Balance due
+          {t("Balance due")}
           {received > 0 && (
             <span className="ml-2 text-xs tabular-nums text-neutral-500">
-              {taka(stay.total)} − {taka(received)} paid
+              {taka(stay.total)} − {taka(received)} {t("paid")}
             </span>
           )}
         </span>
@@ -274,7 +276,7 @@ export default function PaymentSection({ step }: { step: number }) {
             taka(balance)
           ) : (
             <>
-              Fully paid <CircleCheck className="size-4" />
+              {t("Fully paid")} <CircleCheck className="size-4" />
             </>
           )}
         </span>

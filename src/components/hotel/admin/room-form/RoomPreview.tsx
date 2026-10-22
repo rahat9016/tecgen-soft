@@ -8,7 +8,7 @@ import { facilityLabel, formatBeds, formatSize, toNumber, type FormValues, type 
 export type PreviewStatus = "draft" | "published" | "hidden";
 
 const statusStyle: Record<PreviewStatus, { label: string; className: string }> = {
-  draft: { label: "Draft", className: "bg-amber-100 text-amber-900 ring-amber-300" },
+  draft: { label: "Draft", className: "bg-violet-50 text-violet-800 ring-violet-200" },
   published: { label: "Published", className: "bg-emerald-100 text-emerald-900 ring-emerald-300" },
   hidden: { label: "Hidden from website", className: "bg-neutral-100 text-neutral-800 ring-neutral-300" },
 };

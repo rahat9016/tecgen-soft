@@ -24,6 +24,7 @@ import {
   useHotelDB,
 } from "@/src/lib/hotel-store/store";
 import type { User } from "@/src/lib/hotel-store/types";
+import { useT } from "@/src/lib/hotel-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { ADMIN, hbtn, inputClass, textareaClass } from "../ui";
 import {
@@ -53,6 +54,7 @@ const localDigits = (p: string) =>
   p.replace(/\D/g, "").replace(/^880/, "").replace(/^0/, "");
 
 export default function GuestSection({ step }: { step: number }) {
+  const t = useT();
   const db = useHotelDB();
   const { control, register, setValue, getValues } =
     useFormContext<BookingFormValues>();
@@ -147,7 +149,7 @@ export default function GuestSection({ step }: { step: number }) {
           <div className="flex gap-2">
             <select
               {...register("guest.phoneCountry")}
-              aria-label="Country code"
+              aria-label={t("Country code")}
               className={cn(inputClass, "w-[92px] shrink-0 px-2")}
             >
               {countries.map((c) => (
@@ -161,7 +163,7 @@ export default function GuestSection({ step }: { step: number }) {
               <input
                 {...register("guest.customDial")}
                 placeholder="+971"
-                aria-label="Dial code"
+                aria-label={t("Dial code")}
                 className={cn(inputClass, "w-20 shrink-0", err.customDial)}
               />
             )}
@@ -183,7 +185,7 @@ export default function GuestSection({ step }: { step: number }) {
         <FormField label="Full name" name="guest.fullName">
           <input
             {...register("guest.fullName")}
-            placeholder="e.g. Tamim Rahman"
+            placeholder={t("e.g. Tamim Rahman")}
             autoComplete="off"
             className={cn(inputClass, "min-w-0", err.fullName)}
           />
@@ -197,8 +199,8 @@ export default function GuestSection({ step }: { step: number }) {
         >
           <p className="border-b border-sky-100 px-3.5 py-2 text-xs font-semibold text-sky-900">
             {matches.length === 1
-              ? "Existing guest found"
-              : `${matches.length} existing guests found`}
+              ? t("Existing guest found")
+              : t("{n} existing guests found", { n: matches.length })}
           </p>
           <ul className="divide-y divide-sky-100">
             {matches.map((u) => {
@@ -219,8 +221,8 @@ export default function GuestSection({ step }: { step: number }) {
                       {u.phone}
                       {u.email && ` · ${u.email}`} ·{" "}
                       {s.stays
-                        ? `${s.stays} stay${s.stays > 1 ? "s" : ""}, last ${dateLabel(s.last!, "d MMM yyyy")}`
-                        : "No stays yet"}
+                        ? t(s.stays > 1 ? "{n} stays, last {date}" : "{n} stay, last {date}", { n: s.stays, date: dateLabel(s.last!, "d MMM yyyy") })
+                        : t("No stays yet")}
                     </span>
                   </span>
                   <span className="flex gap-1.5">
@@ -241,7 +243,7 @@ export default function GuestSection({ step }: { step: number }) {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => setDismissed((d) => [...d, u.id])}
-                      aria-label={`Not ${u.name}`}
+                      aria-label={`${t("Not this guest")}: ${u.name}`}
                       className={cn(hbtn.icon, focusRing)}
                     >
                       <X className="size-4" />
@@ -332,7 +334,7 @@ export default function GuestSection({ step }: { step: number }) {
               <FormField label="Country name" name="guest.otherCountry">
                 <input
                   {...register("guest.otherCountry")}
-                  placeholder="e.g. Brazil"
+                  placeholder={t("e.g. Brazil")}
                   className={inputClass}
                 />
               </FormField>
@@ -341,7 +343,7 @@ export default function GuestSection({ step }: { step: number }) {
           {!checkingIn && (
             <div className="mt-4">
               <p className="mb-2 text-xs font-medium text-neutral-600">
-                Identification (optional now, needed at check-in)
+                {t("Identification (optional now, needed at check-in)")}
               </p>
               <IdFields />
             </div>
@@ -360,6 +362,7 @@ const countryName = (code: string, other: string) =>
     : countries.find((c) => c.code === code)?.name;
 
 function IdFields() {
+  const t = useT();
   const { control, register, setValue } = useFormContext<BookingFormValues>();
   const [country, idType] = useWatch({
     control,
@@ -375,7 +378,7 @@ function IdFields() {
           <Segmented
             label="ID document"
             value={idType}
-            onChange={(t) => setValue("guest.idType", t, { shouldDirty: true })}
+            onChange={(k) => setValue("guest.idType", k, { shouldDirty: true })}
             options={[
               { value: "nid", label: "NID" },
               { value: "passport", label: "Passport" },
@@ -385,7 +388,7 @@ function IdFields() {
         </FormField>
       )}
       <FormField
-        label={idKind === "nid" ? "NID number" : "Passport number"}
+        label={idKind === "nid" ? t("NID number") : t("Passport number")}
         name="guest.idNumber"
       >
         <input
@@ -407,6 +410,7 @@ function IdFields() {
 
 /** Wishes the desk will try to meet, kept apart from paid extras that go on the bill. */
 function ArrivalAndRequests() {
+  const t = useT();
   const db = useHotelDB();
   const { control, register } = useFormContext<BookingFormValues>();
   const v = useWatch({ control }) as BookingFormValues;
@@ -415,10 +419,10 @@ function ArrivalAndRequests() {
   const { extraBeds, extraBedRate, extras, nights } = computeStay(db, v);
   const rateErr = useErrorClass("extraBedRate");
   const summary = [
-    v.guest.arrivalTime && `Arrives ${v.guest.arrivalTime.split(" (")[0]}`,
+    v.guest.arrivalTime && `${t("Arrives")} ${v.guest.arrivalTime.split(" (")[0]}`,
     picked.length > 0 &&
-      `${picked.length} request${picked.length > 1 ? "s" : ""}`,
-    extraBeds > 0 && `${extraBeds} extra bed${extraBeds > 1 ? "s" : ""}`,
+      t(picked.length > 1 ? "{n} requests" : "{n} request", { n: picked.length }),
+    extraBeds > 0 && t(extraBeds > 1 ? "{n} extra beds" : "{n} extra bed", { n: extraBeds }),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -428,7 +432,7 @@ function ArrivalAndRequests() {
       {v.status !== "check-in" && (
         <FormField label="Estimated arrival" className="mb-4 sm:max-w-xs">
           <select {...register("guest.arrivalTime")} className={inputClass}>
-            <option value="">Not sure yet</option>
+            <option value="">{t("Not sure yet")}</option>
             {arrivalOptions.map((a) => (
               <option key={a}>{a}</option>
             ))}
@@ -478,7 +482,7 @@ function ArrivalAndRequests() {
       <textarea
         {...register("guest.note")}
         rows={2}
-        placeholder="Other requests, e.g. anniversary, allergies"
+        placeholder={t("Other requests, e.g. anniversary, allergies")}
         className={cn(textareaClass, "mt-2.5")}
       />
 
@@ -486,12 +490,12 @@ function ArrivalAndRequests() {
         <p className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-[13px] font-medium text-neutral-800">
           Paid extras{" "}
           <span className="text-xs font-normal text-neutral-600">
-            Added to the bill
+            {t("Added to the bill")}
           </span>
         </p>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="text-sm text-neutral-800">
-            Extra bed
+            {t("Extra bed")}
             <span className="mt-1 flex items-center gap-1.5 text-xs text-neutral-600">
               <span className="relative">
                 <span className="pointer-events-none absolute inset-y-0 left-2 flex items-center text-neutral-500">
@@ -503,7 +507,7 @@ function ArrivalAndRequests() {
                   step={50}
                   inputMode="numeric"
                   {...register("extraBedRate")}
-                  aria-label="Extra bed price per bed per night"
+                  aria-label={t("Extra bed price per bed per night")}
                   className={cn(
                     inputClass,
                     "h-8 w-24 pl-5 text-sm tabular-nums",
@@ -554,6 +558,7 @@ function Tag({
   tone: "rose" | "emerald" | "sky" | "neutral";
   children: React.ReactNode;
 }) {
+  const t = useT();
   const tones = {
     rose: "bg-rose-100 text-rose-800",
     emerald: "bg-emerald-100 text-emerald-800",
@@ -567,7 +572,7 @@ function Tag({
         tones[tone]
       )}
     >
-      {children}
+      {typeof children === "string" ? t(children) : children}
     </span>
   );
 }
@@ -587,6 +592,7 @@ function Avatar({ name, blocked }: { name: string; blocked?: boolean }) {
 
 /** The guest picked from their profile: history and anything the desk should know before booking. */
 function GuestCard({ user, onClear }: { user: User; onClear: () => void }) {
+  const t = useT();
   const db = useHotelDB();
   const s = guestStats(db, user.id);
   const blocked = user.status === "blocked";
@@ -605,13 +611,13 @@ function GuestCard({ user, onClear }: { user: User; onClear: () => void }) {
           <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-neutral-900">
             <Check className="size-4 text-emerald-700" /> Using profile:{" "}
             {user.name}
-            <Tag tone="sky">{s.stays ? "Returning" : "Has profile"}</Tag>
+            <Tag tone="sky">{s.stays ? t("Returning") : t("Has profile")}</Tag>
             {s.inHouse && <Tag tone="emerald">In house now</Tag>}
           </p>
           <p className="text-xs text-neutral-600">
             {s.stays} stay{s.stays !== 1 ? "s" : ""} · {s.nights} night
             {s.nights !== 1 ? "s" : ""} · {taka(s.spent)} paid
-            {s.last && ` · last ${dateLabel(s.last, "d MMM yyyy")}`}
+            {s.last && ` · ${t("last")} ${dateLabel(s.last, "d MMM yyyy")}`}
           </p>
         </div>
         <div className="flex gap-1.5">
@@ -620,7 +626,7 @@ function GuestCard({ user, onClear }: { user: User; onClear: () => void }) {
             onClick={onClear}
             className={cn(hbtn.small, focusRing)}
           >
-            Not this guest
+            {t("Not this guest")}
           </button>
         </div>
       </div>
@@ -629,8 +635,7 @@ function GuestCard({ user, onClear }: { user: User; onClear: () => void }) {
         <div className="mt-2.5 space-y-1 border-t border-neutral-200/70 pt-2.5 text-xs">
           {blocked && (
             <p className="flex items-center gap-1.5 font-medium text-rose-800">
-              <Ban className="size-3.5" /> Blocked guest — you&rsquo;ll be asked
-              to confirm before booking.
+              <Ban className="size-3.5" /> {t("Blocked guest — you’ll be asked to confirm before booking.")}
             </p>
           )}
           {s.noShows > 0 && (

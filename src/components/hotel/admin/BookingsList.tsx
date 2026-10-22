@@ -4,14 +4,15 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
-import { BadgeCheck, CalendarDays, ChevronDown, ChevronRight, ClipboardList, Download, LogIn, LogOut, Plus, Search, Wallet, X } from "lucide-react";
+import { BadgeCheck, CalendarDays, ChevronDown, ChevronRight, ClipboardList, Download, LogIn, LogOut, Plus, Search, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { Calendar } from "@/src/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/src/components/ui/popover";
-import { dateLabel, downloadCsv, formatDateTime, initials, rangeLabel, sourceLabels, statusLabels, taka, todayKey } from "@/src/lib/hotel-store/format";
+import { dateLabel, downloadCsv, formatDateTime, initials, rangeLabel, sourceLabels, statusDots, statusLabels, statusStyles, taka, todayKey } from "@/src/lib/hotel-store/format";
 import { isArrival } from "@/src/lib/hotel-store/frontDesk";
 import { confirmBooking, creditOf, dueOf, folioTotal, isLive, paidOf, paymentStatus, unitNumbers, useHotelDB } from "@/src/lib/hotel-store/store";
 import type { Booking, BookingSource } from "@/src/lib/hotel-store/types";
 import { parseDayKey, toDayKey } from "@/src/lib/hotelDates";
+import { useT } from "@/src/lib/hotel-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { ADMIN, Empty, focusRing, hbtn, Pager, StatusBadge, tableCardClass, usePagination } from "./ui";
 
@@ -53,6 +54,7 @@ const sortLabels: Record<Sort, string> = { created: "Newest first", checkin: "Ch
 const control = cn("h-10 rounded-md border border-neutral-300 bg-white text-sm text-neutral-800 transition hover:border-sky-400", focusRing, "focus-visible:ring-offset-0");
 
 export default function BookingsList() {
+  const t = useT();
   const db = useHotelDB();
   const router = useRouter();
   const params = useSearchParams();
@@ -64,6 +66,7 @@ export default function BookingsList() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [sort, setSort] = useState<Sort>("created");
+  const [showFilters, setShowFilters] = useState(false);
   const today = todayKey();
   // Booking details link back to this exact view.
   const here = `${ADMIN}/bookings${tab !== "all" ? `?status=${tab}` : ""}`;
@@ -82,7 +85,7 @@ export default function BookingsList() {
     });
   }, [db, q, source, pay, from, to]);
 
-  const counts = Object.fromEntries((Object.keys(tabTest) as Tab[]).map((t) => [t, base.filter((b) => tabTest[t](b, today)).length])) as Record<Tab, number>;
+  const counts = Object.fromEntries((Object.keys(tabTest) as Tab[]).map((k) => [k, base.filter((b) => tabTest[k](b, today)).length])) as Record<Tab, number>;
   const list = base
     .filter((b) => tabTest[tab](b, today))
     .sort((a, b) => (sort === "created" ? b.createdAt.localeCompare(a.createdAt) : sort === "checkin" ? a.checkIn.localeCompare(b.checkIn) : b.checkIn.localeCompare(a.checkIn)));
@@ -116,11 +119,11 @@ export default function BookingsList() {
     ]);
 
   const chips = [
-    source !== "any" && { key: "source", label: `Source: ${sourceLabels[source]}`, clear: () => setSource("any") },
-    pay !== "any" && { key: "pay", label: `Payment: ${payLabels[pay]}`, clear: () => setPay("any") },
+    source !== "any" && { key: "source", label: `${t("Source")}: ${t(sourceLabels[source])}`, clear: () => setSource("any") },
+    pay !== "any" && { key: "pay", label: `${t("Payment")}: ${t(payLabels[pay])}`, clear: () => setPay("any") },
     (from || to) && {
       key: "stay",
-      label: `Staying: ${stayLabel(from, to)}`,
+      label: `${t("Staying")}: ${stayLabel(from, to)}`,
       clear: () => {
         setFrom("");
         setTo("");
@@ -128,6 +131,7 @@ export default function BookingsList() {
     },
   ].filter(Boolean) as { key: string; label: string; clear: () => void }[];
   const filtering = chips.length > 0 || !!q.trim();
+  const activeFilters = chips.length + (sort !== "created" ? 1 : 0) + (tab !== "all" ? 1 : 0);
   const clearAll = () => {
     setQ("");
     setSource("any");
@@ -136,38 +140,42 @@ export default function BookingsList() {
     setTo("");
     resetPage();
   };
-  const pickTab = (t: Tab) => {
-    setTab(t);
+  const pickTab = (v: Tab) => {
+    setTab(v);
     resetPage();
   };
 
   return (
     <div className="mx-auto max-w-[1600px]">
       {/* White header card, same as the Rooms page. */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-neutral-200 bg-white px-4 py-3.5 sm:px-5">
+      <div className="mb-3 flex items-center justify-between gap-3 rounded-md border border-neutral-200 bg-white px-4 py-3 sm:mb-4 sm:px-5 sm:py-3.5">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-neutral-900">Bookings</h1>
-          <p className="mt-0.5 text-sm text-neutral-600">
-            {db.bookings.length} bookings · {db.bookings.filter((b) => b.status === "pending").length} waiting for confirmation
+          <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl">{t("Bookings")}</h1>
+          <p className="mt-0.5 truncate text-[13px] text-neutral-600 sm:text-sm">
+            {t("{n} bookings · {p} waiting for confirmation", { n: db.bookings.length, p: db.bookings.filter((b) => b.status === "pending").length })}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button onClick={exportCsv} className={hbtn.outline}>
-            <Download className="size-4" aria-hidden /> <span className="hidden sm:inline">Export CSV</span>
-            <span className="sr-only sm:hidden">Export CSV</span>
+        <div className="flex shrink-0 items-center gap-2">
+          <button onClick={exportCsv} className={cn(hbtn.outline, "size-10 px-0 sm:w-auto sm:px-4")}>
+            <Download className="size-4" aria-hidden /> <span className="hidden sm:inline">{t("Export CSV")}</span>
+            <span className="sr-only sm:hidden">{t("Export CSV")}</span>
           </button>
           <Link href={`${ADMIN}/bookings/new`} className={hbtn.primary}>
-            <Plus className="size-4" aria-hidden /> New booking
+            <Plus className="size-4" aria-hidden /> <span className="sm:hidden">{t("New")}</span>
+            <span className="hidden sm:inline">{t("New booking")}</span>
           </Link>
         </div>
       </div>
 
       <div className={tableCardClass}>
-        <ViewPills tab={tab} counts={counts} onChange={pickTab} />
+        <div className="hidden lg:block">
+          <ViewPills tab={tab} counts={counts} onChange={pickTab} />
+        </div>
 
         <div className="space-y-3 border-b border-neutral-100 p-3 sm:p-4">
-          <div className="grid grid-cols-2 gap-2 lg:grid-cols-[minmax(16rem,1fr)_repeat(4,auto)]">
-            <label className="relative col-span-2 block lg:col-span-1">
+          <div className="flex flex-col gap-2 lg:grid lg:grid-cols-[minmax(16rem,1fr)_repeat(4,auto)]">
+            <div className="flex gap-2">
+            <label className="relative block min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" aria-hidden />
               <input
                 type="search"
@@ -176,11 +184,34 @@ export default function BookingsList() {
                   setQ(e.target.value);
                   resetPage();
                 }}
-                placeholder="Search guest, phone, booking code or room no."
-                aria-label="Search bookings"
+                placeholder={t("Search guest, phone, booking code or room no.")}
+                aria-label={t("Search bookings")}
                 className={cn(control, "w-full pl-9 pr-3 placeholder:text-neutral-500")}
               />
             </label>
+            {/* Phones: the four filters fold away behind one button. */}
+            <button
+              type="button"
+              onClick={() => setShowFilters((v) => !v)}
+              aria-expanded={showFilters}
+              className={cn(control, "relative flex shrink-0 items-center gap-1.5 px-3 font-medium lg:hidden", (showFilters || activeFilters > 0) && "border-sky-500 bg-sky-50 text-sky-900")}
+            >
+              <SlidersHorizontal className="size-4" aria-hidden />
+              <span className="sr-only sm:not-sr-only">{t("Filters")}</span>
+              {activeFilters > 0 && <span className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full bg-sky-600 text-[11px] font-bold text-white">{activeFilters}</span>}
+            </button>
+            </div>
+            <div className={cn("grid grid-cols-2 gap-2 lg:contents", !showFilters && "hidden")}>
+            {/* Phones and tablets: the booking views live here instead of the pill row. */}
+            <div className="col-span-2 lg:hidden">
+              <ToolbarSelect
+                label="Booking views"
+                value={tab}
+                active={tab !== "all"}
+                onChange={pickTab}
+                options={views.map((v) => ({ value: v.tab, label: v.label, count: v.group < 2 ? counts[v.tab] : undefined }))}
+              />
+            </div>
             <ToolbarSelect
               label="Source"
               value={source}
@@ -204,19 +235,20 @@ export default function BookingsList() {
             <StayFilter
               from={from}
               to={to}
-              onChange={(f, t) => {
+              onChange={(f, tt) => {
                 setFrom(f);
-                setTo(t);
+                setTo(tt);
                 resetPage();
               }}
             />
             <ToolbarSelect label="Sort" value={sort} onChange={setSort} options={(Object.keys(sortLabels) as Sort[]).map((s) => ({ value: s, label: sortLabels[s] }))} />
+            </div>
           </div>
 
           {filtering && (
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="text-neutral-700">
-                <b className="font-semibold text-neutral-900">{list.length}</b> {list.length === 1 ? "result" : "results"}
+                <b className="font-semibold text-neutral-900">{list.length}</b> {list.length === 1 ? t("result") : t("results")}
               </span>
               {chips.map((c) => (
                 <button
@@ -226,7 +258,7 @@ export default function BookingsList() {
                     c.clear();
                     resetPage();
                   }}
-                  aria-label={`Remove filter ${c.label}`}
+                  aria-label={`${t("Remove filter")} ${c.label}`}
                   className={cn("inline-flex h-8 items-center gap-1 rounded-full bg-sky-50 pl-3 pr-2 font-medium text-sky-900 ring-1 ring-inset ring-sky-200 transition hover:bg-sky-100", focusRing)}
                 >
                   {c.label}
@@ -234,7 +266,7 @@ export default function BookingsList() {
                 </button>
               ))}
               <button type="button" onClick={clearAll} className={cn("rounded-sm font-medium text-neutral-600 hover:text-sky-800 hover:underline", focusRing)}>
-                Clear all
+                {t("Clear all")}
               </button>
             </div>
           )}
@@ -243,12 +275,12 @@ export default function BookingsList() {
         {list.length === 0 ? (
           <Empty
             icon={ClipboardList}
-            title={filtering ? "No bookings match" : tab === "all" ? "No bookings yet" : `Nothing in “${views.find((v) => v.tab === tab)?.label}”`}
+            title={filtering ? "No bookings match" : tab === "all" ? "No bookings yet" : t("Nothing in “{view}”", { view: t(views.find((v) => v.tab === tab)?.label ?? "") })}
             text={filtering ? "Try another search, or clear the filters." : tab === "all" ? "New bookings will show up here." : "Pick another view above."}
           >
             {filtering && (
               <button onClick={clearAll} className={cn(hbtn.outline, "mt-2")}>
-                Clear filters
+                {t("Clear filters")}
               </button>
             )}
           </Empty>
@@ -258,34 +290,21 @@ export default function BookingsList() {
             <ul className="divide-y divide-neutral-100 md:hidden">
               {page.rows.map((b) => (
                 <li key={b.id}>
-                  <Link href={detail(b)} className={cn("block space-y-3 p-4 transition active:bg-sky-50/60", focusRing, "focus-visible:ring-inset")}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <Avatar name={b.guest.name} />
-                        <div className="min-w-0">
-                          <p className="font-semibold text-neutral-900">{b.guest.name}</p>
-                          <p className="text-[13px] text-neutral-600">
-                            <span className="font-mono font-semibold text-sky-800">{b.code}</span> · {sourceLabels[b.source]}
-                          </p>
-                        </div>
+                  <Link href={detail(b)} className={cn("flex items-center gap-3 px-4 py-3 transition active:bg-sky-50/60", focusRing, "focus-visible:ring-inset")}>
+                    <DateTile b={b} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate font-semibold text-neutral-900">{b.guest.name}</p>
+                        <StatusText status={b.status} />
                       </div>
-                      <StatusBadge status={b.status} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="min-w-0">
-                        <p className="text-[13px] text-neutral-600">Stay</p>
-                        <p className="font-medium text-neutral-900">{rangeLabel(b.checkIn, b.checkOut)}</p>
-                        <p className="text-[13px] text-neutral-600">{nightsGuests(b)}</p>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[13px] text-neutral-600">Room</p>
-                        <RoomCell b={b} />
+                      <div className="mt-1 flex items-center justify-between gap-2 text-[13px]">
+                        <p className="truncate text-neutral-600">
+                          <RoomShort b={b} /> · {shortRange(b.checkIn, b.checkOut)}
+                        </p>
+                        <PayShort b={b} />
                       </div>
                     </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <PayLine b={b} />
-                      <RowAction b={b} today={today} from={here} />
-                    </div>
+                    <ChevronRight className="size-4 shrink-0 text-neutral-300" aria-hidden />
                   </Link>
                 </li>
               ))}
@@ -295,13 +314,13 @@ export default function BookingsList() {
               <table className="w-full min-w-[880px] text-sm">
                 <thead className="border-b border-neutral-200 bg-neutral-50/80 text-left text-xs uppercase tracking-wide text-neutral-500">
                   <tr>
-                    <th className="py-3 pl-4 pr-3 font-medium">Guest</th>
-                    <th className="px-3 py-3 font-medium">Stay</th>
-                    <th className="px-3 py-3 font-medium">Room</th>
-                    <th className="px-3 py-3 font-medium">Status</th>
-                    <th className="px-3 py-3 font-medium">Payment</th>
+                    <th className="py-3 pl-4 pr-3 font-medium">{t("Guest")}</th>
+                    <th className="px-3 py-3 font-medium">{t("Stay")}</th>
+                    <th className="px-3 py-3 font-medium">{t("Room")}</th>
+                    <th className="px-3 py-3 font-medium">{t("Status")}</th>
+                    <th className="px-3 py-3 font-medium">{t("Payment")}</th>
                     <th className="py-3 pr-4 text-right font-medium">
-                      <span className="sr-only">Actions</span>
+                      <span className="sr-only">{t("Actions")}</span>
                     </th>
                   </tr>
                 </thead>
@@ -324,9 +343,9 @@ export default function BookingsList() {
                               </Link>
                               <p className="text-[13px] text-neutral-600">
                                 <span className="font-mono font-semibold text-sky-800">{b.code}</span>
-                                {b.groupId && <span className="ml-1.5 rounded bg-violet-50 px-1.5 py-px text-xs font-medium text-violet-800">Group</span>}
+                                {b.groupId && <span className="ml-1.5 rounded bg-violet-50 px-1.5 py-px text-xs font-medium text-violet-800">{t("Group")}</span>}
                                 {" · "}
-                                {sourceLabels[b.source]}
+                                {t(sourceLabels[b.source])}
                               </p>
                             </div>
                           </div>
@@ -334,10 +353,10 @@ export default function BookingsList() {
                         <td className="px-3 py-4">
                           <p className="flex flex-wrap items-center gap-1.5 whitespace-nowrap text-neutral-900">
                             {rangeLabel(b.checkIn, b.checkOut)}
-                            {arrivesToday && <TodayTag>Arrives today</TodayTag>}
-                            {leavesToday && <TodayTag>Leaves today</TodayTag>}
+                            {arrivesToday && <TodayTag>{t("Arrives today")}</TodayTag>}
+                            {leavesToday && <TodayTag>{t("Leaves today")}</TodayTag>}
                           </p>
-                          <p className="text-[13px] text-neutral-600">{nightsGuests(b)}</p>
+                          <p className="text-[13px] text-neutral-600">{nightsGuests(b, t)}</p>
                         </td>
                         <td className="px-3 py-4">
                           <RoomCell b={b} />
@@ -370,9 +389,10 @@ export default function BookingsList() {
 
 /** The views as one row of pills. Counts show where they drive work (all, and today's views), not on history. */
 function ViewPills({ tab, counts, onChange }: { tab: Tab; counts: Record<Tab, number>; onChange: (t: Tab) => void }) {
+  const t = useT();
   return (
     // Phones swipe through the views in one line; wider screens wrap them.
-    <div role="group" aria-label="Booking views" className="flex items-center gap-1.5 overflow-x-auto border-b border-neutral-100 p-3 [scrollbar-width:none] sm:flex-wrap sm:px-4">
+    <div role="group" aria-label={t("Booking views")} className="flex items-center gap-1.5 overflow-x-auto border-b border-neutral-100 p-3 [scrollbar-width:none] sm:flex-wrap sm:px-4">
       {views.map((v, i) => {
         const selected = tab === v.tab;
         const n = counts[v.tab];
@@ -389,7 +409,7 @@ function ViewPills({ tab, counts, onChange }: { tab: Tab; counts: Record<Tab, nu
                 selected ? "border-sky-600 bg-sky-600 text-white" : "border-neutral-200 bg-white text-neutral-700 hover:border-sky-300 hover:text-sky-800"
               )}
             >
-              {v.label}
+              {t(v.label)}
               {v.group < 2 && (
                 <span
                   className={cn(
@@ -418,13 +438,14 @@ function ToolbarSelect<T extends string>({
   label: string;
   value: T;
   onChange: (v: T) => void;
-  options: { value: T; label: string }[];
+  options: { value: T; label: string; count?: number }[];
   /** A filter that's narrowing the list gets the brand outline, so it's easy to spot. */
   active?: boolean;
 }) {
+  const t = useT();
   return (
     <label className="relative block min-w-0">
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{t(label)}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
@@ -432,7 +453,7 @@ function ToolbarSelect<T extends string>({
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
-            {o.label}
+            {`${t(o.label)}${o.count !== undefined ? ` (${o.count})` : ""}`}
           </option>
         ))}
       </select>
@@ -445,20 +466,21 @@ const stayLabel = (from: string, to: string) => `${from ? dateLabel(from, "d MMM
 
 /** "Staying between" as one button with a range calendar, instead of two bare date fields. */
 function StayFilter({ from, to, onChange }: { from: string; to: string; onChange: (from: string, to: string) => void }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const active = !!(from || to);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" aria-label={active ? `Staying between ${stayLabel(from, to)}` : "Filter by stay dates"} className={cn(control, "flex w-full items-center gap-2 pl-3 pr-3 lg:w-auto", active && "border-sky-500 bg-sky-50 font-medium text-sky-900")}>
+        <button type="button" aria-label={active ? `${t("Staying between")} ${stayLabel(from, to)}` : t("Filter by stay dates")} className={cn(control, "flex w-full items-center gap-2 pl-3 pr-3 lg:w-auto", active && "border-sky-500 bg-sky-50 font-medium text-sky-900")}>
           <CalendarDays className="size-4 shrink-0 text-neutral-500" aria-hidden />
-          <span className="whitespace-nowrap">{active ? stayLabel(from, to) : "Any dates"}</span>
+          <span className="whitespace-nowrap">{active ? stayLabel(from, to) : t("Any dates")}</span>
           <ChevronDown className="ml-auto size-4 shrink-0 text-neutral-500" aria-hidden />
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-auto bg-white p-3">
-        <p className="px-1 text-sm font-semibold text-neutral-900">Staying between</p>
-        <p className="px-1 text-[13px] text-neutral-600">Shows stays that overlap these dates.</p>
+        <p className="px-1 text-sm font-semibold text-neutral-900">{t("Staying between")}</p>
+        <p className="px-1 text-[13px] text-neutral-600">{t("Shows stays that overlap these dates.")}</p>
         <Calendar
           mode="range"
           selected={{ from: parseDayKey(from) ?? undefined, to: parseDayKey(to) ?? undefined }}
@@ -468,10 +490,10 @@ function StayFilter({ from, to, onChange }: { from: string; to: string; onChange
         />
         <div className="mt-2 flex justify-between gap-2">
           <button type="button" onClick={() => onChange("", "")} disabled={!active} className={hbtn.outline}>
-            Clear
+            {t("Clear")}
           </button>
           <button type="button" onClick={() => setOpen(false)} className={hbtn.primary}>
-            Done
+            {t("Done")}
           </button>
         </div>
       </PopoverContent>
@@ -479,19 +501,20 @@ function StayFilter({ from, to, onChange }: { from: string; to: string; onChange
   );
 }
 
-const nightsGuests = (b: Booking) =>
-  `${b.nights} night${b.nights > 1 ? "s" : ""} · ${b.adults + b.children} guest${b.adults + b.children > 1 ? "s" : ""}`;
+const nightsGuests = (b: Booking, t: ReturnType<typeof useT>) =>
+  `${t(b.nights > 1 ? "{n} nights" : "{n} night", { n: b.nights })} · ${t(b.adults + b.children > 1 ? "{n} guests" : "{n} guest", { n: b.adults + b.children })}`;
 
 /** Room number first — that's what the desk works with — and the room's name underneath. */
 function RoomCell({ b }: { b: Booking }) {
+  const t = useT();
   const db = useHotelDB();
   const rooms = unitNumbers(db, b.unitIds);
   const missing = rooms.length < b.rooms && b.status !== "cancelled" && b.status !== "no-show";
   return (
     <div className="min-w-0">
       <p className={missing && !rooms.length ? "font-medium text-rose-700" : "font-medium text-neutral-900"}>
-        {rooms.length ? `Room ${rooms.join(", ")}` : "Not assigned"}
-        {missing && rooms.length > 0 && <span className="ml-1.5 text-[13px] font-medium text-rose-700">+{b.rooms - rooms.length} to assign</span>}
+        {rooms.length ? `${t("Room")} ${rooms.join(", ")}` : t("Not assigned")}
+        {missing && rooms.length > 0 && <span className="ml-1.5 text-[13px] font-medium text-rose-700">{t("+{n} to assign", { n: b.rooms - rooms.length })}</span>}
       </p>
       <p className="text-[13px] text-neutral-600">
         {b.roomName}
@@ -501,22 +524,76 @@ function RoomCell({ b }: { b: Booking }) {
   );
 }
 
+/** Phone list: "6–8 Nov" in the same month, otherwise "30 Oct – 2 Nov". */
+const shortRange = (a: string, b: string) =>
+  a.slice(0, 7) === b.slice(0, 7) ? `${Number(a.slice(8))}–${dateLabel(b, "d MMM")}` : `${dateLabel(a, "d MMM")} – ${dateLabel(b, "d MMM")}`;
+
+/** Phone list: room number only, or a red "No room" when one still needs assigning. */
+function RoomShort({ b }: { b: Booking }) {
+  const t = useT();
+  const db = useHotelDB();
+  const rooms = unitNumbers(db, b.unitIds);
+  if (rooms.length) return <span>{`${t("Room")} ${rooms.join(", ")}`}</span>;
+  return <span className={isLive(b) ? "font-medium text-rose-700" : undefined}>{t("No room")}</span>;
+}
+
+/** Phone list: small coloured status pill. */
+function StatusText({ status }: { status: Booking["status"] }) {
+  const t = useT();
+  return (
+    <span className={cn("inline-flex max-w-[50%] shrink-0 items-center gap-1 truncate rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset", statusStyles[status])}>
+      <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", statusDots[status])} />
+      <span className="truncate">{t(statusLabels[status])}</span>
+    </span>
+  );
+}
+
+const tileTones: Record<Booking["status"], string> = {
+  pending: "bg-violet-50 text-violet-700",
+  confirmed: "bg-sky-50 text-sky-700",
+  "checked-in": "bg-emerald-50 text-emerald-700",
+  "checked-out": "bg-neutral-100 text-neutral-500",
+  cancelled: "bg-rose-50 text-rose-600",
+  "no-show": "bg-slate-100 text-slate-600",
+};
+
+/** Phone list: check-in day as a small calendar tile, tinted by status so the list scans at a glance. */
+function DateTile({ b }: { b: Booking }) {
+  return (
+    <span aria-hidden className={cn("flex size-11 shrink-0 flex-col items-center justify-center rounded-xl leading-none", tileTones[b.status])}>
+      <span className="text-[17px] font-bold tabular-nums">{Number(b.checkIn.slice(8))}</span>
+      <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide">{dateLabel(b.checkIn, "MMM")}</span>
+    </span>
+  );
+}
+
+/** Phone list: only what needs attention — what's owed or to refund; settled bookings show their total quietly. */
+function PayShort({ b }: { b: Booking }) {
+  const t = useT();
+  const due = dueOf(b);
+  const credit = creditOf(b);
+  if (credit > 0) return <span className="shrink-0 font-medium tabular-nums text-violet-700">{t("{amount} to refund", { amount: taka(credit) })}</span>;
+  if (isLive(b) && due > 0) return <span className="shrink-0 font-medium tabular-nums text-rose-700">{t("{amount} due", { amount: taka(due) })}</span>;
+  return <span className="shrink-0 tabular-nums text-neutral-500">{taka(folioTotal(b))}</span>;
+}
+
 /** Total and one plain line on what's owed — no badge, no bar. */
 function PayLine({ b }: { b: Booking }) {
+  const t = useT();
   const due = dueOf(b);
   const credit = creditOf(b);
   const live = isLive(b);
   const paid = paidOf(b);
   const [text, tone] =
     credit > 0
-      ? [`${taka(credit)} to refund`, "text-violet-700"]
+      ? [t("{amount} to refund", { amount: taka(credit) }), "text-violet-700"]
       : !live
-        ? [paid > 0 ? `${taka(paid)} kept` : "No charge", "text-neutral-600"]
+        ? [paid > 0 ? t("{amount} kept", { amount: taka(paid) }) : t("No charge"), "text-neutral-600"]
         : due === 0
-          ? ["Paid in full", "text-emerald-700"]
+          ? [t("Paid in full"), "text-emerald-700"]
           : paid > 0
-            ? [`${taka(due)} due`, "text-rose-700"]
-            : ["Not paid", "text-rose-700"];
+            ? [t("{amount} due", { amount: taka(due) }), "text-rose-700"]
+            : [t("Not paid"), "text-rose-700"];
   return (
     <div className="whitespace-nowrap">
       <p className="font-semibold tabular-nums text-neutral-900">{taka(folioTotal(b))}</p>
@@ -535,6 +612,7 @@ const actionTones = {
 
 /** The one thing the desk most likely wants to do with this booking next. */
 function RowAction({ b, today, from }: { b: Booking; today: string; from: string }) {
+  const t = useT();
   const router = useRouter();
   const go = (e: React.MouseEvent, action: string) => {
     e.preventDefault();
@@ -549,31 +627,31 @@ function RowAction({ b, today, from }: { b: Booking; today: string; from: string
           e.preventDefault();
           e.stopPropagation();
           const r = confirmBooking(b.id);
-          if (r.ok) toast.success(`${b.code} confirmed`);
+          if (r.ok) toast.success(t("{code} confirmed", { code: b.code }));
           else toast.error(r.error);
         }}
         className={actionTones.confirm}
       >
-        <BadgeCheck className="size-4" aria-hidden /> Confirm
+        <BadgeCheck className="size-4" aria-hidden /> {t("Confirm")}
       </button>
     );
   if (b.status === "confirmed" && b.checkIn <= today && today < b.checkOut)
     return (
       <button type="button" onClick={(e) => go(e, "checkin")} className={actionBtn}>
-        <LogIn className="size-4" aria-hidden /> Check in
+        <LogIn className="size-4" aria-hidden /> {t("Check in")}
       </button>
     );
   if (b.status === "checked-in" && b.checkOut <= today)
     return (
       <button type="button" onClick={(e) => go(e, "checkout")} className={actionTones.checkout}>
-        <LogOut className="size-4" aria-hidden /> Check out
+        <LogOut className="size-4" aria-hidden /> {t("Check out")}
       </button>
     );
   // Upcoming stays settle at check-in, so collecting is offered once the guest has arrived.
   if ((b.status === "checked-in" || b.status === "checked-out") && dueOf(b) > 0)
     return (
       <button type="button" onClick={(e) => go(e, "pay")} className={actionTones.collect}>
-        <Wallet className="size-4" aria-hidden /> Collect
+        <Wallet className="size-4" aria-hidden /> {t("Collect")}
       </button>
     );
   return null;

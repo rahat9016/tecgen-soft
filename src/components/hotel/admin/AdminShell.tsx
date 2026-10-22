@@ -45,6 +45,7 @@ import {
   useNow,
 } from "@/src/lib/hotel-store/store";
 import type { Notice } from "@/src/lib/hotel-store/types";
+import { setLang, useLang, useT } from "@/src/lib/hotel-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { ADMIN, Loader, NoAccess } from "./ui";
 
@@ -150,6 +151,7 @@ function useStaffAlerts(onOpen: (n: Notice) => void) {
 }
 
 function NotificationBell() {
+  const t = useT();
   const db = useHotelDB();
   const router = useRouter();
   const now = useNow(60_000);
@@ -159,7 +161,7 @@ function NotificationBell() {
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger
-        aria-label={unread ? `${unread} unread notifications` : "Notifications"}
+        aria-label={unread ? t("{n} unread notifications", { n: unread }) : t("Notifications")}
         className="relative flex size-10 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-600 outline-none transition hover:border-sky-300 hover:text-sky-700 focus-visible:ring-2 focus-visible:ring-sky-200"
       >
         <Bell className="size-4.5" />
@@ -171,15 +173,15 @@ function NotificationBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="w-[min(24rem,calc(100vw-2rem))] rounded-md p-0">
         <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
-          <DropdownMenuLabel className="p-0 text-sm font-semibold">Notifications</DropdownMenuLabel>
+          <DropdownMenuLabel className="p-0 text-sm font-semibold">{t("Notifications")}</DropdownMenuLabel>
           {unread > 0 && (
             <button onClick={() => markNoticesRead("staff")} className="flex items-center gap-1 text-xs font-medium text-sky-700 hover:underline">
-              <CheckCheck className="size-3.5" /> Mark all read
+              <CheckCheck className="size-3.5" /> {t("Mark all read")}
             </button>
           )}
         </div>
         <div className="max-h-96 overflow-y-auto py-1">
-          {notices.length === 0 && <p className="px-4 py-8 text-center text-sm text-neutral-500">No notifications yet.</p>}
+          {notices.length === 0 && <p className="px-4 py-8 text-center text-sm text-neutral-500">{t("No notifications yet.")}</p>}
           {notices.slice(0, 10).map((n) => (
             <DropdownMenuItem
               key={n.id}
@@ -202,7 +204,7 @@ function NotificationBell() {
         </div>
         <DropdownMenuSeparator className="m-0" />
         <Link href={`${ADMIN}/notifications`} className="block px-4 py-2.5 text-center text-sm font-medium text-sky-700 hover:bg-neutral-50">
-          View all notifications
+          {t("View all notifications")}
         </Link>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -210,6 +212,7 @@ function NotificationBell() {
 }
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
+  const t = useT();
   const db = useHotelDB();
   const staff = useCurrentStaff();
   const hydrated = useHydrated();
@@ -272,7 +275,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           if (!items.length) return null;
           return (
             <div key={g.title} className={cn(rail && gi > 0 && "border-t border-white/10 pt-2")}>
-              {!rail && <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-200/40">{g.title}</p>}
+              {!rail && <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-200/40">{t(g.title)}</p>}
               <ul className="space-y-0.5">
                 {items.map((item) => {
                   const active = isActive(item.href, pathname);
@@ -284,7 +287,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                         href={item.href}
                         onClick={() => setOpen(false)}
                         aria-current={active ? "page" : undefined}
-                        title={rail ? item.label : undefined}
+                        title={rail ? t(item.label) : undefined}
                         className={cn(
                           "rounded-md text-sm transition",
                           rail ? "flex flex-col items-center gap-1 px-0.5 py-2 text-center" : "flex items-center gap-3 px-3 py-2.5",
@@ -299,7 +302,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                             </span>
                           )}
                         </span>
-                        <span className={cn(rail && "w-full truncate text-[10px] leading-tight")}>{item.label}</span>
+                        <span className={cn(rail && "w-full truncate text-[10px] leading-tight")}>{t(item.label)}</span>
                         {!rail && count > 0 && <span className={cn("ml-auto rounded-md px-1.5 text-[10px] font-bold tabular-nums", badgeTone)}>{count}</span>}
                       </Link>
                     </li>
@@ -314,29 +317,29 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         <Link
           href="/hotel-management"
           target="_blank"
-          title={rail ? "View website" : undefined}
+          title={rail ? t("View website") : undefined}
           className={cn(
             "rounded-md text-sm text-sky-100/80 hover:bg-white/5 hover:text-white",
             rail ? "flex flex-col items-center gap-1 px-0.5 py-1.5 text-[10px]" : "flex items-center gap-3 px-3 py-2"
           )}
         >
-          <ExternalLink className="size-4" /> {rail ? "Website" : "View website"}
+          <ExternalLink className="size-4" /> {rail ? t("Website") : t("View website")}
         </Link>
         {can(staff.role, "settings.manage") && (
           <button
             onClick={() => {
-              if (confirm("Reset all demo data (bookings, guests, payments, content) to the original sample?")) {
+              if (confirm(t("Reset all demo data (bookings, guests, payments, content) to the original sample?"))) {
                 resetDemoData();
-                toast.success("Demo data reset");
+                toast.success(t("Demo data reset"));
               }
             }}
-            title={rail ? "Reset demo data" : undefined}
+            title={rail ? t("Reset demo data") : undefined}
             className={cn(
               "w-full rounded-md text-sm text-sky-100/80 hover:bg-white/5 hover:text-white",
               rail ? "flex flex-col items-center gap-1 px-0.5 py-1.5 text-[10px]" : "flex items-center gap-3 px-3 py-2"
             )}
           >
-            <RotateCcw className="size-4" /> {rail ? "Reset" : "Reset demo data"}
+            <RotateCcw className="size-4" /> {rail ? t("Reset") : t("Reset demo data")}
           </button>
         )}
       </div>
@@ -355,9 +358,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       </aside>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden print:hidden">
-          <button aria-label="Close menu" className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
+          <button aria-label={t("Close menu")} className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
           <aside className="absolute inset-y-0 left-0 w-64 bg-gradient-to-b from-sky-950 to-slate-950">
-            <button onClick={() => setOpen(false)} aria-label="Close menu" className="absolute right-3 top-5 text-white">
+            <button onClick={() => setOpen(false)} aria-label={t("Close menu")} className="absolute right-3 top-5 text-white">
               <X className="size-5" />
             </button>
             {sidebar(false)}
@@ -368,26 +371,27 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-neutral-200 bg-white/90 px-4 backdrop-blur sm:px-6 xl:px-8 print:hidden">
           <button
             onClick={() => setOpen(true)}
-            aria-label="Open menu"
+            aria-label={t("Open menu")}
             className="flex size-10 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-700 lg:hidden"
           >
             <Menu className="size-5" />
           </button>
           <button
             onClick={toggleCompact}
-            aria-label={compact ? "Expand sidebar" : "Collapse sidebar"}
-            title={compact ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={compact ? t("Expand sidebar") : t("Collapse sidebar")}
+            title={compact ? t("Expand sidebar") : t("Collapse sidebar")}
             className="hidden size-10 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-700 hover:text-sky-700 lg:flex"
           >
             {compact ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}
           </button>
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <LanguageSwitch />
             <NotificationBell />
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-sky-200">
                 <span className="hidden text-right md:block">
                   <span className="block text-sm font-semibold text-neutral-900">{staff.name}</span>
-                  <span className="block text-xs text-neutral-500">{roleLabels[staff.role]}</span>
+                  <span className="block text-xs text-neutral-500">{t(roleLabels[staff.role])}</span>
                 </span>
                 <span className="flex size-10 items-center justify-center rounded-full bg-sky-900 text-sm font-bold text-white">{initials(staff.name)}</span>
               </DropdownMenuTrigger>
@@ -399,7 +403,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="cursor-pointer">
                   <Link href="/hotel-management" target="_blank">
-                    <ExternalLink /> View website
+                    <ExternalLink /> {t("View website")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -410,7 +414,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                     router.replace(`${ADMIN}/login`);
                   }}
                 >
-                  <LogOut /> Log out
+                  <LogOut /> {t("Log out")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -419,6 +423,35 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         {/* The root layout already provides <main>. */}
         <div className="p-4 print:p-0">{allowed ? children : <NoAccess />}</div>
       </div>
+    </div>
+  );
+}
+
+/** EN / বাংলা switch; the choice is remembered in this browser. */
+function LanguageSwitch() {
+  const lang = useLang();
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+  return (
+    <div role="radiogroup" aria-label="Language / ভাষা" className="flex h-9 items-center rounded-full border border-neutral-200 bg-white p-0.5 text-xs font-semibold sm:h-10 sm:p-1 sm:text-[13px]">
+      {(
+        [
+          ["en", "EN"],
+          ["bn", "বাংলা"],
+        ] as const
+      ).map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          role="radio"
+          aria-checked={lang === value}
+          onClick={() => setLang(value)}
+          className={cn("h-7.5 rounded-full px-2.5 transition sm:h-8 sm:px-3", lang === value ? "bg-sky-600 text-white" : "text-neutral-600 hover:text-sky-700")}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }

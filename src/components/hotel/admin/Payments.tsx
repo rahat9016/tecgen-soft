@@ -9,6 +9,7 @@ import { dateLabel, formatDateTime, payLabels, paymentKindLabels, rangeLabel, sh
 import { ledger } from "@/src/lib/hotel-store/reports";
 import { creditOf, dueOf, folioTotal, paidOf, refundedOf, useCurrentStaff, useHotelDB } from "@/src/lib/hotel-store/store";
 import type { Booking, PaymentKind, PayMethod } from "@/src/lib/hotel-store/types";
+import { useT } from "@/src/lib/hotel-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { PaymentModal } from "./BookingModals";
 import { MoneyCard } from "./MoneyCard";
@@ -21,6 +22,7 @@ const rangeStart = (r: Range, today: string) =>
   r === "today" ? today : r === "7d" ? shiftDay(today, -6) : r === "30d" ? shiftDay(today, -29) : r === "month" ? `${today.slice(0, 8)}01` : "";
 
 export default function Payments() {
+  const t = useT();
   const db = useHotelDB();
   const staff = useCurrentStaff();
   const params = useSearchParams();
@@ -79,9 +81,9 @@ export default function Payments() {
     <div>
       <div className="mb-4 grid grid-cols-2 gap-4 xl:grid-cols-5">
         <MoneyCard index={0} label="Collected today" value={net(rows.filter((r) => r.day === today))} hint="Net of refunds" icon="wallet" tone="green" />
-        <MoneyCard index={1} label="This month" value={net(monthRows)} hint={`${monthRows.filter((r) => !r.void).length} transactions`} icon="calendar" tone="sky" />
-        <MoneyCard index={2} label="Outstanding" value={outstanding.reduce((s, b) => s + dueOf(b), 0)} hint={`${outstanding.length} folios with a balance`} icon="bill" tone="rose" />
-        <MoneyCard index={3} label="Refunds due" value={refunds.reduce((s, b) => s + creditOf(b), 0)} hint={`${refunds.length} booking${refunds.length === 1 ? "" : "s"}`} icon="refund" tone="violet" />
+        <MoneyCard index={1} label="This month" value={net(monthRows)} hint={t("{n} transactions", { n: monthRows.filter((r) => !r.void).length })} icon="calendar" tone="sky" />
+        <MoneyCard index={2} label="Outstanding" value={outstanding.reduce((s, b) => s + dueOf(b), 0)} hint={t("{n} folios with a balance", { n: outstanding.length })} icon="bill" tone="rose" />
+        <MoneyCard index={3} label="Refunds due" value={refunds.reduce((s, b) => s + creditOf(b), 0)} hint={t(refunds.length === 1 ? "{n} booking" : "{n} bookings", { n: refunds.length })} icon="refund" tone="violet" />
         <MoneyCard index={4} label="Advance deposits held" value={depositsHeld} hint="Paid on future stays" icon="vault" tone="slate" />
       </div>
 
@@ -106,8 +108,8 @@ export default function Payments() {
                     type="search"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
-                    placeholder="Search booking, guest or TrxID"
-                    aria-label="Search payments"
+                    placeholder={t("Search booking, guest or TrxID")}
+                    aria-label={t("Search payments")}
                     className="h-10 w-full rounded-lg border border-neutral-200 bg-white pl-9 pr-3 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                   />
                 </label>
@@ -130,13 +132,13 @@ export default function Payments() {
                 <table className="w-full min-w-[880px] text-sm">
                   <thead className="bg-neutral-50 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                     <tr>
-                      <th className="px-4 py-3">Date</th>
-                      <th className="px-4 py-3">Booking</th>
-                      <th className="px-4 py-3">Type</th>
-                      <th className="px-4 py-3">Method</th>
-                      <th className="px-4 py-3">Reference</th>
-                      <th className="px-4 py-3">By</th>
-                      <th className="px-4 py-3 text-right">Amount</th>
+                      <th className="px-4 py-3">{t("Date")}</th>
+                      <th className="px-4 py-3">{t("Booking")}</th>
+                      <th className="px-4 py-3">{t("Type")}</th>
+                      <th className="px-4 py-3">{t("Method")}</th>
+                      <th className="px-4 py-3">{t("Reference")}</th>
+                      <th className="px-4 py-3">{t("By")}</th>
+                      <th className="px-4 py-3 text-right">{t("Amount")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
@@ -146,11 +148,11 @@ export default function Payments() {
                         {bookingCell(r.booking)}
                         <td className="px-4 py-3">
                           <span className={cn("rounded-md px-2 py-0.5 text-xs font-semibold", r.kind === "refund" ? "bg-violet-50 text-violet-700" : r.kind === "deposit" ? "bg-sky-50 text-sky-700" : "bg-emerald-50 text-emerald-700")}>
-                            {paymentKindLabels[r.kind]}
+                            {t(paymentKindLabels[r.kind])}
                           </span>
-                          {r.void && <span className="ml-1.5 text-xs text-rose-600">Voided</span>}
+                          {r.void && <span className="ml-1.5 text-xs text-rose-600">{t("Voided")}</span>}
                         </td>
-                        <td className="px-4 py-3 text-neutral-700">{payLabels[r.method]}</td>
+                        <td className="px-4 py-3 text-neutral-700">{t(payLabels[r.method])}</td>
                         <td className="max-w-48 truncate px-4 py-3 font-mono text-xs text-neutral-500">{r.ref ?? "—"}</td>
                         <td className="px-4 py-3 text-neutral-600">{r.by}</td>
                         <td className={cn("px-4 py-3 text-right font-semibold tabular-nums", r.kind === "refund" ? "text-violet-700" : "text-neutral-900", r.void && "line-through")}>
@@ -174,12 +176,12 @@ export default function Payments() {
               <table className="w-full min-w-[820px] text-sm">
                 <thead className="bg-neutral-50 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   <tr>
-                    <th className="px-4 py-3">Booking</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Stay</th>
-                    <th className="px-4 py-3 text-right">Total</th>
-                    <th className="px-4 py-3 text-right">Paid</th>
-                    <th className="px-4 py-3 text-right">Due</th>
+                    <th className="px-4 py-3">{t("Booking")}</th>
+                    <th className="px-4 py-3">{t("Status")}</th>
+                    <th className="px-4 py-3">{t("Stay")}</th>
+                    <th className="px-4 py-3 text-right">{t("Total")}</th>
+                    <th className="px-4 py-3 text-right">{t("Paid")}</th>
+                    <th className="px-4 py-3 text-right">{t("Due")}</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
@@ -189,7 +191,7 @@ export default function Payments() {
                       {bookingCell(b)}
                       <td className="px-4 py-3">
                         <StatusBadge status={b.status} />
-                        {b.status === "checked-out" && <p className="mt-0.5 text-[11px] text-rose-600">Left without settling</p>}
+                        {b.status === "checked-out" && <p className="mt-0.5 text-[11px] text-rose-600">{t("Left without settling")}</p>}
                       </td>
                       <td className="px-4 py-3 text-neutral-600">{rangeLabel(b.checkIn, b.checkOut)}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{taka(folioTotal(b))}</td>
@@ -197,7 +199,7 @@ export default function Payments() {
                       <td className="px-4 py-3 text-right font-semibold tabular-nums text-rose-600">{taka(dueOf(b))}</td>
                       <td className="px-4 py-3 text-right">
                         <button onClick={() => setAction({ booking: b, kind: "payment" })} className={cn(hbtn.small, "border-emerald-200 text-emerald-700")}>
-                          Collect
+                          {t("Collect")}
                         </button>
                       </td>
                     </tr>
@@ -215,12 +217,12 @@ export default function Payments() {
               <table className="w-full min-w-[820px] text-sm">
                 <thead className="bg-neutral-50 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   <tr>
-                    <th className="px-4 py-3">Booking</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Paid via</th>
-                    <th className="px-4 py-3 text-right">Paid</th>
-                    <th className="px-4 py-3 text-right">Fee kept</th>
-                    <th className="px-4 py-3 text-right">To refund</th>
+                    <th className="px-4 py-3">{t("Booking")}</th>
+                    <th className="px-4 py-3">{t("Status")}</th>
+                    <th className="px-4 py-3">{t("Paid via")}</th>
+                    <th className="px-4 py-3 text-right">{t("Paid")}</th>
+                    <th className="px-4 py-3 text-right">{t("Fee kept")}</th>
+                    <th className="px-4 py-3 text-right">{t("To refund")}</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
@@ -235,7 +237,7 @@ export default function Payments() {
                           <p className="mt-0.5 text-[11px] text-neutral-500">{dateLabel(b.checkIn, "dd MMM yyyy")}</p>
                         </td>
                         <td className="px-4 py-3 text-neutral-700">
-                          {first ? payLabels[first.method] : "—"}
+                          {first ? t(payLabels[first.method]) : "—"}
                           {first?.ref && <p className="font-mono text-[11px] text-neutral-400">{first.ref}</p>}
                         </td>
                         <td className="px-4 py-3 text-right tabular-nums">{taka(paidOf(b))}</td>
@@ -244,10 +246,10 @@ export default function Payments() {
                         <td className="px-4 py-3 text-right">
                           {canRefund ? (
                             <button onClick={() => setAction({ booking: b, kind: "refund" })} className={cn(hbtn.small, "border-violet-200 text-violet-700")}>
-                              Refund
+                              {t("Refund")}
                             </button>
                           ) : (
-                            <span className="text-xs text-neutral-400">Manager only</span>
+                            <span className="text-xs text-neutral-400">{t("Manager only")}</span>
                           )}
                         </td>
                       </tr>
@@ -291,11 +293,12 @@ function FilterSelect<T extends string>({
   options: { value: T; label: string }[];
   icon?: React.ComponentType<{ className?: string }>;
 }) {
+  const t = useT();
   // An "any" choice means the filter is off; selects without one (like the date range) are never highlighted.
   const active = options.some((o) => o.value === "any") && value !== "any";
   return (
     <label className="relative">
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{t(label)}</span>
       {Icon && <Icon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />}
       <select
         value={value}
@@ -308,7 +311,7 @@ function FilterSelect<T extends string>({
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
-            {o.label}
+            {t(o.label)}
           </option>
         ))}
       </select>
@@ -332,6 +335,7 @@ function PaymentHistory({
   /** A refund or collect dialog is open on top; Escape belongs to it. */
   busy: boolean;
 }) {
+  const t = useT();
   const due = dueOf(b);
   const credit = creditOf(b);
   const paid = paidOf(b);
@@ -346,8 +350,8 @@ function PaymentHistory({
   }, [onClose, busy]);
 
   return (
-    <div className="fixed inset-0 z-50 print:hidden" role="dialog" aria-modal="true" aria-label={`Payment history for ${b.code}`}>
-      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-neutral-950/40 backdrop-blur-[1px]" />
+    <div className="fixed inset-0 z-50 print:hidden" role="dialog" aria-modal="true" aria-label={`${t("Payment history")} · ${b.code}`}>
+      <button aria-label={t("Close")} onClick={onClose} className="absolute inset-0 bg-neutral-950/40 backdrop-blur-[1px]" />
       <aside className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-200">
         <header className="flex items-start justify-between gap-3 border-b border-neutral-100 px-5 py-4">
           <div className="min-w-0">
@@ -358,16 +362,16 @@ function PaymentHistory({
               {rangeLabel(b.checkIn, b.checkOut)} · {b.roomName}
             </p>
           </div>
-          <button onClick={onClose} aria-label="Close" className={cn(hbtn.icon, "shrink-0")}>
+          <button onClick={onClose} aria-label={t("Close")} className={cn(hbtn.icon, "shrink-0")}>
             <X className="size-5" />
           </button>
         </header>
 
         <div className="grid grid-cols-3 gap-px border-b border-neutral-100 bg-neutral-100 text-center">
           {[
-            ["Total", taka(folioTotal(b)), "text-neutral-900"],
-            ["Paid", taka(paid), "text-emerald-700"],
-            credit > 0 ? ["To refund", taka(credit), "text-violet-700"] : ["Balance", taka(due), due > 0 ? "text-rose-600" : "text-neutral-900"],
+            [t("Total"), taka(folioTotal(b)), "text-neutral-900"],
+            [t("Paid"), taka(paid), "text-emerald-700"],
+            credit > 0 ? [t("To refund"), taka(credit), "text-violet-700"] : [t("Balance"), taka(due), due > 0 ? "text-rose-600" : "text-neutral-900"],
           ].map(([k, v, tone]) => (
             <div key={k} className="bg-white px-3 py-3">
               <p className="text-xs text-neutral-500">{k}</p>
@@ -378,11 +382,11 @@ function PaymentHistory({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           <div className="flex items-baseline justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Payment history</h3>
-            {refunded > 0 && <span className="text-xs text-violet-700">{taka(refunded)} refunded</span>}
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("Payment history")}</h3>
+            {refunded > 0 && <span className="text-xs text-violet-700">{t("{amount} refunded", { amount: taka(refunded) })}</span>}
           </div>
           {payments.length === 0 ? (
-            <p className="mt-3 rounded-md border border-dashed border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500">No payments yet.</p>
+            <p className="mt-3 rounded-md border border-dashed border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500">{t("No payments yet.")}</p>
           ) : (
             <ol className="relative mt-3 space-y-4 border-l border-neutral-200 pl-5">
               {payments.map((p) => {
@@ -399,11 +403,11 @@ function PaymentHistory({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="flex flex-wrap items-center gap-1.5 text-sm">
-                          <span className={cn("font-medium", p.void ? "text-neutral-400 line-through" : "text-neutral-900")}>{payLabels[p.method]}</span>
+                          <span className={cn("font-medium", p.void ? "text-neutral-400 line-through" : "text-neutral-900")}>{t(payLabels[p.method])}</span>
                           <span className={cn("rounded px-1.5 py-px text-[11px] font-semibold", refund ? "bg-violet-50 text-violet-700" : p.kind === "deposit" ? "bg-sky-50 text-sky-700" : "bg-emerald-50 text-emerald-700")}>
-                            {paymentKindLabels[p.kind]}
+                            {t(paymentKindLabels[p.kind])}
                           </span>
-                          {p.void && <span className="rounded bg-rose-50 px-1.5 py-px text-[11px] font-semibold text-rose-700">Voided</span>}
+                          {p.void && <span className="rounded bg-rose-50 px-1.5 py-px text-[11px] font-semibold text-rose-700">{t("Voided")}</span>}
                         </p>
                         {p.ref && <p className="truncate font-mono text-xs text-neutral-500">{p.ref}</p>}
                         <p className="text-xs text-neutral-500">
@@ -427,11 +431,11 @@ function PaymentHistory({
           <footer className="border-t border-neutral-100 p-4">
             {credit > 0 && canRefund ? (
               <button onClick={() => onAction("refund")} className={cn(hbtn.primary, "h-11 w-full bg-violet-600 hover:bg-violet-700")}>
-                <Undo2 className="size-4" /> Refund {taka(credit)}
+                <Undo2 className="size-4" /> {t("Refund")} {taka(credit)}
               </button>
             ) : (
               <button onClick={() => onAction("payment")} className={cn(hbtn.primary, "h-11 w-full")}>
-                <Wallet className="size-4" /> Collect {taka(due)}
+                <Wallet className="size-4" /> {t("Collect")} {taka(due)}
               </button>
             )}
           </footer>
