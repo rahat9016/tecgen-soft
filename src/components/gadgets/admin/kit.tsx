@@ -184,7 +184,7 @@ export function Modal({
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -200,18 +200,20 @@ export function Modal({
         tabIndex={-1}
         className={cn(
           // The rounded panel clips (overflow-clip, which focus can't scroll); only the inner area scrolls, so the title stays put.
-          "relative flex max-h-[90vh] w-full flex-col overflow-clip rounded-2xl bg-white shadow-2xl outline-none",
+          // Phones: a bottom sheet that slides up; larger screens: a centred dialog.
+          "relative flex max-h-[92dvh] w-full flex-col overflow-clip rounded-t-2xl bg-white shadow-2xl outline-none animate-in slide-in-from-bottom duration-200 sm:max-h-[90vh] sm:rounded-2xl sm:slide-in-from-bottom-0 sm:zoom-in-95",
           wide ? "max-w-2xl" : "max-w-md",
           className
         )}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-neutral-100 px-6 pb-4 pt-7">
-          <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
+        <div className="relative flex shrink-0 items-center justify-between gap-3 border-b border-neutral-100 px-4 pb-3.5 pt-5 sm:px-6 sm:pb-4 sm:pt-7">
+          <span aria-hidden className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-neutral-200 sm:hidden" />
+          <h2 className="min-w-0 truncate text-base font-semibold text-neutral-900 sm:text-lg">{title}</h2>
           <button onClick={onClose} aria-label="Close" className={btn.ghost}>
             <X className="size-4" />
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6 pt-5 [scrollbar-gutter:stable]">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 [scrollbar-gutter:stable] sm:px-6 sm:pb-6 sm:pt-5">{children}</div>
       </div>
     </div>
   );

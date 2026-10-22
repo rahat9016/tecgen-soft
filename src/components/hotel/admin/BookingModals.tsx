@@ -39,6 +39,7 @@ import {
   useHotelDB,
 } from "@/src/lib/hotel-store/store";
 import type { Booking, ChargeCategory, GuestInfo, HotelDB, PayMethod, PaymentKind, RoomUnit } from "@/src/lib/hotel-store/types";
+import { useT } from "@/src/lib/hotel-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { ADMIN, Field, hbtn, inputClass, Modal, textareaClass, useSaving } from "./ui";
 
@@ -75,28 +76,26 @@ export function PaymentModal({ booking, kind, onClose }: { booking: Booking; kin
   return kind === "refund" ? <RefundModal booking={booking} onClose={onClose} /> : <CollectModal booking={booking} kind={kind} onClose={onClose} />;
 }
 
-function CollectModal({ booking, kind, onClose }: { booking: Booking; kind: PaymentKind | null; onClose: () => void }) {
+/** Collect a payment, laid out like the refund: what's owed, how much now, what's left, then how it was paid. */
+function CollectModal({ booking: b, kind, onClose }: { booking: Booking; kind: PaymentKind | null; onClose: () => void }) {
+  const t = useT();
   const db = useHotelDB();
-  const isRefund = kind === "refund";
-  const due = dueOf(booking);
-  const paid = paidOf(booking);
-  const credit = creditOf(booking);
-  const max = isRefund ? paid : due;
-  const suggested = isRefund ? credit || paid : due;
-  const firstMethod = booking.payments.find((p) => !p.void && p.kind !== "refund")?.method;
-  const [amount, setAmount] = useState(String(suggested || ""));
-  const [method, setMethod] = useState<PayMethod>(isRefund && firstMethod ? firstMethod : "cash");
+  const due = dueOf(b);
+  const paid = paidOf(b);
+  const total = folioTotal(b);
+  const rooms = unitNumbers(db, b.unitIds);
+  const [amount, setAmount] = useState(String(due || ""));
+  const [method, setMethod] = useState<PayMethod>("cash");
   const [ref, setRef] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [tried, setTried] = useState(false);
   const { saving, run } = useSaving();
 
-  const errors = paymentErrors({ amount, method, ref, note, isRefund, max });
-  const show = (k: keyof typeof errors) => (tried ? errors[k] : undefined);
+  const errors = paymentErrors({ amount, method, ref, note, isRefund: false, max: due });
+  const show = (k: keyof typeof errors) => (tried && errors[k] ? t(errors[k]!) : undefined);
   const value = Number(amount) || 0;
-  const after = isRefund ? paid - value : due - value;
-  const rooms = unitNumbers(db, booking.unitIds);
+  const after = Math.max(0, due - value);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,94 +103,102 @@ function CollectModal({ booking, kind, onClose }: { booking: Booking; kind: Paym
     if (Object.keys(errors).length) return;
     run(() => {
       setError("");
-      const r = addPayment(booking.id, { amount: value, method, kind: kind ?? "payment", ref, note });
+      const r = addPayment(b.id, { amount: value, method, kind: kind ?? "payment", ref, note });
       if (!r.ok) return setError(r.error);
-      toast.success(isRefund ? `Refunded ${taka(value)}` : `Received ${taka(value)} via ${payLabels[method]}`);
+      toast.success(t("Received {amount} via {method}", { amount: taka(value), method: t(payLabels[method]) }));
       onClose();
     });
   };
 
+  const row = (label: React.ReactNode, v: string, tone = "text-neutral-900") => (
+    <div className="flex items-center justify-between gap-3 px-4 py-2">
+      <dt className="text-neutral-600">{label}</dt>
+      <dd className={cn("tabular-nums", tone)}>{v}</dd>
+    </div>
+  );
+
   return (
-    <Modal open={!!kind} onClose={onClose} title={isRefund ? `Refund · ${booking.guest.name}` : `Collect payment · ${booking.guest.name}`}>
+    <Modal open={!!kind} onClose={onClose} title={`${t("Collect payment")} · ${b.guest.name}`}>
       <form onSubmit={submit} noValidate className="space-y-5">
-        <dl className="divide-y divide-neutral-100 rounded-md border border-neutral-200 text-sm">
-          <div className="flex justify-between px-3.5 py-2">
-            <dt className="text-neutral-600">Bill total{rooms.length > 0 && ` · Room ${rooms.join(", ")}`}</dt>
-            <dd className="tabular-nums text-neutral-900">{taka(folioTotal(booking))}</dd>
-          </div>
-          <div className="flex justify-between px-3.5 py-2">
-            <dt className="text-neutral-600">Paid so far</dt>
-            <dd className="tabular-nums text-emerald-700">{taka(paid)}</dd>
-          </div>
-          {credit > 0 && (
-            <div className="flex justify-between px-3.5 py-2">
-              <dt className="text-neutral-600">Overpaid (refundable)</dt>
-              <dd className="tabular-nums text-violet-700">{taka(credit)}</dd>
+        <p className="text-[13px] text-neutral-500">
+          <span className="font-mono font-semibold text-sky-700">{b.code}</span> · {b.roomName}
+          {rooms.length > 0 && ` · ${t("Room")} ${rooms.join(", ")}`}
+        </p>
+
+        <dl className="overflow-hidden rounded-xl border border-neutral-200 text-sm">
+          <div className="py-1.5">
+            {row(t("Bill total"), taka(total))}
+            {row(t("Paid so far"), `− ${taka(paid)}`, "text-emerald-700")}
+            <div className="flex items-center justify-between gap-3 px-4 py-2 font-semibold">
+              <dt className="text-neutral-900">{t("Balance due")}</dt>
+              <dd className="tabular-nums text-neutral-900">{taka(due)}</dd>
             </div>
-          )}
-          <div className="flex justify-between bg-neutral-50 px-3.5 py-2.5 font-medium">
-            <dt className="text-neutral-900">Balance due</dt>
-            <dd className={cn("tabular-nums", due > 0 ? "text-rose-600" : "text-emerald-600")}>{taka(due)}</dd>
+          </div>
+          <div className="border-t border-neutral-200 bg-sky-50/60 px-4 py-3">
+            <label htmlFor="pay-amount" className="flex items-center justify-between gap-3">
+              <span>
+                <span className="block font-semibold text-neutral-900">{t("Collecting now")}</span>
+                <span className={cn("text-xs", show("amount") ? "font-medium text-rose-600" : "text-neutral-500")}>
+                  {show("amount") ?? (value > 0 ? (after === 0 ? t("Clears the balance in full") : t("{amount} still due after this", { amount: taka(after) })) : t("Enter the amount received"))}
+                </span>
+              </span>
+              <span className="relative w-32 shrink-0">
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center font-medium text-neutral-500">৳</span>
+                <input
+                  id="pay-amount"
+                  type="number"
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  aria-invalid={!!show("amount")}
+                  autoFocus
+                  className={cn(
+                    inputClass,
+                    "h-11 pl-7 text-right text-lg font-bold tabular-nums text-sky-800 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none",
+                    show("amount") && "border-rose-400"
+                  )}
+                />
+              </span>
+            </label>
           </div>
         </dl>
 
-        <div>
-          <label htmlFor="pay-amount" className="mb-1 block text-xs font-medium text-neutral-600">
-            {isRefund ? "Refund amount" : "Amount received"}
-          </label>
-          <div className="relative">
-            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-lg font-medium text-neutral-500">৳</span>
-            <input
-              id="pay-amount"
-              type="number"
-              min={1}
-              step={1}
-              inputMode="numeric"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              aria-invalid={!!show("amount")}
-              aria-describedby="pay-amount-msg"
-              className={cn(inputClass, "h-12 pl-8 text-lg font-medium tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none", show("amount") && "border-rose-400 focus:border-rose-500 focus:ring-rose-200")}
-              autoFocus
-            />
-          </div>
-          <p id="pay-amount-msg" className={cn("mt-1.5 text-xs", show("amount") ? "font-medium text-rose-600" : "text-neutral-500")}>
-            {show("amount") ??
-              (value > 0 && after >= 0
-                ? isRefund
-                  ? `Paid after refund: ${taka(after)}`
-                  : after === 0
-                    ? "Clears the balance in full."
-                    : `Still due after this: ${taka(after)}`
-                : "\u00a0")}
-          </p>
-        </div>
-
         <fieldset>
-          <legend className="mb-1 block text-xs font-medium text-neutral-600">{isRefund ? "Refund to" : "Payment method"}</legend>
+          <legend className="mb-1.5 block text-xs font-medium text-neutral-600">{t("Paid by")}</legend>
           <div className="grid grid-cols-3 gap-2">
-            {methods.map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMethod(m)}
-                aria-pressed={method === m}
-                className={cn(
-                  "relative h-10 rounded-md border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500",
-                  method === m ? "border-sky-600 bg-sky-50 text-sky-800 ring-1 ring-sky-600" : "border-neutral-200 text-neutral-700 hover:border-sky-300"
-                )}
-              >
-                {method === m && <Check className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-sky-600" aria-hidden />}
-                {payLabels[m]}
-              </button>
-            ))}
+            {methods.map((m) => {
+              const info = paymentMethodInfo[m];
+              const on = method === m;
+              const Icon = m === "cash" ? Banknote : m === "bank" ? Landmark : m === "card" ? CreditCard : null;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMethod(m)}
+                  aria-pressed={on}
+                  className={cn(
+                    "flex h-14 flex-col items-center justify-center gap-1 rounded-lg border text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500",
+                    on ? "border-sky-600 bg-sky-50 text-sky-800 ring-1 ring-sky-600" : "border-neutral-200 text-neutral-700 hover:border-sky-300"
+                  )}
+                >
+                  {info?.logos.length && m !== "card" ? (
+                    <Image src={info.logos[0]} alt="" width={48} height={18} className="h-[18px] w-12 object-contain" />
+                  ) : Icon ? (
+                    <Icon className="size-[18px] text-neutral-500" aria-hidden />
+                  ) : null}
+                  {t(payLabels[m])}
+                </button>
+              );
+            })}
           </div>
         </fieldset>
 
         {method !== "cash" && (
           <div>
             <label htmlFor="pay-ref" className="mb-1 block text-xs font-medium text-neutral-600">
-              {refLabel(method)}
+              {t(refLabel(method))}
             </label>
             <input
               id="pay-ref"
@@ -207,7 +214,7 @@ function CollectModal({ booking, kind, onClose }: { booking: Booking; kind: Paym
 
         <div>
           <label htmlFor="pay-note" className="mb-1 block text-xs font-medium text-neutral-600">
-            {isRefund ? "Reason" : "Note"} {!isRefund && <span className="font-normal text-neutral-400">(optional)</span>}
+            {t("Note")} <span className="font-normal text-neutral-400">({t("optional")})</span>
           </label>
           <input
             id="pay-note"
@@ -216,19 +223,19 @@ function CollectModal({ booking, kind, onClose }: { booking: Booking; kind: Paym
             onChange={(e) => setNote(e.target.value)}
             aria-invalid={!!show("note")}
             className={cn(inputClass, show("note") && "border-rose-400")}
-            placeholder={isRefund ? "Reason for the refund" : "e.g. Paid at check-out"}
+            placeholder={t("e.g. Paid at check-out")}
           />
           {show("note") && <p className="mt-1 text-xs font-medium text-rose-600">{show("note")}</p>}
         </div>
 
         <FormError text={error} />
-        <div className="flex justify-end gap-2 border-t border-neutral-100 pt-4">
+        <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-4">
           <button type="button" onClick={onClose} className={hbtn.outline}>
-            Cancel
+            {t("Cancel")}
           </button>
-          <button type="submit" disabled={saving || max <= 0} className={cn(isRefund ? hbtn.dark : hbtn.primary, "min-w-40")}>
+          <button type="submit" disabled={saving || due <= 0} className={hbtn.primary}>
             {saving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Wallet className="size-4" aria-hidden />}
-            {saving ? "Saving…" : `${isRefund ? "Refund" : "Record"} ${value > 0 && !errors.amount ? taka(value) : "payment"}`}
+            {saving ? t("Saving…") : t("Collect")}
           </button>
         </div>
       </form>
@@ -243,6 +250,7 @@ const refundReasons = ["Booking cancelled", "Overpaid", "Stay shortened", "Servi
  * the refund fee taken off (hotel rule, can be changed or waived), and what the guest actually gets.
  */
 function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () => void }) {
+  const t = useT();
   const db = useHotelDB();
   const policy = refundFeeRateOf(db.settings);
   const credit = creditOf(b);
@@ -253,7 +261,7 @@ function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () =>
   const [pct, setPct] = useState(String(policy));
   const [method, setMethod] = useState<PayMethod>(firstMethod ?? "cash");
   const [ref, setRef] = useState("");
-  const [note, setNote] = useState(b.status === "cancelled" ? "Booking cancelled" : live ? "Overpaid" : "");
+  const [note, setNote] = useState(b.status === "cancelled" ? t("Booking cancelled") : live ? t("Overpaid") : "");
   const [tried, setTried] = useState(false);
   const [error, setError] = useState("");
   const { saving, run } = useSaving();
@@ -262,7 +270,7 @@ function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () =>
   const keep = Math.round((credit * rate) / 100);
   const amount = credit - keep;
   const errors = paymentErrors({ amount: String(Math.max(amount, 1)), method: amount > 0 ? method : "cash", ref, note, isRefund: true, max: credit });
-  const show = (k: keyof typeof errors) => (tried ? errors[k] : undefined);
+  const show = (k: keyof typeof errors) => (tried && errors[k] ? t(errors[k]!) : undefined);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,7 +280,7 @@ function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () =>
       setError("");
       const r = refundBooking(b.id, { amount, keep, method, ref, note });
       if (!r.ok) return setError(r.error);
-      toast.success(amount > 0 ? `Refunded ${taka(amount)}${keep ? ` · ${taka(keep)} kept` : ""}` : `${taka(keep)} kept — nothing paid back`);
+      toast.success(amount > 0 ? `${t("Refunded {amount}", { amount: taka(amount) })}${keep ? ` · ${t("{amount} kept", { amount: taka(keep) })}` : ""}` : t("{amount} kept — nothing paid back", { amount: taka(keep) }));
       onClose();
     });
   };
@@ -285,7 +293,7 @@ function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () =>
   );
 
   return (
-    <Modal open onClose={onClose} title={`Refund · ${b.guest.name}`}>
+    <Modal open onClose={onClose} title={`${t("Refund")} · ${b.guest.name}`}>
       <form onSubmit={submit} noValidate className="space-y-5">
         <p className="text-[13px] text-neutral-500">
           <span className="font-mono font-semibold text-sky-700">{b.code}</span> · {b.roomName}
@@ -294,15 +302,15 @@ function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () =>
 
         <dl className="overflow-hidden rounded-xl border border-neutral-200 text-sm">
           <div className="py-1.5">
-            {row("Guest paid", taka(received))}
-            {refunded > 0 && row("Already refunded", `− ${taka(refunded)}`, true)}
+            {row(t("Guest paid"), taka(received))}
+            {refunded > 0 && row(t("Already refunded"), `− ${taka(refunded)}`, true)}
             {live
-              ? row("Bill for the stay", `− ${taka(folioTotal(b))}`, true)
-              : (b.cancellationFee ?? 0) > 0 && row(b.status === "no-show" ? "No-show fee" : "Cancellation fee", `− ${taka(b.cancellationFee ?? 0)}`, true)}
-            {(b.refundFee ?? 0) > 0 && row("Refund fee already kept", `− ${taka(b.refundFee ?? 0)}`, true)}
+              ? row(t("Bill for the stay"), `− ${taka(folioTotal(b))}`, true)
+              : (b.cancellationFee ?? 0) > 0 && row(b.status === "no-show" ? t("No-show fee") : t("Cancellation fee"), `− ${taka(b.cancellationFee ?? 0)}`, true)}
+            {(b.refundFee ?? 0) > 0 && row(t("Refund fee already kept"), `− ${taka(b.refundFee ?? 0)}`, true)}
             <div className="flex items-center justify-between gap-3 px-4 py-2">
               <dt className="flex flex-wrap items-center gap-x-2 gap-y-1 text-neutral-600">
-                Refund fee
+                {t("Refund fee")}
                 <span className="relative inline-block w-16">
                   <input
                     type="number"
@@ -310,19 +318,19 @@ function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () =>
                     max={100}
                     value={pct}
                     onChange={(e) => setPct(e.target.value)}
-                    aria-label="Refund fee percent"
+                    aria-label={t("Refund fee percent")}
                     className={cn(inputClass, "h-7 pl-2 pr-5 text-right text-xs tabular-nums")}
                   />
                   <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-neutral-500">%</span>
                 </span>
                 {rate !== 0 ? (
                   <button type="button" onClick={() => setPct("0")} className="text-xs font-medium text-sky-700 hover:underline">
-                    Waive
+                    {t("Waive")}
                   </button>
                 ) : (
                   rate !== policy && (
                     <button type="button" onClick={() => setPct(String(policy))} className="text-xs font-medium text-sky-700 hover:underline">
-                      Use {policy}% rule
+                      {t("Use {n}% rule", { n: policy })}
                     </button>
                   )
                 )}
@@ -332,9 +340,9 @@ function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () =>
           </div>
           <div className="flex items-center justify-between gap-3 border-t border-neutral-200 bg-sky-50/60 px-4 py-3">
             <dt>
-              <span className="block font-semibold text-neutral-900">Guest receives</span>
+              <span className="block font-semibold text-neutral-900">{t("Guest receives")}</span>
               <span className="text-xs text-neutral-500">
-                {taka(credit)} refundable{keep > 0 ? ` − ${taka(keep)} fee` : ""}
+                {t("{amount} refundable", { amount: taka(credit) })}{keep > 0 ? ` − ${t("{amount} fee", { amount: taka(keep) })}` : ""}
               </span>
             </dt>
             <dd className="text-2xl font-bold tabular-nums text-sky-700">{taka(amount)}</dd>
@@ -343,7 +351,7 @@ function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () =>
 
         {amount > 0 && (
           <fieldset>
-            <legend className="mb-1.5 block text-xs font-medium text-neutral-600">Send refund to</legend>
+            <legend className="mb-1.5 block text-xs font-medium text-neutral-600">{t("Send refund to")}</legend>
             <div className="grid grid-cols-3 gap-2">
               {methods.map((m) => {
                 const info = paymentMethodInfo[m];
@@ -365,20 +373,20 @@ function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () =>
                     ) : Icon ? (
                       <Icon className="size-[18px] text-neutral-500" aria-hidden />
                     ) : null}
-                    {payLabels[m]}
-                    {m === firstMethod && <span className="absolute right-1 top-1 size-1.5 rounded-full bg-sky-600" title="Guest paid with this" />}
+                    {t(payLabels[m])}
+                    {m === firstMethod && <span className="absolute right-1 top-1 size-1.5 rounded-full bg-sky-600" title={t("Guest paid with this")} />}
                   </button>
                 );
               })}
             </div>
-            {firstMethod && <p className="mt-1.5 text-xs text-neutral-500">Guest paid by {payLabels[firstMethod]} — refunds usually go back the same way.</p>}
+            {firstMethod && <p className="mt-1.5 text-xs text-neutral-500">{t("Guest paid by {method} — refunds usually go back the same way.", { method: t(payLabels[firstMethod]) })}</p>}
           </fieldset>
         )}
 
         {amount > 0 && method !== "cash" && (
           <div>
             <label htmlFor="refund-ref" className="mb-1 block text-xs font-medium text-neutral-600">
-              {refLabel(method)}
+              {t(refLabel(method))}
             </label>
             <input
               id="refund-ref"
@@ -394,20 +402,20 @@ function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () =>
 
         <div>
           <label htmlFor="refund-note" className="mb-1.5 block text-xs font-medium text-neutral-600">
-            Reason
+            {t("Reason")}
           </label>
           <div className="mb-2 flex flex-wrap gap-1.5">
             {refundReasons.map((r) => (
               <button
                 key={r}
                 type="button"
-                onClick={() => setNote(r)}
+                onClick={() => setNote(t(r))}
                 className={cn(
                   "rounded-full border px-2.5 py-1 text-xs font-medium transition",
-                  note === r ? "border-sky-600 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-600 hover:border-sky-300"
+                  note === t(r) ? "border-sky-600 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-600 hover:border-sky-300"
                 )}
               >
-                {r}
+                {t(r)}
               </button>
             ))}
           </div>
@@ -418,7 +426,7 @@ function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () =>
             onChange={(e) => setNote(e.target.value)}
             aria-invalid={!!show("note")}
             className={cn(inputClass, show("note") && "border-rose-400")}
-            placeholder="Or write a reason"
+            placeholder={t("Or write a reason")}
           />
           {show("note") && <p className="mt-1 text-xs font-medium text-rose-600">{show("note")}</p>}
         </div>
@@ -426,11 +434,11 @@ function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () =>
         <FormError text={error} />
         <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-4">
           <button type="button" onClick={onClose} className={hbtn.outline}>
-            Cancel
+            {t("Cancel")}
           </button>
           <button type="submit" disabled={saving || credit <= 0} className={hbtn.primary}>
             {saving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Undo2 className="size-4" aria-hidden />}
-            {saving ? "Saving…" : "Refund"}
+            {saving ? t("Saving…") : t("Refund")}
           </button>
         </div>
       </form>
