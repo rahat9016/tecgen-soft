@@ -393,61 +393,67 @@ section[id] {
   }
 }
 
-/* Payments money cards: icons draw in, the ৳ pops, then the badge floats gently. */
-@keyframes tw-draw {
-  from {
-    stroke-dashoffset: 100;
-  }
+/* Payments money cards: on hover, an animated SVG backdrop behind each icon — a turning dashed ring and soft ripples. */
+@keyframes tw-spin {
   to {
-    stroke-dashoffset: 0;
+    transform: rotate(360deg);
   }
 }
 
-@keyframes tw-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.5);
+@keyframes tw-ripple {
+  0% {
+    opacity: 0.28;
+    transform: scale(0.55);
   }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes tw-float {
-  0%,
   100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-3px);
+    opacity: 0;
+    transform: scale(1.15);
   }
 }
 
-.tw-draw {
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-  animation: tw-draw 0.9s ease-out forwards;
-}
-
-.tw-pop {
-  opacity: 0;
+/* Still until the card is hovered (or focused within), then the backdrop comes alive. */
+.tw-spin,
+.tw-ripple {
   transform-box: fill-box;
   transform-origin: center;
-  animation: tw-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s forwards;
 }
 
-.tw-float {
-  animation: tw-float 3.2s ease-in-out 1.2s infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tw-draw,
-  .tw-pop,
-  .tw-float {
-    animation: none;
-    stroke-dashoffset: 0;
-    opacity: 1;
-    transform: none;
+@media (prefers-reduced-motion: no-preference) {
+  .group:hover .tw-spin,
+  .group:focus-within .tw-spin {
+    animation: tw-spin 6s linear infinite;
   }
+
+  .group:hover .tw-ripple,
+  .group:focus-within .tw-ripple {
+    animation: tw-ripple 1.8s ease-out infinite;
+  }
+}
+
+/* Thin 3px scrollbars everywhere (modals, panels, tables, page).
+   Chrome/Safari use the ::-webkit rules; setting scrollbar-width there would override them,
+   so the standard properties go to Firefox only (it has no exact width — "thin" is closest). */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(163 163 163 / 0.7) transparent;
+  }
+}
+
+*::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgb(163 163 163 / 0.7);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgb(115 115 115);
 }

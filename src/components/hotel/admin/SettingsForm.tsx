@@ -30,7 +30,7 @@ export default function SettingsForm() {
   const [s, setS] = useState<Settings>(db.settings);
   const dirty = JSON.stringify(s) !== JSON.stringify(db.settings);
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((x) => ({ ...x, [k]: v }));
-  const num = (k: "serviceFeeRate" | "vatRate" | "depositRate" | "freeCancellationHours" | "lateCancellationFeeRate", min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const num = (k: "serviceFeeRate" | "vatRate" | "depositRate" | "freeCancellationHours" | "lateCancellationFeeRate" | "refundFeeRate", min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) =>
     set(k, Math.min(max, Math.max(min, Number(e.target.value) || 0)));
   const example = quoteStay(s, 3200, 2, 1);
 
@@ -116,6 +116,9 @@ export default function SettingsForm() {
             </Field>
             <Field label="Late cancellation / no-show fee (% of total)" hint="Never more than the guest has paid">
               <input type="number" min={0} max={100} value={s.lateCancellationFeeRate} onChange={num("lateCancellationFeeRate", 0, 100)} className={inputClass} />
+            </Field>
+            <Field label="Refund fee (% kept from each refund)" hint="Taken off what the guest gets back; staff can waive it">
+              <input type="number" min={0} max={100} value={s.refundFeeRate ?? 10} onChange={num("refundFeeRate", 0, 100)} className={inputClass} />
             </Field>
           </div>
         </Card>

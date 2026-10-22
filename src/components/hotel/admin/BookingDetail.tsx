@@ -106,14 +106,12 @@ export default function BookingDetail({ id }: { id: string }) {
   const otherStays = user ? db.bookings.filter((x) => x.userId === user.id && x.id !== b.id) : [];
   const unitList = unitNumbers(db, b.unitIds);
   const due = dueOf(b);
-  const credit = creditOf(b);
   const paid = paidOf(b);
   const total = folioTotal(b);
   const settled = due === 0 && paid > 0;
   const live = isLive(b);
   const upcoming = b.status === "pending" || b.status === "confirmed";
   const terms = cancellationTerms(db, b);
-  const canRefund = can(role, "payments.refund");
   const canVoid = can(role, "payments.void");
 
   const startCheckIn = () => setModal("checkin");
@@ -140,11 +138,6 @@ export default function BookingDetail({ id }: { id: string }) {
       {b.status === "checked-in" && (
         <button onClick={() => setModal("checkout")} className={hbtn.success}>
           <LogOut className="size-4" /> Check out
-        </button>
-      )}
-      {credit > 0 && canRefund && (
-        <button onClick={() => setPayKind("refund")} className={cn(hbtn.outline, "border-violet-200 text-violet-700")}>
-          <Undo2 className="size-4" /> Refund {taka(credit)}
         </button>
       )}
       {(upcoming || b.status === "checked-in") && (
@@ -555,10 +548,8 @@ export default function BookingDetail({ id }: { id: string }) {
                 </>
               ) : (
                 <>
-                  <p className="text-sm text-neutral-500">{credit > 0 ? "Refund due to guest" : due > 0 ? "Balance due" : "Balance"}</p>
-                  <p className={cn("mt-1 text-3xl font-bold tabular-nums", credit > 0 ? "text-violet-700" : due > 0 ? "text-rose-600" : "text-emerald-600")}>
-                    {taka(credit > 0 ? credit : due)}
-                  </p>
+                  <p className="text-sm text-neutral-500">{due > 0 ? "Balance due" : "Balance"}</p>
+                  <p className={cn("mt-1 text-3xl font-bold tabular-nums", due > 0 ? "text-rose-600" : "text-emerald-600")}>{taka(due)}</p>
                   <dl className="mt-4 space-y-1.5 text-sm">
                     <div className="flex justify-between">
                       <dt className="text-neutral-500">Folio total</dt>
@@ -682,10 +673,9 @@ function PaymentState({ b }: { b: Booking }) {
   const last = b.payments.filter((p) => !p.void && p.kind !== "refund").sort((x, y) => x.at.localeCompare(y.at)).at(-1);
   // Nothing paid yet: the balance above already says it all.
   if (credit <= 0 && due > 0 && received <= 0) return null;
+  // Refunds are handled on the Payments page, so an overpaid folio reads as paid here.
   const state =
-    credit > 0
-      ? { label: "Refund due", tone: "bg-violet-50 text-violet-700 ring-violet-200" }
-      : due === 0
+    due === 0
         ? { label: "Paid in full", tone: "bg-emerald-50 text-emerald-700 ring-emerald-200" }
         : { label: "Partially paid", tone: "bg-sky-50 text-sky-700 ring-sky-200" };
   return (
@@ -717,7 +707,6 @@ function ProcessSteps({ db, b }: { db: HotelDB; b: Booking }) {
   const today = todayKey();
   const { checkInTime, checkOutTime } = db.settings;
   const due = dueOf(b);
-  const credit = creditOf(b);
   const paid = paidOf(b);
 
   if (b.status === "cancelled" || b.status === "no-show")
@@ -725,7 +714,6 @@ function ProcessSteps({ db, b }: { db: HotelDB; b: Booking }) {
       <p className="mt-4 rounded-md border border-neutral-200 bg-white p-3 text-sm text-neutral-700">
         <b>{b.status === "cancelled" ? "Cancelled" : "No-show"}</b>
         {b.cancelReason ? ` — ${b.cancelReason}.` : "."}
-        {credit > 0 ? ` Refund due: ${taka(credit)}.` : ""}
       </p>
     );
 
@@ -744,7 +732,7 @@ function ProcessSteps({ db, b }: { db: HotelDB; b: Booking }) {
     {
       label: "Payment",
       state: due === 0 ? "done" : paid > 0 ? "part" : "todo",
-      detail: credit > 0 ? `Refund due ${taka(credit)}` : due === 0 ? "Paid in full" : paid > 0 ? `${taka(paid)} paid · ${taka(due)} due` : `Not paid · ${taka(due)} due`,
+      detail: due === 0 ? "Paid in full" : paid > 0 ? `${taka(paid)} paid · ${taka(due)} due` : `Not paid · ${taka(due)} due`,
     },
     {
       label: "Check-in",

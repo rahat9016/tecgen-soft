@@ -32,6 +32,7 @@ export const defaultSettings: Settings = {
   checkOutTime: "12:00 PM",
   freeCancellationHours: 24,
   lateCancellationFeeRate: 20,
+  refundFeeRate: 10,
   requireConfirmation: false,
   onlineMethods: { bkash: true, nagad: true, rocket: true, card: true },
   notifySound: true,

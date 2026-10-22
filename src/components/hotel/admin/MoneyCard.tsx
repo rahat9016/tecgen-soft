@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { taka } from "@/src/lib/hotel-store/format";
 import { cn } from "@/src/lib/utils";
 
@@ -38,39 +37,32 @@ const tones = {
   slate: { badge: "bg-slate-100 text-slate-600", bar: "bg-slate-400" },
 };
 
-/** Animates 0 → value once, and again whenever the value changes. Skipped for reduced motion. */
-function useCountUp(value: number, ms = 900) {
-  const [shown, setShown] = useState(0);
-  useEffect(() => {
-    let raf = 0;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = reduce ? 1 : Math.min(1, (now - start) / ms);
-      setShown(Math.round(value * (1 - Math.pow(1 - t, 3))));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value, ms]);
-  return shown;
-}
-
-export function MoneyGlyph({ icon, className, delay = 0 }: { icon: MoneyIcon; className?: string; delay?: number }) {
+export function MoneyGlyph({ icon, className }: { icon: MoneyIcon; className?: string }) {
   const { paths, taka: [x, y] } = icons[icon];
   return (
     <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden className={className}>
       {paths.map((d, i) => (
-        <path key={i} d={d} pathLength={100} className="tw-draw" style={{ animationDelay: `${delay + i * 120}ms` }} />
+        <path key={i} d={d} />
       ))}
-      <text x={x} y={y} textAnchor="middle" fontSize={11} fontWeight={700} fill="currentColor" stroke="none" className="tw-pop" style={{ animationDelay: `${delay + 700}ms` }}>
+      <text x={x} y={y} textAnchor="middle" fontSize={11} fontWeight={700} fill="currentColor" stroke="none">
         ৳
       </text>
     </svg>
   );
 }
 
-/** Dashboard tile: animated ৳ icon, a counting-up amount and one line of context. */
+/** Moving backdrop behind the icon: a slowly turning dashed ring and two staggered ripples. */
+function IconBackdrop({ delay }: { delay: number }) {
+  return (
+    <svg viewBox="0 0 56 56" aria-hidden className="absolute inset-0 size-full">
+      <circle cx="28" cy="28" r="26" fill="currentColor" className="tw-ripple opacity-0" style={{ animationDelay: `${delay}ms` }} />
+      <circle cx="28" cy="28" r="26" fill="currentColor" className="tw-ripple opacity-0" style={{ animationDelay: `${delay + 1400}ms` }} />
+      <circle cx="28" cy="28" r="25" fill="none" stroke="currentColor" strokeWidth="1.2" strokeDasharray="3 5" strokeLinecap="round" className="tw-spin opacity-40" />
+    </svg>
+  );
+}
+
+/** Dashboard tile: ৳ icon on an animated backdrop, the amount and one line of context. */
 export function MoneyCard({
   label,
   value,
@@ -87,18 +79,18 @@ export function MoneyCard({
   /** Staggers the entrance across a row of cards. */
   index?: number;
 }) {
-  const shown = useCountUp(value);
   const t = tones[tone];
   return (
     <section className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-md">
       <span aria-hidden className={cn("absolute inset-x-0 top-0 h-0.5 opacity-70", t.bar)} />
       <div className="flex items-start justify-between gap-2">
         <p className="min-w-0 pt-1 text-[13px] font-medium text-neutral-600">{label}</p>
-        <span className={cn("tw-float flex size-11 shrink-0 items-center justify-center rounded-xl", t.badge)}>
-          <MoneyGlyph icon={icon} className="size-7" delay={index * 120} />
+        <span className={cn("relative flex size-14 shrink-0 items-center justify-center rounded-full", t.badge)}>
+          <IconBackdrop delay={index * 300} />
+          <MoneyGlyph icon={icon} className="relative size-7" />
         </span>
       </div>
-      <p className="mt-auto pt-3 text-2xl font-bold tabular-nums tracking-tight text-neutral-900">{taka(shown)}</p>
+      <p className="mt-auto pt-3 text-2xl font-bold tabular-nums tracking-tight text-neutral-900">{taka(value)}</p>
       {hint && <p className="mt-0.5 text-[13px] text-neutral-500">{hint}</p>}
     </section>
   );

@@ -155,6 +155,8 @@ export type Booking = {
   source: BookingSource;
   /** Kept by the hotel when a booking is cancelled late or is a no-show. */
   cancellationFee?: number;
+  /** Kept by the hotel out of refunds (the refund fee), so it is no longer owed back. */
+  refundFee?: number;
   cancelReason?: string;
   internalNote?: string;
   createdAt: string;
@@ -267,6 +269,8 @@ export type Settings = {
   freeCancellationHours: number;
   /** Percent of the total the hotel keeps on a late cancellation or no-show. */
   lateCancellationFeeRate: number;
+  /** Percent of each refund the hotel keeps as a processing charge. Older saved settings lack it (default 10). */
+  refundFeeRate?: number;
   /** Online bookings wait for staff to confirm them instead of confirming instantly. */
   requireConfirmation: boolean;
   onlineMethods: Record<OnlineMethod, boolean>;

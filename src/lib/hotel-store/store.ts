@@ -209,7 +209,9 @@ export const isLive = (b: Booking) => b.status !== "cancelled" && b.status !== "
 export const dueOf = (b: Booking) => (isLive(b) ? Math.max(0, folioTotal(b) - paidOf(b)) : 0);
 /** Money the hotel holds beyond what the guest owes — to refund. */
 export const creditOf = (b: Booking) =>
-  isLive(b) ? Math.max(0, paidOf(b) - folioTotal(b)) : Math.max(0, paidOf(b) - (b.cancellationFee ?? 0));
+  Math.max(0, paidOf(b) - (b.refundFee ?? 0) - (isLive(b) ? folioTotal(b) : (b.cancellationFee ?? 0)));
+/** Hotel's refund fee percent, for settings saved before the rule existed. */
+export const refundFeeRateOf = (s: Settings) => s.refundFeeRate ?? 10;
 
 export function paymentStatus(b: Booking): { label: string; tone: string } {
   const paid = paidOf(b);
@@ -1224,6 +1226,39 @@ export function addPayment(id: string, input: PaymentInput) {
           p.kind === "refund" ? `${money(p.amount)} has been refunded to your ${p.method} account.` : `Thank you — ${money(p.amount)} received by ${p.method}. Balance: ${money(dueOf(b))}.`
         ),
       ];
+    }
+  );
+}
+
+/** Pays money back: `amount` goes to the guest, `keep` stays with the hotel as the refund fee. Together they settle what is owed back. */
+export function refundBooking(id: string, input: { amount: number; keep: number; method: PayMethod; ref?: string; note: string }) {
+  return patchBooking(
+    id,
+    (b) => {
+      const amount = Math.round(input.amount);
+      const keep = Math.round(input.keep);
+      const credit = creditOf(b);
+      if (credit <= 0) return "Nothing is owed back on this booking.";
+      if (amount < 0 || keep < 0) return "Amounts can't be negative.";
+      if (amount + keep <= 0) return "Enter an amount above zero.";
+      if (amount + keep > credit) return `Only ${money(credit)} is refundable.`;
+      if (!input.note.trim()) return "Give a reason for the refund.";
+      const by = actor();
+      const at = nowIso();
+      const payments: Payment[] =
+        amount > 0
+          ? [...b.payments, { id: uid("p"), amount, method: input.method, kind: "refund", ref: input.ref?.trim() || undefined, note: [input.note.trim(), keep > 0 && `${money(keep)} kept as refund fee`].filter(Boolean).join(" · "), at, by }]
+          : b.payments;
+      return {
+        ...b,
+        payments,
+        refundFee: (b.refundFee ?? 0) + keep,
+        log: logged(b, `Refunded ${money(amount)} via ${input.method}${keep > 0 ? ` (${money(keep)} kept as refund fee)` : ""}`, by),
+      };
+    },
+    (b, s) => {
+      const p = b.payments[b.payments.length - 1];
+      return p?.kind === "refund" ? guestNotice(s, b, "payment", `Refund sent · ${b.code}`, `${money(p.amount)} has been refunded to your ${p.method} account.`) : [];
     }
   );
 }

@@ -1,21 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
-import { Banknote, Download, Hourglass, Receipt, Undo2, Wallet } from "lucide-react";
+import { CalendarDays, ChevronDown, FileText, Search, Undo2, Wallet, X } from "lucide-react";
 import { can } from "@/src/lib/hotel-store/auth";
-import { dateLabel, downloadCsv, formatDateTime, payLabels, paymentKindLabels, rangeLabel, shiftDay, taka, todayKey } from "@/src/lib/hotel-store/format";
+import { dateLabel, formatDateTime, payLabels, paymentKindLabels, rangeLabel, shiftDay, taka, todayKey } from "@/src/lib/hotel-store/format";
 import { ledger } from "@/src/lib/hotel-store/reports";
-import { creditOf, dueOf, folioTotal, paidOf, useCurrentStaff, useHotelDB } from "@/src/lib/hotel-store/store";
+import { creditOf, dueOf, folioTotal, paidOf, refundedOf, useCurrentStaff, useHotelDB } from "@/src/lib/hotel-store/store";
 import type { Booking, PaymentKind, PayMethod } from "@/src/lib/hotel-store/types";
 import { cn } from "@/src/lib/utils";
 import { PaymentModal } from "./BookingModals";
-import { RankBars } from "./charts";
-import { ADMIN, AdminHeader, Card, Empty, hbtn, Pager, SearchBox, Select, StatCard, StatusBadge, tableCardClass, Tabs, toolbarClass, usePagination } from "./ui";
+import { MoneyCard } from "./MoneyCard";
+import { Empty, hbtn, Pager, StatusBadge, tableCardClass, Tabs, usePagination } from "./ui";
 
-type Tab = "transactions" | "outstanding" | "refunds" | "methods";
+type Tab = "transactions" | "outstanding" | "refunds";
 type Range = "today" | "7d" | "30d" | "month" | "all";
 
 const rangeStart = (r: Range, today: string) =>
@@ -26,12 +25,14 @@ export default function Payments() {
   const staff = useCurrentStaff();
   const params = useSearchParams();
   const initial = params.get("tab");
-  const [tab, setTab] = useState<Tab>(initial === "refunds" || initial === "outstanding" || initial === "methods" ? initial : "transactions");
+  const [tab, setTab] = useState<Tab>(initial === "refunds" || initial === "outstanding" ? initial : "transactions");
   const [range, setRange] = useState<Range>("30d");
   const [method, setMethod] = useState<"any" | PayMethod>("any");
   const [kind, setKind] = useState<"any" | PaymentKind>("any");
   const [q, setQ] = useState("");
   const [action, setAction] = useState<{ booking: Booking; kind: PaymentKind } | null>(null);
+  // Booking whose payment history is open in the side panel; looked up live so new payments show at once.
+  const [historyId, setHistoryId] = useState<string | null>(null);
   const today = todayKey();
   const canRefund = can(staff?.role, "payments.refund");
 
@@ -57,24 +58,6 @@ export default function Payments() {
   const refunds = db.bookings.filter((b) => creditOf(b) > 0).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const depositsHeld = db.bookings.filter((b) => (b.status === "confirmed" || b.status === "pending") && b.checkIn > today).reduce((s, b) => s + paidOf(b), 0);
 
-  const byMethod = (Object.keys(payLabels) as PayMethod[])
-    .map((m) => {
-      const list = inRange.filter((r) => r.method === m && !r.void);
-      return { label: payLabels[m], value: net(list), note: `${list.length} txn${list.length === 1 ? "" : "s"}` };
-    })
-    .filter((r) => r.value !== 0 || r.note !== "0 txns")
-    .sort((a, b) => b.value - a.value);
-  const byKind = (Object.keys(paymentKindLabels) as PaymentKind[]).map((k) => ({
-    label: paymentKindLabels[k],
-    value: inRange.filter((r) => r.kind === k && !r.void).reduce((s, r) => s + r.amount, 0),
-  }));
-
-  const exportCsv = () =>
-    downloadCsv(`payments-${range}-${today}.csv`, [
-      ["Date", "Booking", "Guest", "Type", "Method", "Reference", "Received by", "Amount", "Voided"],
-      ...filtered.map((r) => [formatDateTime(r.at), r.booking.code, r.booking.guest.name, paymentKindLabels[r.kind], payLabels[r.method], r.ref ?? "", r.by, r.kind === "refund" ? -r.amount : r.amount, r.void ? `Yes — ${r.void.reason}` : ""]),
-    ]);
-
   const rangeOptions: { value: Range; label: string }[] = [
     { value: "today", label: "Today" },
     { value: "7d", label: "Last 7 days" },
@@ -85,33 +68,21 @@ export default function Payments() {
 
   const bookingCell = (b: Booking) => (
     <td className="px-4 py-3">
-      <Link href={`${ADMIN}/bookings/${b.id}`} className="font-mono font-semibold text-sky-700 hover:underline">
+      <button type="button" onClick={() => setHistoryId(b.id)} className="rounded-sm font-mono font-semibold text-sky-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500">
         {b.code}
-      </Link>
+      </button>
       <p className="text-xs text-neutral-500">{b.guest.name}</p>
     </td>
   );
 
   return (
     <div>
-      <AdminHeader
-        title="Payments"
-        subtitle="Every deposit, balance and refund across the hotel."
-        actions={
-          tab === "transactions" && (
-            <button onClick={exportCsv} className={hbtn.outline}>
-              <Download className="size-4" /> Export CSV
-            </button>
-          )
-        }
-      />
-
-      <div className="mb-6 grid grid-cols-2 gap-4 xl:grid-cols-5">
-        <StatCard label="Collected today" value={taka(net(rows.filter((r) => r.day === today)))} hint="Net of refunds" icon={Wallet} tone="green" />
-        <StatCard label="This month" value={taka(net(monthRows))} hint={`${monthRows.filter((r) => !r.void).length} transactions`} icon={Banknote} tone="neutral" />
-        <StatCard label="Outstanding" value={taka(outstanding.reduce((s, b) => s + dueOf(b), 0))} hint={`${outstanding.length} folios with a balance`} icon={Receipt} tone="orange" />
-        <StatCard label="Refunds due" value={taka(refunds.reduce((s, b) => s + creditOf(b), 0))} hint={`${refunds.length} booking${refunds.length === 1 ? "" : "s"}`} icon={Undo2} tone="violet" />
-        <StatCard label="Advance deposits held" value={taka(depositsHeld)} hint="Paid on future stays" icon={Hourglass} tone="neutral" />
+      <div className="mb-4 grid grid-cols-2 gap-4 xl:grid-cols-5">
+        <MoneyCard index={0} label="Collected today" value={net(rows.filter((r) => r.day === today))} hint="Net of refunds" icon="wallet" tone="green" />
+        <MoneyCard index={1} label="This month" value={net(monthRows)} hint={`${monthRows.filter((r) => !r.void).length} transactions`} icon="calendar" tone="sky" />
+        <MoneyCard index={2} label="Outstanding" value={outstanding.reduce((s, b) => s + dueOf(b), 0)} hint={`${outstanding.length} folios with a balance`} icon="bill" tone="rose" />
+        <MoneyCard index={3} label="Refunds due" value={refunds.reduce((s, b) => s + creditOf(b), 0)} hint={`${refunds.length} booking${refunds.length === 1 ? "" : "s"}`} icon="refund" tone="violet" />
+        <MoneyCard index={4} label="Advance deposits held" value={depositsHeld} hint="Paid on future stays" icon="vault" tone="slate" />
       </div>
 
       <div className={tableCardClass}>
@@ -122,23 +93,31 @@ export default function Payments() {
             { value: "transactions", label: "Transactions", count: inRange.length },
             { value: "outstanding", label: "Outstanding", count: outstanding.length },
             { value: "refunds", label: "Refunds due", count: refunds.length, dot: refunds.length ? "bg-violet-500" : undefined },
-            { value: "methods", label: "By method" },
           ]}
         />
 
-        {(tab === "transactions" || tab === "methods") && (
-          <div className={toolbarClass}>
-            <Select label="Date range" value={range} onChange={setRange} options={rangeOptions} />
+        {tab === "transactions" && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 p-3 sm:px-4">
             {tab === "transactions" && (
               <>
-                <SearchBox value={q} onChange={setQ} placeholder="Search booking, guest, TrxID" />
-                <Select label="Method" value={method} onChange={setMethod} options={[{ value: "any", label: "All methods" }, ...(Object.keys(payLabels) as PayMethod[]).map((m) => ({ value: m, label: payLabels[m] }))]} />
-                <Select label="Type" value={kind} onChange={setKind} options={[{ value: "any", label: "All types" }, ...(Object.keys(paymentKindLabels) as PaymentKind[]).map((k) => ({ value: k, label: paymentKindLabels[k] }))]} />
-                <span className="ml-auto text-sm text-neutral-600">
-                  Net <b className="tabular-nums text-neutral-900">{taka(net(filtered))}</b>
-                </span>
+                <label className="relative min-w-56 flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" aria-hidden />
+                  <input
+                    type="search"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search booking, guest or TrxID"
+                    aria-label="Search payments"
+                    className="h-10 w-full rounded-lg border border-neutral-200 bg-white pl-9 pr-3 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                  />
+                </label>
+                <FilterSelect label="Method" value={method} onChange={setMethod} options={[{ value: "any", label: "All methods" }, ...(Object.keys(payLabels) as PayMethod[]).map((m) => ({ value: m, label: payLabels[m] }))]} />
+                <FilterSelect label="Type" value={kind} onChange={setKind} options={[{ value: "any", label: "All types" }, ...(Object.keys(paymentKindLabels) as PaymentKind[]).map((k) => ({ value: k, label: paymentKindLabels[k] }))]} />
               </>
             )}
+            <div className="ml-auto">
+              <FilterSelect label="Date range" icon={CalendarDays} value={range} onChange={setRange} options={rangeOptions} />
+            </div>
           </div>
         )}
 
@@ -189,7 +168,7 @@ export default function Payments() {
 
         {tab === "outstanding" &&
           (outstandingSorted.length === 0 ? (
-            <Empty icon={Receipt} title="Nothing outstanding" text="Every in-house and departed guest has settled." />
+            <Empty icon={FileText} title="Nothing outstanding" text="Every in-house and departed guest has settled." />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[820px] text-sm">
@@ -279,21 +258,185 @@ export default function Payments() {
             </div>
           ))}
 
-        {tab === "methods" && (
-          <div className="grid gap-6 p-5 lg:grid-cols-2">
-            <Card>
-              <h3 className="mb-4 font-semibold text-neutral-900">Net by payment method</h3>
-              {byMethod.length ? <RankBars rows={byMethod} /> : <p className="text-sm text-neutral-500">No payments in this range.</p>}
-            </Card>
-            <Card>
-              <h3 className="mb-4 font-semibold text-neutral-900">By type</h3>
-              <RankBars rows={byKind} />
-            </Card>
-          </div>
-        )}
       </div>
 
+      {historyId && (() => {
+        const hb = db.bookings.find((b) => b.id === historyId);
+        return hb ? (
+          <PaymentHistory
+            b={hb}
+            canRefund={canRefund}
+            onClose={() => setHistoryId(null)}
+            onAction={(kind) => setAction({ booking: hb, kind })}
+            busy={!!action}
+          />
+        ) : null;
+      })()}
       {action && <PaymentModal booking={db.bookings.find((b) => b.id === action.booking.id) ?? action.booking} kind={action.kind} onClose={() => setAction(null)} />}
+    </div>
+  );
+}
+
+/** A select that turns blue while it narrows the list. */
+function FilterSelect<T extends string>({
+  label,
+  value,
+  onChange,
+  options,
+  icon: Icon,
+}: {
+  label: string;
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string }[];
+  icon?: React.ComponentType<{ className?: string }>;
+}) {
+  // An "any" choice means the filter is off; selects without one (like the date range) are never highlighted.
+  const active = options.some((o) => o.value === "any") && value !== "any";
+  return (
+    <label className="relative">
+      <span className="sr-only">{label}</span>
+      {Icon && <Icon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        className={cn(
+          "h-10 appearance-none rounded-lg border bg-white pr-9 text-sm outline-none transition focus:ring-2 focus:ring-sky-100",
+          Icon ? "pl-9" : "pl-3",
+          active ? "border-sky-500 bg-sky-50 font-medium text-sky-900" : "border-neutral-200 text-neutral-700 hover:border-neutral-300"
+        )}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" aria-hidden />
+    </label>
+  );
+}
+
+/** Side panel with every payment on one booking, and the refund or collect action — no trip to the booking page. */
+function PaymentHistory({
+  b,
+  canRefund,
+  onClose,
+  onAction,
+  busy,
+}: {
+  b: Booking;
+  canRefund: boolean;
+  onClose: () => void;
+  onAction: (k: PaymentKind) => void;
+  /** A refund or collect dialog is open on top; Escape belongs to it. */
+  busy: boolean;
+}) {
+  const due = dueOf(b);
+  const credit = creditOf(b);
+  const paid = paidOf(b);
+  const refunded = refundedOf(b);
+  const payments = [...b.payments].sort((x, y) => y.at.localeCompare(x.at));
+
+  useEffect(() => {
+    if (busy) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose, busy]);
+
+  return (
+    <div className="fixed inset-0 z-50 print:hidden" role="dialog" aria-modal="true" aria-label={`Payment history for ${b.code}`}>
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-neutral-950/40 backdrop-blur-[1px]" />
+      <aside className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-200">
+        <header className="flex items-start justify-between gap-3 border-b border-neutral-100 px-5 py-4">
+          <div className="min-w-0">
+            <p className="font-mono text-sm font-semibold text-sky-700">{b.code}</p>
+            <h2 className="truncate text-lg font-semibold text-neutral-900">{b.guest.name}</h2>
+            <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-neutral-500">
+              <StatusBadge status={b.status} />
+              {rangeLabel(b.checkIn, b.checkOut)} · {b.roomName}
+            </p>
+          </div>
+          <button onClick={onClose} aria-label="Close" className={cn(hbtn.icon, "shrink-0")}>
+            <X className="size-5" />
+          </button>
+        </header>
+
+        <div className="grid grid-cols-3 gap-px border-b border-neutral-100 bg-neutral-100 text-center">
+          {[
+            ["Total", taka(folioTotal(b)), "text-neutral-900"],
+            ["Paid", taka(paid), "text-emerald-700"],
+            credit > 0 ? ["To refund", taka(credit), "text-violet-700"] : ["Balance", taka(due), due > 0 ? "text-rose-600" : "text-neutral-900"],
+          ].map(([k, v, tone]) => (
+            <div key={k} className="bg-white px-3 py-3">
+              <p className="text-xs text-neutral-500">{k}</p>
+              <p className={cn("mt-0.5 font-semibold tabular-nums", tone)}>{v}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          <div className="flex items-baseline justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Payment history</h3>
+            {refunded > 0 && <span className="text-xs text-violet-700">{taka(refunded)} refunded</span>}
+          </div>
+          {payments.length === 0 ? (
+            <p className="mt-3 rounded-md border border-dashed border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500">No payments yet.</p>
+          ) : (
+            <ol className="relative mt-3 space-y-4 border-l border-neutral-200 pl-5">
+              {payments.map((p) => {
+                const refund = p.kind === "refund";
+                return (
+                  <li key={p.id} className="relative">
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "absolute -left-[27px] top-0.5 flex size-3.5 items-center justify-center rounded-full ring-4 ring-white",
+                        p.void ? "bg-neutral-300" : refund ? "bg-violet-500" : "bg-emerald-500"
+                      )}
+                    />
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="flex flex-wrap items-center gap-1.5 text-sm">
+                          <span className={cn("font-medium", p.void ? "text-neutral-400 line-through" : "text-neutral-900")}>{payLabels[p.method]}</span>
+                          <span className={cn("rounded px-1.5 py-px text-[11px] font-semibold", refund ? "bg-violet-50 text-violet-700" : p.kind === "deposit" ? "bg-sky-50 text-sky-700" : "bg-emerald-50 text-emerald-700")}>
+                            {paymentKindLabels[p.kind]}
+                          </span>
+                          {p.void && <span className="rounded bg-rose-50 px-1.5 py-px text-[11px] font-semibold text-rose-700">Voided</span>}
+                        </p>
+                        {p.ref && <p className="truncate font-mono text-xs text-neutral-500">{p.ref}</p>}
+                        <p className="text-xs text-neutral-500">
+                          {formatDateTime(p.at)} · {p.by}
+                        </p>
+                        {p.void && <p className="text-xs text-rose-700">{p.void.reason}</p>}
+                      </div>
+                      <span className={cn("shrink-0 text-sm font-semibold tabular-nums", p.void ? "text-neutral-400 line-through" : refund ? "text-violet-700" : "text-neutral-900")}>
+                        {refund ? "−" : ""}
+                        {taka(p.amount)}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </div>
+
+        {(credit > 0 && canRefund) || due > 0 ? (
+          <footer className="border-t border-neutral-100 p-4">
+            {credit > 0 && canRefund ? (
+              <button onClick={() => onAction("refund")} className={cn(hbtn.primary, "h-11 w-full bg-violet-600 hover:bg-violet-700")}>
+                <Undo2 className="size-4" /> Refund {taka(credit)}
+              </button>
+            ) : (
+              <button onClick={() => onAction("payment")} className={cn(hbtn.primary, "h-11 w-full")}>
+                <Wallet className="size-4" /> Collect {taka(due)}
+              </button>
+            )}
+          </footer>
+        ) : null}
+      </aside>
     </div>
   );
 }

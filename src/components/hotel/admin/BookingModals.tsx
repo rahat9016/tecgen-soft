@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { toast } from "react-toastify";
-import { AlertCircle, AlertTriangle, Check, Loader2, Minus, Wallet } from "lucide-react";
+import { AlertCircle, AlertTriangle, Banknote, Check, CreditCard, Landmark, Loader2, Minus, Undo2, Wallet } from "lucide-react";
+import { paymentMethodInfo } from "@/src/lib/hotelPayment";
 import { can } from "@/src/lib/hotel-store/auth";
 import { chargeLabels, dateLabel, housekeepingLabels, nightsBetween, payLabels, taka, todayKey } from "@/src/lib/hotel-store/format";
 import { checkInBlockers, type Blocker } from "@/src/lib/hotel-store/frontDesk";
@@ -24,8 +26,12 @@ import {
   freeUnits,
   groupOf,
   paidOf,
+  isLive,
   quoteStay,
   ratesFor,
+  refundBooking,
+  refundedOf,
+  refundFeeRateOf,
   setHousekeeping,
   unitNumbers,
   updateBookingGuest,
@@ -64,7 +70,12 @@ function paymentErrors(input: { amount: string; method: PayMethod; ref: string; 
   return e;
 }
 
+/** Collect a payment, or — for refunds — the step-by-step refund with the hotel's refund fee. */
 export function PaymentModal({ booking, kind, onClose }: { booking: Booking; kind: PaymentKind | null; onClose: () => void }) {
+  return kind === "refund" ? <RefundModal booking={booking} onClose={onClose} /> : <CollectModal booking={booking} kind={kind} onClose={onClose} />;
+}
+
+function CollectModal({ booking, kind, onClose }: { booking: Booking; kind: PaymentKind | null; onClose: () => void }) {
   const db = useHotelDB();
   const isRefund = kind === "refund";
   const due = dueOf(booking);
@@ -218,6 +229,208 @@ export function PaymentModal({ booking, kind, onClose }: { booking: Booking; kin
           <button type="submit" disabled={saving || max <= 0} className={cn(isRefund ? hbtn.dark : hbtn.primary, "min-w-40")}>
             {saving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Wallet className="size-4" aria-hidden />}
             {saving ? "Saving…" : `${isRefund ? "Refund" : "Record"} ${value > 0 && !errors.amount ? taka(value) : "payment"}`}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+const refundReasons = ["Booking cancelled", "Overpaid", "Stay shortened", "Service issue"];
+
+/**
+ * Refund in plain steps: what the guest paid, what the hotel already keeps, what is refundable,
+ * the refund fee taken off (hotel rule, can be changed or waived), and what the guest actually gets.
+ */
+function RefundModal({ booking: b, onClose }: { booking: Booking; onClose: () => void }) {
+  const db = useHotelDB();
+  const policy = refundFeeRateOf(db.settings);
+  const credit = creditOf(b);
+  const live = isLive(b);
+  const received = b.payments.filter((p) => !p.void && p.kind !== "refund").reduce((s, p) => s + p.amount, 0);
+  const refunded = refundedOf(b);
+  const firstMethod = b.payments.find((p) => !p.void && p.kind !== "refund")?.method;
+  const [pct, setPct] = useState(String(policy));
+  const [method, setMethod] = useState<PayMethod>(firstMethod ?? "cash");
+  const [ref, setRef] = useState("");
+  const [note, setNote] = useState(b.status === "cancelled" ? "Booking cancelled" : live ? "Overpaid" : "");
+  const [tried, setTried] = useState(false);
+  const [error, setError] = useState("");
+  const { saving, run } = useSaving();
+
+  const rate = Math.min(100, Math.max(0, Number(pct) || 0));
+  const keep = Math.round((credit * rate) / 100);
+  const amount = credit - keep;
+  const errors = paymentErrors({ amount: String(Math.max(amount, 1)), method: amount > 0 ? method : "cash", ref, note, isRefund: true, max: credit });
+  const show = (k: keyof typeof errors) => (tried ? errors[k] : undefined);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setTried(true);
+    if (credit <= 0 || errors.ref || errors.note) return;
+    run(() => {
+      setError("");
+      const r = refundBooking(b.id, { amount, keep, method, ref, note });
+      if (!r.ok) return setError(r.error);
+      toast.success(amount > 0 ? `Refunded ${taka(amount)}${keep ? ` · ${taka(keep)} kept` : ""}` : `${taka(keep)} kept — nothing paid back`);
+      onClose();
+    });
+  };
+
+  const row = (label: React.ReactNode, value: string, muted = false) => (
+    <div className="flex items-center justify-between gap-3 px-4 py-2">
+      <dt className="text-neutral-600">{label}</dt>
+      <dd className={cn("tabular-nums", muted ? "text-neutral-500" : "text-neutral-900")}>{value}</dd>
+    </div>
+  );
+
+  return (
+    <Modal open onClose={onClose} title={`Refund · ${b.guest.name}`}>
+      <form onSubmit={submit} noValidate className="space-y-5">
+        <p className="text-[13px] text-neutral-500">
+          <span className="font-mono font-semibold text-sky-700">{b.code}</span> · {b.roomName}
+          {b.cancelReason ? ` · ${b.cancelReason}` : ""}
+        </p>
+
+        <dl className="overflow-hidden rounded-xl border border-neutral-200 text-sm">
+          <div className="py-1.5">
+            {row("Guest paid", taka(received))}
+            {refunded > 0 && row("Already refunded", `− ${taka(refunded)}`, true)}
+            {live
+              ? row("Bill for the stay", `− ${taka(folioTotal(b))}`, true)
+              : (b.cancellationFee ?? 0) > 0 && row(b.status === "no-show" ? "No-show fee" : "Cancellation fee", `− ${taka(b.cancellationFee ?? 0)}`, true)}
+            {(b.refundFee ?? 0) > 0 && row("Refund fee already kept", `− ${taka(b.refundFee ?? 0)}`, true)}
+            <div className="flex items-center justify-between gap-3 px-4 py-2">
+              <dt className="flex flex-wrap items-center gap-x-2 gap-y-1 text-neutral-600">
+                Refund fee
+                <span className="relative inline-block w-16">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={pct}
+                    onChange={(e) => setPct(e.target.value)}
+                    aria-label="Refund fee percent"
+                    className={cn(inputClass, "h-7 pl-2 pr-5 text-right text-xs tabular-nums")}
+                  />
+                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-neutral-500">%</span>
+                </span>
+                {rate !== 0 ? (
+                  <button type="button" onClick={() => setPct("0")} className="text-xs font-medium text-sky-700 hover:underline">
+                    Waive
+                  </button>
+                ) : (
+                  rate !== policy && (
+                    <button type="button" onClick={() => setPct(String(policy))} className="text-xs font-medium text-sky-700 hover:underline">
+                      Use {policy}% rule
+                    </button>
+                  )
+                )}
+              </dt>
+              <dd className="tabular-nums text-neutral-500">− {taka(keep)}</dd>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-neutral-200 bg-sky-50/60 px-4 py-3">
+            <dt>
+              <span className="block font-semibold text-neutral-900">Guest receives</span>
+              <span className="text-xs text-neutral-500">
+                {taka(credit)} refundable{keep > 0 ? ` − ${taka(keep)} fee` : ""}
+              </span>
+            </dt>
+            <dd className="text-2xl font-bold tabular-nums text-sky-700">{taka(amount)}</dd>
+          </div>
+        </dl>
+
+        {amount > 0 && (
+          <fieldset>
+            <legend className="mb-1.5 block text-xs font-medium text-neutral-600">Send refund to</legend>
+            <div className="grid grid-cols-3 gap-2">
+              {methods.map((m) => {
+                const info = paymentMethodInfo[m];
+                const on = method === m;
+                const Icon = m === "cash" ? Banknote : m === "bank" ? Landmark : m === "card" ? CreditCard : null;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMethod(m)}
+                    aria-pressed={on}
+                    className={cn(
+                      "relative flex h-14 flex-col items-center justify-center gap-1 rounded-lg border text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500",
+                      on ? "border-sky-600 bg-sky-50 text-sky-800 ring-1 ring-sky-600" : "border-neutral-200 text-neutral-700 hover:border-sky-300"
+                    )}
+                  >
+                    {info?.logos.length && m !== "card" ? (
+                      <Image src={info.logos[0]} alt="" width={48} height={18} className="h-[18px] w-12 object-contain" />
+                    ) : Icon ? (
+                      <Icon className="size-[18px] text-neutral-500" aria-hidden />
+                    ) : null}
+                    {payLabels[m]}
+                    {m === firstMethod && <span className="absolute right-1 top-1 size-1.5 rounded-full bg-sky-600" title="Guest paid with this" />}
+                  </button>
+                );
+              })}
+            </div>
+            {firstMethod && <p className="mt-1.5 text-xs text-neutral-500">Guest paid by {payLabels[firstMethod]} — refunds usually go back the same way.</p>}
+          </fieldset>
+        )}
+
+        {amount > 0 && method !== "cash" && (
+          <div>
+            <label htmlFor="refund-ref" className="mb-1 block text-xs font-medium text-neutral-600">
+              {refLabel(method)}
+            </label>
+            <input
+              id="refund-ref"
+              value={ref}
+              onChange={(e) => setRef(e.target.value)}
+              aria-invalid={!!show("ref")}
+              className={cn(inputClass, show("ref") && "border-rose-400")}
+              placeholder={method === "card" ? "•••• 4242 · Auth 123456" : method === "bank" ? "e.g. DBBL-20261019-001" : "e.g. 9F3K2L1M0P"}
+            />
+            {show("ref") && <p className="mt-1 text-xs font-medium text-rose-600">{show("ref")}</p>}
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="refund-note" className="mb-1.5 block text-xs font-medium text-neutral-600">
+            Reason
+          </label>
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {refundReasons.map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setNote(r)}
+                className={cn(
+                  "rounded-full border px-2.5 py-1 text-xs font-medium transition",
+                  note === r ? "border-sky-600 bg-sky-50 text-sky-800" : "border-neutral-200 text-neutral-600 hover:border-sky-300"
+                )}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+          <input
+            id="refund-note"
+            value={note}
+            maxLength={200}
+            onChange={(e) => setNote(e.target.value)}
+            aria-invalid={!!show("note")}
+            className={cn(inputClass, show("note") && "border-rose-400")}
+            placeholder="Or write a reason"
+          />
+          {show("note") && <p className="mt-1 text-xs font-medium text-rose-600">{show("note")}</p>}
+        </div>
+
+        <FormError text={error} />
+        <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-4">
+          <button type="button" onClick={onClose} className={hbtn.outline}>
+            Cancel
+          </button>
+          <button type="submit" disabled={saving || credit <= 0} className={hbtn.primary}>
+            {saving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Undo2 className="size-4" aria-hidden />}
+            {saving ? "Saving…" : "Refund"}
           </button>
         </div>
       </form>

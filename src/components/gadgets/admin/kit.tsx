@@ -199,18 +199,19 @@ export function Modal({
         ref={panel}
         tabIndex={-1}
         className={cn(
-          "relative max-h-[90vh] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl outline-none",
+          // The rounded panel clips (overflow-clip, which focus can't scroll); only the inner area scrolls, so the title stays put.
+          "relative flex max-h-[90vh] w-full flex-col overflow-clip rounded-2xl bg-white shadow-2xl outline-none",
           wide ? "max-w-2xl" : "max-w-md",
           className
         )}
       >
-        <div className="mb-5 flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between border-b border-neutral-100 px-6 pb-4 pt-7">
           <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
           <button onClick={onClose} aria-label="Close" className={btn.ghost}>
             <X className="size-4" />
           </button>
         </div>
-        {children}
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6 pt-5 [scrollbar-gutter:stable]">{children}</div>
       </div>
     </div>
   );
