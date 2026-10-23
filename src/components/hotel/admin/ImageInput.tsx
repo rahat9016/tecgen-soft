@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { ImagePlus, Link2, Loader2 } from "lucide-react";
+import { useT } from "@/src/lib/hotel-store/i18n";
 import { hbtn, inputClass } from "./ui";
 
 /**
@@ -28,13 +29,14 @@ export function compressImage(file: File, max = 1280): Promise<string> {
 
 /** Add a photo by pasting a link or uploading a file. */
 export default function ImageInput({ onAdd, multiple = true, max }: { onAdd: (src: string) => void; multiple?: boolean; max?: number }) {
+  const t = useT();
   const fileRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
 
   const addUrl = () => {
     const v = url.trim();
-    if (!/^https?:\/\/\S+$/i.test(v)) return toast.error("Paste a full image link starting with https://");
+    if (!/^https?:\/\/\S+$/i.test(v)) return toast.error(t("Paste a full image link starting with https://"));
     onAdd(v);
     setUrl("");
   };
@@ -52,15 +54,15 @@ export default function ImageInput({ onAdd, multiple = true, max }: { onAdd: (sr
               addUrl();
             }
           }}
-          placeholder="Paste image link (https://…)"
+          placeholder={t("Paste image link (https://…)")}
           className={`${inputClass} pl-9`}
         />
       </div>
       <button type="button" onClick={addUrl} className={hbtn.outline}>
-        Add link
+        {t("Add link")}
       </button>
       <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className={hbtn.outline}>
-        {busy ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />} Upload
+        {busy ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />} {t("Upload")}
       </button>
       <input
         ref={fileRef}
@@ -76,7 +78,7 @@ export default function ImageInput({ onAdd, multiple = true, max }: { onAdd: (sr
           try {
             for (const f of files) onAdd(await compressImage(f));
           } catch {
-            toast.error("That file couldn't be read as an image.");
+            toast.error(t("That file couldn't be read as an image."));
           } finally {
             setBusy(false);
           }

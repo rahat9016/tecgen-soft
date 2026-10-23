@@ -219,7 +219,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  // Desktop only: an 85px icon rail instead of the full menu, remembered in this browser.
+  // Desktop only: an 80px icon rail instead of the full menu, remembered in this browser.
   // The shell renders only after hydration, so reading storage up front can't mismatch the server HTML.
   const [compact, setCompact] = useState(() => {
     try {
@@ -351,7 +351,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-30 hidden bg-gradient-to-b from-sky-950 to-slate-950 transition-[width] duration-200 lg:block print:hidden",
-          compact ? "w-[85px]" : "w-64"
+          compact ? "w-20" : "w-64"
         )}
       >
         {sidebar(compact)}
@@ -367,7 +367,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           </aside>
         </div>
       )}
-      <div className={cn("min-w-0 transition-[padding] duration-200 print:pl-0", compact ? "lg:pl-[85px]" : "lg:pl-64")}>
+      <div className={cn("min-w-0 transition-[padding] duration-200 print:pl-0", compact ? "lg:pl-20" : "lg:pl-64")}>
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-neutral-200 bg-white/90 px-4 backdrop-blur sm:px-6 xl:px-8 print:hidden">
           <button
             onClick={() => setOpen(true)}
