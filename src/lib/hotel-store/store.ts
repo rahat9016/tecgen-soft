@@ -413,10 +413,6 @@ export function markNoticesRead(to: string, ids?: string[]) {
   update((s) => ({ ...s, notices: s.notices.map((n) => (n.to === to && (!ids || ids.includes(n.id)) ? { ...n, read: true } : n)) }));
 }
 
-export function deleteNotice(id: string) {
-  update((s) => ({ ...s, notices: s.notices.filter((n) => n.id !== id) }));
-}
-
 /* ───────────── accounts ───────────── */
 
 const actor = () => {
