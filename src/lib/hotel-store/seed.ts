@@ -6,6 +6,7 @@ import type {
   BookingStatus,
   Charge,
   ChargeCategory,
+  ChatThread,
   Content,
   HotelDB,
   Notice,
@@ -270,6 +271,7 @@ export const staticState: HotelDB = {
   users: [],
   reviews: seedReviews,
   notices: [],
+  threads: [],
   seq: { booking: 10240 },
 };
 
@@ -655,6 +657,24 @@ export function createSeed(): HotelDB {
     { id: `n${notices.length + 1}`, to: "ug1", kind: "booking", title: `Booking confirmed · ${tamimNext.code}`, body: `${tamimNext.roomName}, ${tamimNext.nights} nights from ${tamimNext.checkIn}. See you soon!`, bookingId: tamimNext.id, at: tamimNext.createdAt, read: false },
     { id: `n${notices.length + 2}`, to: "ug1", kind: "review", title: "How was your stay?", body: `Tell other guests about the ${tamimPast.roomName} — it only takes a minute.`, bookingId: tamimPast.id, at: tamimPast.checkedOutAt ?? tamimPast.updatedAt, read: false }
   );
+  // Tamim asked about his coming stay a few minutes ago and is waiting for an answer.
+  const ago = (min: number) => new Date(nowMs - min * 60_000).toISOString();
+  const threads: ChatThread[] = [
+    {
+      phone: "01712345678",
+      name: "Tamim Rahman",
+      userId: "ug1",
+      messages: [
+        { id: "m1", from: "guest", text: `Hi, I have booking ${tamimNext.code}. Is early check-in possible? Our flight lands at 9 am.`, at: ago(95) },
+        { id: "m2", from: "staff", text: "Hello Tamim! We'll try our best — a room is usually ready by 11 am. We can keep your bags until then.", at: ago(80), by: "Sumaiya Islam" },
+        { id: "m3", from: "guest", text: "Great, thanks. Can you also arrange an airport pickup?", at: ago(6) },
+      ],
+      staffUnread: 1,
+      guestUnread: 0,
+      updatedAt: ago(6),
+    },
+  ];
+  notices.push({ id: `n${notices.length + 1}`, to: "staff", kind: "message", title: "Message from Tamim Rahman", body: "01712-345678 · Great, thanks. Can you also arrange an airport pickup?", phone: "01712345678", at: ago(6), read: false });
   notices.sort((a, b) => b.at.localeCompare(a.at));
 
   // Two fresh reviews waiting for moderation.
@@ -680,6 +700,7 @@ export function createSeed(): HotelDB {
     users,
     reviews: [...seedReviews, ...pendingReviews],
     notices,
+    threads,
     seq: { booking: seq },
   };
 }

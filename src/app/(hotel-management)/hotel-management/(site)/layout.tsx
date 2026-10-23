@@ -1,6 +1,6 @@
 import HotelHeader from "@/src/components/hotel/Header/HotelHeader";
 import HotelFooter from "@/src/components/hotel/Footer/HotelFooter";
-import WhatsAppButton from "@/src/components/hotel/shared/WhatsAppButton";
+import GuestChat from "@/src/components/hotel/shared/GuestChat";
 
 export default function HotelManagementLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -8,7 +8,7 @@ export default function HotelManagementLayout({ children }: { children: React.Re
       <HotelHeader />
       {children}
       <HotelFooter />
-      <WhatsAppButton />
+      <GuestChat />
     </div>
   );
 }

@@ -15,6 +15,7 @@ import {
   LayoutTemplate,
   LogOut,
   Menu,
+  MessagesSquare,
   PanelLeftClose,
   PanelLeftOpen,
   RotateCcw,
@@ -36,6 +37,7 @@ import { initials, roleLabels, timeAgo } from "@/src/lib/hotel-store/format";
 import {
   creditOf,
   logOut,
+  threadsOf,
   markNoticesRead,
   resetDemoData,
   STORAGE_FULL_EVENT,
@@ -52,7 +54,7 @@ import { ADMIN, Loader, NoAccess } from "./ui";
 
 const COMPACT_KEY = "hotel-admin-sidebar-compact";
 
-type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }>; perm?: Permission; badge?: "pending" | "refunds" | "reviews" | "notices" };
+type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }>; perm?: Permission; badge?: "pending" | "refunds" | "reviews" | "notices" | "messages" };
 
 const groups: { title: string; items: NavItem[] }[] = [
   {
@@ -60,6 +62,7 @@ const groups: { title: string; items: NavItem[] }[] = [
     items: [
       { href: `${ADMIN}/bookings`, label: "Bookings", icon: ClipboardList, perm: "bookings.manage", badge: "pending" },
       { href: `${ADMIN}/payments`, label: "Payments", icon: Wallet, perm: "payments.record", badge: "refunds" },
+      { href: `${ADMIN}/messages`, label: "Messages", icon: MessagesSquare, perm: "guests.message", badge: "messages" },
     ],
   },
   {
@@ -81,6 +84,16 @@ const groups: { title: string; items: NavItem[] }[] = [
 ];
 
 const allItems = groups.flatMap((g) => g.items);
+
+/** Where a notification leads: its booking, the conversation it came from, or the review queue. */
+const noticeHref = (n: Notice) =>
+  n.bookingId
+    ? `${ADMIN}/bookings/${n.bookingId}`
+    : n.kind === "message" && n.phone
+      ? `${ADMIN}/messages?phone=${encodeURIComponent(n.phone)}`
+      : n.kind === "review"
+        ? `${ADMIN}/reviews`
+        : `${ADMIN}/notifications`;
 const isActive = (href: string, path: string) => path === href || path.startsWith(`${href}/`);
 
 /** A short two-note chime made on the fly, so there's no audio file to ship. */
@@ -187,9 +200,7 @@ function NotificationBell() {
               key={n.id}
               onSelect={() => {
                 markNoticesRead("staff", [n.id]);
-                if (n.bookingId) router.push(`${ADMIN}/bookings/${n.bookingId}`);
-                else if (n.kind === "review") router.push(`${ADMIN}/reviews`);
-                else router.push(`${ADMIN}/notifications`);
+                router.push(noticeHref(n));
               }}
               className="mx-1 flex cursor-pointer items-start gap-3 rounded-md px-3 py-2.5"
             >
@@ -239,7 +250,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   useStaffAlerts((n) => {
     markNoticesRead("staff", [n.id]);
-    router.push(n.bookingId ? `${ADMIN}/bookings/${n.bookingId}` : n.kind === "review" ? `${ADMIN}/reviews` : `${ADMIN}/notifications`);
+    router.push(noticeHref(n));
   });
 
   useEffect(() => {
@@ -260,6 +271,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     refunds: db.bookings.filter((b) => creditOf(b) > 0).length,
     reviews: db.reviews.filter((r) => r.status === "pending").length,
     notices: db.notices.filter((n) => n.to === "staff" && !n.read).length,
+    messages: threadsOf(db).filter((th) => th.staffUnread > 0).length,
   };
   const current = [...allItems].sort((a, b) => b.href.length - a.href.length).find((i) => isActive(i.href, pathname));
   const allowed = !current?.perm || can(staff.role, current.perm);
@@ -280,7 +292,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 {items.map((item) => {
                   const active = isActive(item.href, pathname);
                   const count = item.badge ? badges[item.badge] : 0;
-                  const badgeTone = item.badge === "notices" ? "bg-rose-500 text-white" : active ? "bg-sky-600 text-white" : "bg-sky-500 text-white";
+                  const badgeTone = item.badge === "notices" || item.badge === "messages" ? "bg-rose-500 text-white" : active ? "bg-sky-600 text-white" : "bg-sky-500 text-white";
                   return (
                     <li key={item.href}>
                       <Link
@@ -290,7 +302,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                         title={rail ? t(item.label) : undefined}
                         className={cn(
                           "rounded-md text-sm transition",
-                          rail ? "flex flex-col items-center gap-1 px-0.5 py-2 text-center" : "flex items-center gap-3 px-3 py-2.5",
+                          rail ? "flex h-15 flex-col items-center justify-center gap-1 px-0.5 text-center" : "flex items-center gap-3 px-3 py-2.5",
                           active ? "bg-white font-semibold text-sky-950 shadow-sm" : "text-sky-100/80 hover:bg-white/5 hover:text-white"
                         )}
                       >

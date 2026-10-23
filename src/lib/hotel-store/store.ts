@@ -3,13 +3,14 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Hotel, RoomType } from "@/src/data/hotels";
 import { discountLimit, hashPassword, isStaff } from "./auth";
-import { clockMinutes, dateLabel, hotelDayOf, hotelInstant, nightsBetween, payLabels, shiftDay, sourceLabels, stayNights, todayKey } from "./format";
+import { clockMinutes, dateLabel, formatMobile, hotelDayOf, hotelInstant, nightsBetween, payLabels, shiftDay, sourceLabels, stayNights, todayKey } from "./format";
 import { createSeed, DB_VERSION, staticState } from "./seed";
 import type {
   Booking,
   BookingSource,
   BookingStatus,
   Charge,
+  ChatThread,
   Commission,
   Content,
   DiscountKind,
@@ -612,6 +613,133 @@ export function guestBookings(db: HotelDB, ses: Session, user?: User) {
   return db.bookings
     .filter((b) => (user && (b.userId === user.id || (user.email && b.guest.email.toLowerCase() === user.email))) || ses.bookingIds.includes(b.id))
     .sort((a, b) => b.checkIn.localeCompare(a.checkIn));
+}
+
+/* ───────────── guest chat ───────────── */
+
+/**
+ * A mobile number as the key it is stored under: Bangladeshi numbers in any form ("+880 1712-345678",
+ * "8801712345678", "01712345678") become "01712345678"; numbers from abroad need their "+" country code.
+ */
+export function mobileKey(input: string) {
+  const local = phoneDigits(input);
+  if (/^01[3-9]\d{8}$/.test(local)) return local;
+  const digits = input.replace(/\D/g, "");
+  return input.trim().startsWith("+") && !digits.startsWith("880") && digits.length >= 8 && digits.length <= 15 ? `+${digits}` : null;
+}
+
+const MAX_MESSAGE = 1000;
+export const threadsOf = (db: HotelDB) => db.threads ?? [];
+export const findThread = (db: HotelDB, phone: string) => threadsOf(db).find((t) => t.phone === phone);
+
+/** Everything the hotel knows about a mobile number: guest profiles and bookings made with it, newest stay first. */
+export function phoneContext(db: HotelDB, phone: string) {
+  const same = (p?: string) => !!p && mobileKey(p) === phone;
+  const users = db.users.filter((u) => u.role === "guest" && same(u.phone));
+  const ids = new Set(users.map((u) => u.id));
+  const bookings = db.bookings.filter((b) => same(b.guest.phone) || (b.userId && ids.has(b.userId))).sort((a, b) => b.checkIn.localeCompare(a.checkIn));
+  return { users, bookings };
+}
+
+const upsertThread = (s: HotelDB, phone: string, fn: (t: ChatThread) => ChatThread, fallbackName: string) => {
+  const list = threadsOf(s);
+  const existing = list.find((t) => t.phone === phone);
+  const base: ChatThread = existing ?? {
+    phone,
+    name: fallbackName,
+    userId: phoneContext(s, phone).users[0]?.id,
+    messages: [],
+    staffUnread: 0,
+    guestUnread: 0,
+    updatedAt: nowIso(),
+  };
+  const next = fn(base);
+  // Latest conversation first.
+  return { ...s, threads: [next, ...list.filter((t) => t.phone !== phone)] };
+};
+
+/** Logs the website chat in as a mobile number and remembers it to fill in next time. */
+export function startGuestChat(phoneInput: string, nameInput: string): Result<string> {
+  const phone = mobileKey(phoneInput);
+  const name = nameInput.trim();
+  if (!name) return fail("Enter your name.");
+  if (!phone) return fail("Enter a valid mobile number, e.g. 01712-345678.");
+  setSession((x) => ({ ...x, chatPhone: phone, chatName: name }));
+  return { ok: true, value: phone };
+}
+
+/** A message from the website. The number is the guest's identity: the same number always lands in the same thread. */
+export function sendGuestMessage(input: { phone: string; name: string; text: string }): Result<ChatThread> {
+  const phone = mobileKey(input.phone);
+  const text = input.text.trim();
+  const name = input.name.trim();
+  if (!phone) return fail("Enter a valid mobile number, e.g. 01712-345678.");
+  if (!name) return fail("Enter your name.");
+  if (!text) return fail("Write a message.");
+  if (text.length > MAX_MESSAGE) return fail(`Keep it under ${MAX_MESSAGE} characters.`);
+  let result: Result<ChatThread> = fail("Could not send the message.");
+  update((s) => {
+    const user = phoneContext(s, phone).users[0];
+    if (user?.status === "blocked") {
+      result = fail("We can't take messages from this number. Please call the hotel.");
+      return s;
+    }
+    const at = nowIso();
+    const next = upsertThread(
+      s,
+      phone,
+      (t) => ({
+        ...t,
+        name,
+        userId: t.userId ?? user?.id,
+        messages: [...t.messages, { id: uid("m"), from: "guest", text, at }],
+        staffUnread: t.staffUnread + 1,
+        updatedAt: at,
+      }),
+      name
+    );
+    result = { ok: true, value: findThread(next, phone)! };
+    // One alert per conversation: a newer message replaces the unread one before it.
+    const cleared = { ...next, notices: next.notices.filter((n) => !(n.kind === "message" && n.phone === phone && !n.read)) };
+    return withNotices(cleared, { ...notice("staff", "message", `Message from ${name}`, `${formatMobile(phone)} · ${text.length > 120 ? `${text.slice(0, 117)}…` : text}`), phone });
+  });
+  if (result.ok) setSession((x) => ({ ...x, chatPhone: phone, chatName: name }));
+  return result;
+}
+
+/** Staff reply, or a new conversation started from the admin panel. */
+export function sendStaffMessage(phoneInput: string, textInput: string, name = ""): Result<ChatThread> {
+  const phone = mobileKey(phoneInput);
+  const text = textInput.trim();
+  if (!phone) return fail("Enter a valid mobile number, e.g. 01712-345678.");
+  if (!text) return fail("Write a message.");
+  if (text.length > MAX_MESSAGE) return fail(`Keep it under ${MAX_MESSAGE} characters.`);
+  let result: Result<ChatThread> = fail("Could not send the message.");
+  const by = actor();
+  update((s) => {
+    const ctx = phoneContext(s, phone);
+    const fallback = name.trim() || ctx.users[0]?.name || ctx.bookings[0]?.guest.name || formatMobile(phone);
+    const at = nowIso();
+    const next = upsertThread(
+      s,
+      phone,
+      (t) => ({ ...t, messages: [...t.messages, { id: uid("m"), from: "staff", text, at, by }], staffUnread: 0, guestUnread: t.guestUnread + 1, updatedAt: at }),
+      fallback
+    );
+    result = { ok: true, value: findThread(next, phone)! };
+    return next;
+  });
+  return result;
+}
+
+export function markThreadRead(phone: string, side: "staff" | "guest") {
+  update((s) => {
+    const t = findThread(s, phone);
+    if (!t || (side === "staff" ? !t.staffUnread : !t.guestUnread)) return s;
+    const threads = threadsOf(s).map((x) => (x.phone === phone ? { ...x, [side === "staff" ? "staffUnread" : "guestUnread"]: 0 } : x));
+    const notices = side === "staff" ? s.notices.map((n) => (n.kind === "message" && n.phone === phone ? { ...n, read: true } : n)) : s.notices;
+    return { ...s, threads, notices };
+  });
 }
 
 /* ───────────── bookings ───────────── */

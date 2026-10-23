@@ -21,6 +21,7 @@ import {
   LogIn,
   LogOut,
   Mail,
+  MessagesSquare,
   Moon,
   MoreVertical,
   Phone,
@@ -44,10 +45,12 @@ import { checkInBlockers, isArrival } from "@/src/lib/hotel-store/frontDesk";
 import {
   confirmBooking,
   dueOf,
+  findThread,
   folioTotal,
   groupOf,
   isLive,
   markNoShow,
+  mobileKey,
   paidOf,
   removeCharge,
   setInternalNote,
@@ -273,9 +276,24 @@ export default function BookingDetail({ id }: { id: string }) {
       : []),
   ];
 
+  const chatPhone = mobileKey(b.guest.phone);
+  const chatUnread = chatPhone ? findThread(db, chatPhone)?.staffUnread : 0;
   const guestRows: InfoRow[] = [
     { icon: UserRound, label: t("Name"), value: b.guest.name },
     { icon: Phone, label: t("Phone"), value: b.guest.phone, href: `tel:${b.guest.phone.replace(/\s/g, "")}` },
+    ...(chatPhone && can(staff?.role, "guests.message")
+      ? [
+          {
+            icon: MessagesSquare,
+            label: t("Messages"),
+            value: (
+              <Link href={`${ADMIN}/messages?${new URLSearchParams({ phone: chatPhone, name: b.guest.name })}`} className="text-sky-700 hover:underline">
+                {chatUnread ? t("{n} new — open chat", { n: chatUnread }) : t("Open chat")}
+              </Link>
+            ),
+          },
+        ]
+      : []),
     { icon: Mail, label: t("Email"), value: b.guest.email || "—", href: b.guest.email ? `mailto:${b.guest.email}` : undefined },
     { icon: Globe2, label: t("Country"), value: b.guest.country || "—" },
     { icon: IdCard, label: b.guest.idType === "passport" ? t("Passport") : "NID", value: b.guest.idNumber || t("Not given") },

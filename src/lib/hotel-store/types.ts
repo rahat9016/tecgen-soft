@@ -185,7 +185,7 @@ export type User = {
   lastLoginAt?: string;
 };
 
-export type NoticeKind = "booking" | "payment" | "cancel" | "checkin" | "checkout" | "review" | "user" | "system";
+export type NoticeKind = "booking" | "payment" | "cancel" | "checkin" | "checkout" | "review" | "user" | "message" | "system";
 
 /** In-app notification. `to` is "staff" (shared by the front office) or a guest's user id. */
 export type Notice = {
@@ -195,8 +195,32 @@ export type Notice = {
   title: string;
   body: string;
   bookingId?: string;
+  /** Chat thread (mobile number) a message notice belongs to. */
+  phone?: string;
   at: string;
   read: boolean;
+};
+
+export type ChatMessage = {
+  id: string;
+  from: "guest" | "staff";
+  text: string;
+  at: string;
+  /** Staff member who replied. */
+  by?: string;
+};
+
+/** One conversation per mobile number: everything said to or from that number lives here. */
+export type ChatThread = {
+  /** Normalised mobile number, e.g. "01712345678" (or "+447700123456" abroad). The thread's id. */
+  phone: string;
+  name: string;
+  /** Guest profile with this number, when there is one. */
+  userId?: string;
+  messages: ChatMessage[];
+  staffUnread: number;
+  guestUnread: number;
+  updatedAt: string;
 };
 
 export type ReviewStatus = "published" | "pending" | "hidden";
@@ -289,6 +313,8 @@ export type HotelDB = {
   users: User[];
   reviews: Review[];
   notices: Notice[];
+  /** Missing in data saved before chat existed. */
+  threads?: ChatThread[];
   seq: { booking: number };
 };
 
@@ -298,4 +324,8 @@ export type Session = {
   staffId?: string;
   /** Bookings made in this browser without an account, so "My bookings" can still list them. */
   bookingIds: string[];
+  /** Mobile number this browser chats with the hotel from. */
+  chatPhone?: string;
+  /** Name given with it, used until the first message creates the thread. */
+  chatName?: string;
 };

@@ -95,6 +95,9 @@ export const clockMinutes = (time: string) => {
   return h * 60 + Number(m[2]);
 };
 
+/** "01712345678" → "01712-345678"; numbers from abroad are shown as stored. */
+export const formatMobile = (key: string) => (/^01\d{9}$/.test(key) ? `${key.slice(0, 5)}-${key.slice(5)}` : key);
+
 export const initials = (name: string) =>
   name
     .replace(/^(Mr|Ms|Mrs|Dr)\.?\s+/i, "")
@@ -205,6 +208,7 @@ export const noticeKindLabels: Record<NoticeKind, string> = {
   checkout: "Check-out",
   review: "Review",
   user: "Account",
+  message: "Message",
   system: "System",
 };
 

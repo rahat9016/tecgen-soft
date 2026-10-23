@@ -20,6 +20,7 @@ const grants = {
   "rooms.housekeeping": ["admin", "manager", "receptionist"],
   "rooms.manage": ["admin", "manager"],
   "guests.view": ["admin", "manager", "receptionist"],
+  "guests.message": ["admin", "manager", "receptionist"],
   "guests.manage": ["admin", "manager"],
   "staff.manage": ["admin"],
   "content.manage": ["admin", "manager"],
