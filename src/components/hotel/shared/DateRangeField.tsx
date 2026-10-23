@@ -28,7 +28,7 @@ function Half({
   return (
     <span
       className={`flex min-w-0 items-center transition ${
-        compact ? "gap-2 rounded-md p-2.5" : "gap-2.5 rounded-md px-3 py-2"
+        compact ? "gap-2 rounded-md p-2.5" : "min-h-16 gap-2.5 rounded-md px-3 py-3"
       } ${
         active ? "bg-white shadow-md ring-2 ring-sky-400" : "bg-white ring-1 ring-neutral-900/10"
       }`}

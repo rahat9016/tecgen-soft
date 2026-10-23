@@ -42,7 +42,7 @@ export default function GuestsRoomsField({
           {inline ? (
             <button
               type="button"
-              className="flex w-full items-center gap-2.5 rounded-md bg-white px-3 py-2 text-left ring-1 ring-neutral-900/10 transition data-[state=open]:shadow-md data-[state=open]:ring-2 data-[state=open]:ring-sky-400"
+              className="flex min-h-16 w-full items-center gap-2.5 rounded-md bg-white px-3 py-3 text-left ring-1 ring-neutral-900/10 transition data-[state=open]:shadow-md data-[state=open]:ring-2 data-[state=open]:ring-sky-400"
             >
               <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-600">
                 <Users className="size-4" />
