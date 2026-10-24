@@ -29,11 +29,11 @@ export default function PoliciesSection({ policies }: { policies: string[] }) {
       {times && (
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: "Check-in", value: `From ${times.checkIn}` },
-            { label: "Check-out", value: `Until ${times.checkOut}` },
+            { label: "Check-in from", value: times.checkIn },
+            { label: "Check-out until", value: times.checkOut },
           ].map(({ label, value }) => (
-            <div key={label} className="flex items-center gap-3 rounded-md bg-sky-50 p-4">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-white text-sky-600 shadow-sm">
+            <div key={label} className="flex items-center gap-3 rounded-md bg-sky-50 p-3 sm:p-4">
+              <span className="hidden size-10 shrink-0 items-center justify-center rounded-md bg-white text-sky-600 shadow-sm sm:flex">
                 <Clock3 className="size-5" />
               </span>
               <div>

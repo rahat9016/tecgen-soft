@@ -15,7 +15,8 @@ export default function OtherRooms({
   roomsNeeded: number;
 }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    // Phones: a swipeable row with the next card peeking in; wider screens: a two-column grid.
+    <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
       {rooms.map((room) => {
         const free = availability[room.id];
         const soldOut = free !== null && free < roomsNeeded;
@@ -23,7 +24,7 @@ export default function OtherRooms({
           <Link
             key={room.id}
             href={`/hotel-management/rooms/${room.id}${query ? `?${query}` : ""}`}
-            className="group flex overflow-hidden rounded-md border border-neutral-200/70 bg-white transition hover:border-sky-200 hover:shadow-lg"
+            className="group flex w-[85%] shrink-0 snap-start overflow-hidden rounded-md border border-neutral-200/70 bg-white transition hover:border-sky-200 hover:shadow-lg sm:w-auto"
           >
             <div className="relative w-32 shrink-0 overflow-hidden sm:w-36">
               <img

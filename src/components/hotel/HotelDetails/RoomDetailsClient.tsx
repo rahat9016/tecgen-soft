@@ -3,30 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
-import {
-  BadgeCheck,
-  BedDouble,
-  Clock3,
-  Coffee,
-  DoorOpen,
-  MapPin,
-  Maximize,
-  Navigation,
-  Phone,
-  Share2,
-  Users,
-} from "lucide-react";
+import { BadgeCheck, BedDouble, Coffee, DoorOpen, MapPin, Maximize, Phone, Share2, Users } from "lucide-react";
 import { availableRooms, type Hotel, type RoomType } from "@/src/data/hotels";
 import { parseDayKey, toDayKey } from "@/src/lib/hotelDates";
 import { useAppDispatch } from "@/src/lib/redux/hooks";
 import { setSelection } from "@/src/lib/redux/features/hotelBooking/hotelBookingSlice";
 import type { GuestsRoomsValue } from "@/src/components/hotel/shared/GuestsRoomsField";
-import { ratingLabel } from "@/src/components/hotel/shared/ratingLabel";
 import Gallery from "./Gallery";
 import AmenitiesGrid from "./AmenitiesGrid";
 import OtherRooms from "./OtherRooms";
 import ReviewsSection from "./ReviewsSection";
-import PoliciesSection, { parseCheckTimes } from "./PoliciesSection";
+import PoliciesSection from "./PoliciesSection";
 import LocationCard from "@/src/components/hotel/shared/LocationCard";
 import BookingSidebar from "./BookingSidebar";
 
@@ -71,10 +58,8 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
     ...room.images.map((src) => ({ src, title: room.name, subtitle: `${room.beds} · ${room.size}` })),
     ...hotel.images.map((src) => ({ src, title: hotel.name, subtitle: "Hotel & facilities" })),
   ];
-  const checkTimes = parseCheckTimes(hotel.policies);
   const cancellationPolicy = hotel.policies.find((p) => p.toLowerCase().includes("free cancellation"));
   const breakfast = room.amenities.some((a) => a.toLowerCase().includes("breakfast"));
-  const nearest = hotel.nearby[0];
   const otherRooms = hotel.rooms.filter((r) => r.id !== room.id);
 
   // Free rooms per type for the chosen dates (null until both dates are set), live from every booking in the store.
@@ -92,39 +77,22 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
     rooms: String(guests.rooms),
   }).toString();
 
+  // Just the values: the icons say what each one is, and the label stays for screen readers.
   const specs = [
     { icon: Maximize, label: "Room size", value: room.size },
     { icon: BedDouble, label: "Beds", value: room.beds },
-    { icon: Users, label: "Sleeps", value: `Up to ${room.capacity} guests` },
-    {
-      icon: DoorOpen,
-      label: "Your dates",
-      value:
-        available === null
-          ? "Pick dates to check"
-          : available === 0
-            ? "Fully booked"
-            : `${available} of ${room.totalRooms} free`,
-      tone:
-        available === null
-          ? "font-semibold text-neutral-500"
-          : available === 0
-            ? "text-rose-600"
-            : unavailable || available <= 2
-              ? "text-amber-700"
-              : "text-emerald-700",
-    },
+    { icon: Users, label: "Sleeps", value: `${room.capacity} guests` },
   ];
 
+  // Check-in time and distances live in Policies and Location, so they aren't repeated here.
   const facts = [
+    available !== null && {
+      icon: DoorOpen,
+      text: available === 0 ? "Fully booked" : `${available} left for your dates`,
+      tone: available === 0 || unavailable ? "text-rose-700 bg-rose-50" : "text-sky-700 bg-sky-50",
+    },
     cancellationPolicy && { icon: BadgeCheck, text: "Free cancellation", tone: "text-emerald-700 bg-emerald-50" },
     breakfast && { icon: Coffee, text: "Breakfast included", tone: "text-emerald-700 bg-emerald-50" },
-    checkTimes && { icon: Clock3, text: `Check-in from ${checkTimes.checkIn}`, tone: "text-sky-700 bg-sky-50" },
-    nearest && {
-      icon: Navigation,
-      text: `${nearest.distance} to ${nearest.name}`,
-      tone: "text-sky-700 bg-sky-50",
-    },
   ].filter(Boolean) as { icon: typeof Users; text: string; tone: string }[];
 
   const handleShare = async () => {
@@ -167,12 +135,12 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
       <Gallery photos={photos} />
 
       <nav className="sticky top-16 z-20 -mx-4 mt-4 border-b border-neutral-200/70 bg-white/90 px-4 backdrop-blur-xl md:top-18">
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex gap-1 overflow-x-auto [scrollbar-width:none]">
           {sections.map(({ id, label }) => (
             <a
               key={id}
               href={`#${id}`}
-              className={`shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition ${
+              className={`shrink-0 border-b-2 px-3 py-3 text-[13px] font-semibold transition sm:px-4 sm:text-sm ${
                 activeSection === id
                   ? "border-sky-600 text-sky-700"
                   : "border-transparent text-neutral-500 hover:text-neutral-900"
@@ -187,33 +155,19 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_380px]">
         <div className="min-w-0 space-y-10">
           <section id="overview" className="scroll-mt-36">
-            <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h1 className="text-2xl font-bold text-neutral-900 md:text-3xl">{room.name}</h1>
-                <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-neutral-600">
+                <a
+                  href="#location"
+                  className="mt-1.5 flex min-w-0 items-center gap-1.5 text-sm text-neutral-600 transition hover:text-sky-700"
+                >
                   <MapPin className="size-4 shrink-0 text-sky-600" />
-                  {hotel.name} &middot; {hotel.address}
-                  <a href="#location" className="font-semibold text-sky-700 hover:underline">
-                    Show on map
-                  </a>
-                </p>
+                  <span className="truncate">{hotel.address}</span>
+                </a>
               </div>
 
-              <div className="flex items-center gap-2">
-                <a
-                  href="#reviews"
-                  className="flex items-center gap-2.5 rounded-md border border-neutral-200/70 py-1.5 pl-3 pr-1.5 transition hover:border-sky-200"
-                >
-                  <span className="text-right">
-                    <span className="block text-sm font-bold text-neutral-900">
-                      {ratingLabel(hotel.rating)}
-                    </span>
-                    <span className="block text-xs text-neutral-500">{hotel.reviewsCount} reviews</span>
-                  </span>
-                  <span className="flex size-10 items-center justify-center rounded-md rounded-bl-none bg-sky-700 font-bold text-white">
-                    {hotel.rating.toFixed(1)}
-                  </span>
-                </a>
+              <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
                   onClick={handleShare}
@@ -232,18 +186,21 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-              {specs.map(({ icon: Icon, label, value, tone }) => (
-                <div key={label} className="rounded-md border border-neutral-200/70 bg-white p-4">
-                  <Icon className="size-5 text-sky-600" />
-                  <p className="mt-2 text-xs text-neutral-500">{label}</p>
-                  <p className={`text-sm font-bold text-neutral-900 ${tone ?? ""}`}>{value}</p>
-                </div>
+            <ul className="mt-4 flex flex-wrap gap-2">
+              {specs.map(({ icon: Icon, label, value }) => (
+                <li
+                  key={label}
+                  className="flex items-center gap-2 rounded-md border border-neutral-200/70 bg-white px-3 py-2 text-sm font-semibold text-neutral-900"
+                >
+                  <Icon className="size-4 text-sky-600" aria-hidden />
+                  <span className="sr-only">{label}:</span>
+                  {value}
+                </li>
               ))}
-            </div>
+            </ul>
 
             {facts.length > 0 && (
-              <ul className="mt-4 flex flex-wrap gap-2">
+              <ul className="mt-3 flex flex-wrap gap-2">
                 {facts.map(({ icon: Icon, text, tone }) => (
                   <li
                     key={text}
@@ -256,8 +213,7 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
               </ul>
             )}
 
-            <p className="mt-5 text-[15px] leading-relaxed text-neutral-700">{room.description}</p>
-            <p className="mt-3 text-sm leading-relaxed text-neutral-500">{hotel.description}</p>
+            <p className="mt-4 text-[15px] leading-relaxed text-neutral-700">{room.description}</p>
           </section>
 
           <section id="amenities" className="scroll-mt-36">
@@ -281,8 +237,7 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
 
           {otherRooms.length > 0 && (
             <section>
-              <h2 className="text-xl font-bold text-neutral-900">Other rooms at {hotel.name}</h2>
-              <p className="mt-1 text-sm text-neutral-500">Need more space or a different bed setup?</p>
+              <h2 className="text-xl font-bold text-neutral-900">Other rooms</h2>
               <div className="mt-4">
                 <OtherRooms
                   rooms={otherRooms}
@@ -295,14 +250,7 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
           )}
 
           <section id="reviews" className="scroll-mt-36">
-            <h2 className="text-xl font-bold text-neutral-900">Guest Reviews</h2>
-            <div className="mt-4">
-              <ReviewsSection
-                reviews={hotel.reviews}
-                rating={hotel.rating}
-                reviewsCount={hotel.reviewsCount}
-              />
-            </div>
+            <ReviewsSection reviews={hotel.reviews} rating={hotel.rating} reviewsCount={hotel.reviewsCount} />
           </section>
 
           <section id="policies" className="scroll-mt-36">
