@@ -38,6 +38,16 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
     rooms: Number(searchParams.get("rooms") ?? 1),
   });
   const [activeSection, setActiveSection] = useState(sections[0].id);
+  // The bottom bar steps aside while the booking card is on screen, so there's only ever one booking button in view.
+  const [bookingInView, setBookingInView] = useState(false);
+
+  useEffect(() => {
+    const card = document.getElementById("booking");
+    if (!card) return;
+    const observer = new IntersectionObserver(([entry]) => setBookingInView(entry.isIntersecting), { threshold: 0.2 });
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -286,7 +296,11 @@ export default function RoomDetailsClient({ hotel, room }: { hotel: Hotel; room:
 
       <div
         data-booking-bar
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200/70 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl lg:hidden"
+        data-hidden={bookingInView || undefined}
+        inert={bookingInView}
+        className={`fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200/70 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-transform duration-300 lg:hidden ${
+          bookingInView ? "translate-y-full" : ""
+        }`}
       >
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">

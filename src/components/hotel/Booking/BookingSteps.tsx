@@ -1,9 +1,9 @@
 import { BedDouble, Check, MailCheck, UserRound } from "lucide-react";
 
 const steps = [
-  { title: "Choose room", detail: "Room & dates", icon: BedDouble },
-  { title: "Guest details", detail: "Contact & payment", icon: UserRound },
-  { title: "Confirmation", detail: "Instant e-mail receipt", icon: MailCheck },
+  { title: "Choose room", icon: BedDouble },
+  { title: "Guest details", icon: UserRound },
+  { title: "Confirmation", icon: MailCheck },
 ];
 
 /** Booking progress. `current` is the zero-based active step; pass steps.length to show every step done. */
@@ -70,7 +70,6 @@ export default function BookingSteps({ current }: { current: number }) {
                   <p className={`text-sm font-bold ${done || isCurrent ? "text-neutral-900" : "text-neutral-400"}`}>
                     {step.title}
                   </p>
-                  <p className="text-xs text-neutral-500">{step.detail}</p>
                 </div>
               </div>
 

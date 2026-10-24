@@ -3,15 +3,18 @@ import BookingSteps from "@/src/components/hotel/Booking/BookingSteps";
 
 export default function HotelBookingPage() {
   return (
-    <div className="container py-8">
-      <BookingSteps current={1} />
+    // scroll-mt clears the sticky header when navigation scrolls this page into view.
+    <div className="container scroll-mt-20 py-4 md:py-8">
+      {/* Phones go straight to the form: no stepper, and the heading is kept for screen readers only. */}
+      <div className="hidden md:block">
+        <BookingSteps current={1} />
+      </div>
 
-      <h1 className="mt-6 text-2xl font-bold text-neutral-900 md:text-3xl">Complete your booking</h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        Just a few details and your room is reserved. Guests from Bangladesh and abroad are welcome.
-      </p>
+      <h1 className="sr-only text-2xl font-bold text-neutral-900 md:not-sr-only md:mt-6 md:block md:text-3xl">
+        Complete your booking
+      </h1>
 
-      <div className="mt-6">
+      <div className="md:mt-6">
         <GuestInfoForm />
       </div>
     </div>

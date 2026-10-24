@@ -66,10 +66,7 @@ export default function BookingSidebar({
         ? { label: "Change dates", onClick: () => setDatesOpen(true) }
         : overCapacity
           ? { label: "Adjust guests or rooms", onClick: undefined }
-          : {
-              label: `Book now · BDT ${total.toLocaleString()}`,
-              onClick: onBookNow,
-            };
+          : { label: "Book now", onClick: onBookNow };
 
   return (
     <div

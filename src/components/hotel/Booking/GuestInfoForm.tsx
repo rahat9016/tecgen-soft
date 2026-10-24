@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,17 +14,7 @@ import {
 import { yupResolver } from "@hookform/resolvers/yup";
 import { differenceInCalendarDays } from "date-fns";
 import { toast } from "react-toastify";
-import {
-  BedDouble,
-  Globe2,
-  IdCard,
-  Loader2,
-  Lock,
-  Plane,
-  ShieldCheck,
-  UserRound,
-  Wallet,
-} from "lucide-react";
+import { BedDouble, ChevronDown, Globe2, Loader2, Lock, ShieldCheck } from "lucide-react";
 import ControlledInputField from "@/src/components/shared/FromController/ControlledInputField";
 import ControlledSelectField from "@/src/components/shared/FromController/ControlledSelectField";
 import ControlledTextareaField from "@/src/components/shared/FromController/ControlledTextareaField";
@@ -35,7 +25,6 @@ import {
   setLastBookingId,
 } from "@/src/lib/redux/features/hotelBooking/hotelBookingSlice";
 import { countries, getCountry } from "@/src/data/countries";
-import type { CurrencyCode } from "@/src/lib/currency";
 import { toDayKey } from "@/src/lib/hotelDates";
 import {
   onlinePaymentMethods,
@@ -55,19 +44,17 @@ import {
   AIRPORT_PICKUP,
   guestInfoValidationSchema,
   TERMS_ACCEPTED,
-  titles,
   type GuestInfoFormType,
 } from "./schema/GuestInfoSchema";
 
 const UNSURE_ARRIVAL = "unsure";
 
-const titleOptions = titles.map((title) => ({ label: title, value: title }));
 const countryOptions = [
   ...countries.map((c) => ({ label: c.name, value: c.code })),
   { label: "Other country…", value: "OTHER" },
 ];
 const dialOptions = [
-  ...countries.map((c) => ({ label: `+${c.dial} ${c.name}`, value: c.code })),
+  ...countries.map((c) => ({ label: `+${c.dial} ${c.code}`, value: c.code })),
   { label: "Other code…", value: "OTHER" },
 ];
 const arrivalOptions = [
@@ -94,16 +81,13 @@ const baseRequests = [
   value: label,
 }));
 const termsOptions = [
-  {
-    label:
-      "I agree to the house rules and cancellation policy, and confirm the guest details are correct.",
-    value: TERMS_ACCEPTED,
-  },
+  { label: "I agree to the house rules and cancellation policy.", value: TERMS_ACCEPTED },
 ];
 
 // ControlledCheckboxField renders a vertical list; lay its rows out as a 2-column grid of bordered options.
+// An odd last option (the longer airport pickup) takes the full row.
 const checkboxGridClass =
-  "[&>div]:grid [&>div]:gap-2.5 [&>div>*]:!m-0 sm:[&>div]:grid-cols-2 [&>div>div]:rounded-md [&>div>div]:border [&>div>div]:border-neutral-200 [&>div>div]:bg-white [&>div>div]:px-3 [&>div>div]:py-2.5 [&>div>div]:transition [&>div>div:has([data-state=checked])]:border-sky-400 [&>div>div:has([data-state=checked])]:bg-sky-50/60 [&_label]:text-sm [&_label]:leading-snug [&_label]:text-neutral-700 [&_[data-state=checked]]:border-sky-600 [&_[data-state=checked]]:bg-sky-600";
+  "[&>div]:grid [&>div]:grid-cols-2 [&>div]:gap-2 sm:[&>div]:gap-2.5 [&>div>*]:!m-0 [&>div>div:last-child:nth-child(odd)]:col-span-2 [&>div>div]:rounded-md [&>div>div]:border [&>div>div]:border-neutral-200 [&>div>div]:bg-white [&>div>div]:px-3 [&>div>div]:py-2.5 [&>div>div]:transition [&>div>div:has([data-state=checked])]:border-sky-400 [&>div>div:has([data-state=checked])]:bg-sky-50/60 [&_label]:text-[13px] sm:[&_label]:text-sm [&_label]:leading-snug [&_label]:text-neutral-700 [&_[data-state=checked]]:border-sky-600 [&_[data-state=checked]]:bg-sky-600";
 
 // Passed to the shared controlled fields; border colour is left to them so their error state still shows.
 const inputClass =
@@ -111,36 +95,61 @@ const inputClass =
 const selectClass =
   "h-11 rounded-md px-3.5 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
 
+/**
+ * A numbered card: the number shows where the guest is, the title says what's asked.
+ * Optional cards start folded; they open on tap, or by themselves when one of their fields fails validation.
+ */
 function Section({
   step,
-  icon: Icon,
   title,
-  subtitle,
+  collapsible,
+  errorFields = [],
   children,
 }: {
   step: number;
-  icon: typeof UserRound;
   title: string;
-  subtitle?: string;
+  collapsible?: boolean;
+  errorFields?: (keyof GuestInfoFormType)[];
   children: ReactNode;
 }) {
+  const [open, setOpen] = useState(!collapsible);
+  const { errors } = useFormState<GuestInfoFormType>({ name: errorFields });
+  const shown = open || errorFields.some((field) => errors[field]);
+  const bodyId = useId();
+  const heading = (
+    <>
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white">
+        {step}
+      </span>
+      {title}
+    </>
+  );
+
   return (
-    <section className="rounded-md border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
-      <div className="flex items-start gap-3">
-        <span className="relative flex size-10 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-600">
-          <Icon className="size-5" />
-          <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-sky-600 text-[10px] font-bold text-white">
-            {step}
-          </span>
-        </span>
-        <div>
-          <h2 className="font-bold text-neutral-900">{title}</h2>
-          {subtitle && (
-            <p className="mt-0.5 text-sm text-neutral-500">{subtitle}</p>
-          )}
-        </div>
+    <section className="rounded-md border border-neutral-200/80 bg-white p-4 shadow-sm sm:p-5 md:p-6">
+      {collapsible ? (
+        <h2>
+          <button
+            type="button"
+            aria-expanded={shown}
+            aria-controls={bodyId}
+            onClick={() => setOpen(!shown)}
+            className="flex w-full items-center gap-2.5 rounded-md text-left font-bold text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
+          >
+            {heading}
+            <ChevronDown
+              className={`ml-auto size-5 shrink-0 text-neutral-500 transition-transform ${shown ? "rotate-180" : ""}`}
+              aria-hidden
+            />
+          </button>
+        </h2>
+      ) : (
+        <h2 className="flex items-center gap-2.5 font-bold text-neutral-900">{heading}</h2>
+      )}
+      {/* Kept mounted while folded so typed values and validation stay intact. */}
+      <div id={bodyId} hidden={!shown} className="mt-4">
+        {children}
       </div>
-      <div className="mt-5">{children}</div>
     </section>
   );
 }
@@ -206,21 +215,16 @@ export default function GuestInfoForm() {
     ...(airport
       ? [
           {
-            label: `Airport pickup from ${airport.name} (${airport.distance}) — price confirmed later`,
+            label: "Airport pickup (price on request)",
             value: AIRPORT_PICKUP,
           },
         ]
       : []),
   ];
-  const [currencyChoice, setCurrencyChoice] = useState<{
-    country: string;
-    currency: CurrencyCode;
-  } | null>(null);
 
   const methods = useForm<GuestInfoFormType>({
     resolver: yupResolver(guestInfoValidationSchema),
     defaultValues: {
-      title: "Mr",
       firstName: "",
       lastName: "",
       email: "",
@@ -289,10 +293,6 @@ export default function GuestInfoForm() {
   const isLocal = country === "BD";
   // Only Bangladeshi residents choose between NID and passport; everyone else books with a passport.
   const idKind = isLocal ? idType : "passport";
-  const currency =
-    currencyChoice?.country === country
-      ? currencyChoice.currency
-      : (getCountry(country)?.currency ?? "USD");
 
   const checkIn = new Date(selection.checkIn!);
   const checkOut = new Date(selection.checkOut!);
@@ -334,7 +334,7 @@ export default function GuestInfoForm() {
       plan: data.paymentPlan as PaymentPlan,
       method: data.paymentMethod as OnlinePaymentMethod,
       guest: {
-        name: `${data.title} ${data.firstName.trim()} ${data.lastName.trim()}`,
+        name: `${data.firstName.trim()} ${data.lastName.trim()}`,
         email: data.email.trim(),
         phone: `+${dial} ${localNumber}`,
         note,
@@ -372,6 +372,21 @@ export default function GuestInfoForm() {
     router.push(`/hotel-management/booking-success?bookingId=${booking.code}`);
   };
 
+  const summary = (
+    <BookingSummary
+      selection={selection}
+      checkIn={checkIn}
+      checkOut={checkOut}
+      nights={nights}
+      subtotal={subtotal}
+      serviceFee={serviceFee}
+      tax={tax}
+      total={total}
+      dueNow={dueNow}
+      plan={plan}
+    />
+  );
+
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[1fr_400px]">
       <FormProvider {...methods}>
@@ -380,20 +395,8 @@ export default function GuestInfoForm() {
           noValidate
           className="space-y-5"
         >
-          <Section
-            step={1}
-            icon={UserRound}
-            title="Who's checking in?"
-            subtitle="Use the name on your ID or passport."
-          >
-            <div className="grid gap-4 sm:grid-cols-[110px_1fr_1fr]">
-              <Field label="Title">
-                <ControlledSelectField
-                  name="title"
-                  options={titleOptions}
-                  className={selectClass}
-                />
-              </Field>
+          <Section step={1} title="Who's checking in?">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field label="First name">
                 <ControlledInputField
                   name="firstName"
@@ -411,11 +414,7 @@ export default function GuestInfoForm() {
             </div>
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <Field
-                label="Email"
-                name="email"
-                hint="We'll send your confirmation here."
-              >
+              <Field label="Email" name="email">
                 <ControlledInputField
                   name="email"
                   type="email"
@@ -442,18 +441,9 @@ export default function GuestInfoForm() {
               </Field>
             )}
 
-            <Field
-              label="Mobile number"
-              name="phone"
-              hint={
-                isLocal
-                  ? "Bangladeshi mobile, e.g. 01712345678"
-                  : "Include your area code. WhatsApp works best for international guests."
-              }
-              className="mt-4"
-            >
+            <Field label="Mobile number" name="phone" className="mt-4">
               <div className="flex items-start gap-2">
-                <div className="w-32 shrink-0 sm:w-48">
+                <div className="w-32 shrink-0 sm:w-36">
                   <ControlledSelectField
                     name="phoneCountry"
                     options={dialOptions}
@@ -474,7 +464,7 @@ export default function GuestInfoForm() {
                     name="phone"
                     type="tel"
                     placeholder={
-                      phoneCountry === "BD" ? "01XXXXXXXXX" : "Phone number"
+                      phoneCountry === "BD" ? "01XXXXXXXXX" : "Number with area code"
                     }
                     className={inputClass}
                   />
@@ -483,21 +473,12 @@ export default function GuestInfoForm() {
             </Field>
           </Section>
 
-          <Section
-            step={2}
-            icon={IdCard}
-            title="Identification"
-            subtitle="Optional now — it speeds up check-in. Bring the same document with you."
-          >
+          <Section step={2} title="ID (optional)" collapsible errorFields={["idType", "idNumber"]}>
             {!isLocal && (
-              <div className="mb-4 flex gap-2.5 rounded-md bg-sky-50 p-3 text-sm text-sky-900">
+              <p className="mb-4 flex gap-2.5 rounded-md bg-sky-50 p-3 text-sm text-sky-900">
                 <Globe2 className="mt-0.5 size-4 shrink-0 text-sky-600" />
-                <p>
-                  <span className="font-semibold">International guests:</span>{" "}
-                  please bring your passport (and visa, if required) to
-                  check-in.
-                </p>
-              </div>
+                Bring your passport (and visa, if needed) to check-in.
+              </p>
             )}
 
             {isLocal && (
@@ -506,7 +487,7 @@ export default function GuestInfoForm() {
                 control={control}
                 render={({ field }) => (
                   <div
-                    className="mb-4 inline-flex rounded-md bg-neutral-100 p-1 text-sm font-medium"
+                    className="mb-4 grid grid-cols-2 rounded-md bg-neutral-100 p-1 text-sm font-medium"
                     role="radiogroup"
                   >
                     {(["nid", "passport"] as const).map((type) => (
@@ -516,7 +497,7 @@ export default function GuestInfoForm() {
                         role="radio"
                         aria-checked={field.value === type}
                         onClick={() => field.onChange(type)}
-                        className={`rounded-md px-4 py-1.5 transition ${
+                        className={`whitespace-nowrap rounded-md px-2 py-2 text-center transition ${
                           field.value === type
                             ? "bg-white font-semibold text-sky-700 shadow-sm"
                             : "text-neutral-600 hover:text-neutral-900"
@@ -530,10 +511,7 @@ export default function GuestInfoForm() {
               />
             )}
 
-            <Field
-              label={idKind === "nid" ? "NID number" : "Passport number"}
-              optional
-            >
+            <Field label={idKind === "nid" ? "NID number" : "Passport number"}>
               <ControlledInputField
                 name="idNumber"
                 placeholder={
@@ -544,12 +522,7 @@ export default function GuestInfoForm() {
             </Field>
           </Section>
 
-          <Section
-            step={3}
-            icon={Plane}
-            title="Arrival & requests"
-            subtitle="Requests aren't guaranteed, but we'll do our best."
-          >
+          <Section step={3} title="Arrival & requests" collapsible errorFields={["arrivalTime", "requests", "note"]}>
             <Field
               label="Estimated arrival time"
               optional
@@ -574,18 +547,13 @@ export default function GuestInfoForm() {
             <Field label="Anything else?" optional className="mt-4">
               <ControlledTextareaField
                 name="note"
-                placeholder="Anything else we should know?"
-                className="h-28 rounded-md bg-white focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                placeholder="e.g. celebrating an anniversary"
+                className="h-24 rounded-md bg-white focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
               />
             </Field>
           </Section>
 
-          <Section
-            step={4}
-            icon={Wallet}
-            title="Secure your booking"
-            subtitle={`Pay ${settings.depositRate}% now to confirm your room — the rest is paid at the hotel.`}
-          >
+          <Section step={4} title="Payment">
             <Controller
               name="paymentPlan"
               control={control}
@@ -675,7 +643,7 @@ export default function GuestInfoForm() {
                   role="radiogroup"
                   aria-label="Payment method"
                 >
-                  {methodChoices.map(({ value, label, detail, logos }) => {
+                  {methodChoices.map(({ value, label, logos }) => {
                     const selected = field.value === value;
                     return (
                       <button
@@ -702,13 +670,8 @@ export default function GuestInfoForm() {
                             />
                           ))}
                         </span>
-                        <span>
-                          <span className="block text-sm font-semibold text-neutral-900">
-                            {label}
-                          </span>
-                          <span className="block text-[11px] text-neutral-500">
-                            {detail}
-                          </span>
+                        <span className="text-sm font-semibold text-neutral-900">
+                          {label}
                         </span>
                       </button>
                     );
@@ -717,18 +680,16 @@ export default function GuestInfoForm() {
               )}
             />
 
-            <div className="mt-4 flex gap-2.5 rounded-md bg-emerald-50 p-3 text-sm text-emerald-800">
-              <ShieldCheck className="mt-0.5 size-4 shrink-0" />
-              <p>
-                Secure payment in BDT — we never see or store your card number
-                or wallet PIN.{" "}
-                {settings.freeCancellationHours > 0 &&
-                  ` Cancel for free up to ${settings.freeCancellationHours} hours before check-in and your ${plan === "full" ? "payment" : "deposit"} is refunded in full.`}
-              </p>
-            </div>
+            <p className="mt-3 flex items-center gap-2 text-xs text-neutral-600">
+              <ShieldCheck className="size-4 shrink-0 text-emerald-600" />
+              Secure payment — we never store your card or wallet PIN.
+            </p>
           </Section>
 
-          <div className="rounded-md border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
+          {/* Phones and tablets: guest details come first, then the stay and price just before paying. */}
+          <div className="lg:hidden">{summary}</div>
+
+          <div className="rounded-md border border-neutral-200/80 bg-white p-4 shadow-sm sm:p-5 md:p-6">
             <div className="[&_label]:text-sm [&_label]:leading-snug [&_label]:text-neutral-700 [&_[data-state=checked]]:border-sky-600 [&_[data-state=checked]]:bg-sky-600 [&>div>div]:items-start [&_button]:mt-0.5">
               <ControlledCheckboxField
                 name="acceptTerms"
@@ -741,7 +702,7 @@ export default function GuestInfoForm() {
               target="_blank"
               className="ml-6 mt-1 inline-block text-xs font-semibold text-sky-700 hover:underline"
             >
-              Read the house rules
+              View rules
             </Link>
 
             <button
@@ -761,36 +722,11 @@ export default function GuestInfoForm() {
                 </>
               )}
             </button>
-            <p className="mt-2 text-center text-xs text-neutral-500">
-              {plan === "deposit"
-                ? `Remaining BDT ${(total - deposit).toLocaleString()} is paid at the hotel on arrival.`
-                : "Paid in full — nothing more to pay at the hotel."}{" "}
-              {settings.requireConfirmation
-                ? "The hotel confirms your booking shortly."
-                : "Instant confirmation by email."}
-            </p>
           </div>
         </form>
       </FormProvider>
 
-      <aside className="order-first lg:sticky lg:top-24 lg:order-none">
-        <BookingSummary
-          selection={selection}
-          checkIn={checkIn}
-          checkOut={checkOut}
-          nights={nights}
-          subtotal={subtotal}
-          serviceFee={serviceFee}
-          tax={tax}
-          total={total}
-          dueNow={dueNow}
-          plan={plan}
-          currency={currency}
-          onCurrencyChange={(next) =>
-            setCurrencyChoice({ country, currency: next })
-          }
-        />
-      </aside>
+      <aside className="hidden lg:sticky lg:top-24 lg:block">{summary}</aside>
     </div>
   );
 }

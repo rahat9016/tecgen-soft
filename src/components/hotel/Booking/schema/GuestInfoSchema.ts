@@ -7,12 +7,10 @@ const INTL_NUMBER = /^\d{5,14}$/;
 const NID = /^(\d{10}|\d{13}|\d{17})$/;
 const PASSPORT = /^[A-Z0-9]{6,12}$/i;
 
-export const titles = ["Mr", "Ms", "Mrs", "Dr"] as const;
 export const TERMS_ACCEPTED = "accepted";
 export const AIRPORT_PICKUP = "airport-pickup";
 
 export const guestInfoValidationSchema = yup.object({
-  title: yup.string().oneOf(titles).required(),
   firstName: yup.string().trim().required("First name is required"),
   lastName: yup.string().trim().required("Last name is required"),
   email: yup.string().trim().email("Enter a valid email address").required("Email is required"),

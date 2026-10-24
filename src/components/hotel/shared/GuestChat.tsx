@@ -132,7 +132,7 @@ export default function GuestChat() {
           onClick={toggle}
           aria-label={unread ? `Chat with us — ${unread} new` : "Chat with us"}
           title="Chat with us"
-          className="group fixed bottom-6 right-4 z-50 flex size-14 items-center justify-center rounded-full bg-sky-600 text-white shadow-lg shadow-sky-900/30 transition hover:scale-110 hover:bg-sky-700 active:scale-95 md:right-6 print:hidden [body:has([data-booking-bar])_&]:bottom-24 lg:[body:has([data-booking-bar])_&]:bottom-6"
+          className="group fixed bottom-6 right-4 z-50 flex size-14 items-center justify-center rounded-full bg-sky-600 text-white shadow-lg shadow-sky-900/30 transition-all duration-300 hover:scale-110 hover:bg-sky-700 active:scale-95 md:right-6 print:hidden [body:has([data-booking-bar]:not([data-hidden]))_&]:bottom-24 lg:[body:has([data-booking-bar]:not([data-hidden]))_&]:bottom-6"
         >
           {/* Soft pulse so the button is noticed; motion-safe respects "reduce motion". */}
           <span
