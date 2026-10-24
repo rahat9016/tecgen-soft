@@ -62,8 +62,8 @@ export default function FacilityPicker({ value, onChange }: { value: string[]; o
         })}
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]">
-        <div className="relative">
+      <div className="mt-4 flex gap-2">
+        <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" aria-hidden />
           <input
             value={query}
@@ -80,7 +80,7 @@ export default function FacilityPicker({ value, onChange }: { value: string[]; o
             type="search"
             aria-label="Search other facilities"
             aria-controls="facility-results"
-            placeholder="Search other facilities, e.g. mini fridge"
+            placeholder="Search facilities"
             className={cn(ctl(), "pl-9")}
           />
         </div>
@@ -93,9 +93,12 @@ export default function FacilityPicker({ value, onChange }: { value: string[]; o
           disabled={customOpen}
           aria-expanded={customOpen}
           aria-controls="custom-facility-panel"
-          className={hbtn.outline}
+          aria-label="Add custom facility"
+          className={cn(hbtn.outline, "shrink-0 max-sm:px-3")}
         >
-          <Plus className="size-4" /> Add custom facility
+          <Plus className="size-4" aria-hidden />
+          <span className="sm:hidden">Add</span>
+          <span className="max-sm:hidden">Add custom facility</span>
         </button>
       </div>
 
@@ -160,9 +163,9 @@ export default function FacilityPicker({ value, onChange }: { value: string[]; o
         </div>
       )}
 
-      <div className="mt-4 border-t border-neutral-100 pt-3">
-        <p className="mb-2 text-sm font-medium text-neutral-800">Selected ({value.length})</p>
-        {value.length ? (
+      {value.length > 0 && (
+        <div className="mt-4 border-t border-neutral-100 pt-3">
+          <p className="mb-2 text-sm font-medium text-neutral-800">Selected ({value.length})</p>
           <ul className="flex flex-wrap gap-1.5">
             {value.map((v) => (
               <li key={v} className="inline-flex h-7 items-center gap-1 rounded-md bg-sky-50 pl-2.5 pr-1 text-xs font-medium text-sky-900 ring-1 ring-inset ring-sky-200">
@@ -173,10 +176,8 @@ export default function FacilityPicker({ value, onChange }: { value: string[]; o
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="text-sm text-neutral-600">None yet — tap the common ones above.</p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

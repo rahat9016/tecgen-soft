@@ -64,6 +64,10 @@ export const rangeLabel = (checkIn: string, checkOut: string) => {
     : `${format(a, "dd MMM yyyy")} – ${format(b, "dd MMM yyyy")}`;
 };
 
+/** Compact stay dates for phone rows: "21–25 Oct", or "30 Oct – 2 Nov" across months. */
+export const shortRange = (a: string, b: string) =>
+  a.slice(0, 7) === b.slice(0, 7) ? `${Number(a.slice(8))}–${dateLabel(b, "d MMM")}` : `${dateLabel(a, "d MMM")} – ${dateLabel(b, "d MMM")}`;
+
 export const relativeDay = (key: string) => {
   const t = todayKey();
   if (key === t) return "Today";

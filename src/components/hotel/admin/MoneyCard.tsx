@@ -83,17 +83,17 @@ export function MoneyCard({
   const tr = useT();
   const t = tones[tone];
   return (
-    <section className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-md">
+    <section className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white p-3 transition sm:p-4 hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-md">
       <span aria-hidden className={cn("absolute inset-x-0 top-0 h-0.5 opacity-70", t.bar)} />
       <div className="flex items-start justify-between gap-2">
-        <p className="min-w-0 pt-1 text-[13px] font-medium text-neutral-600">{tr(label)}</p>
-        <span className={cn("relative flex size-14 shrink-0 items-center justify-center rounded-full", t.badge)}>
+        <p className="min-w-0 pt-0.5 text-[13px] font-medium text-neutral-600 sm:pt-1">{tr(label)}</p>
+        <span className={cn("relative flex size-10 shrink-0 items-center justify-center rounded-full sm:size-14", t.badge)}>
           <IconBackdrop delay={index * 300} />
-          <MoneyGlyph icon={icon} className="relative size-7" />
+          <MoneyGlyph icon={icon} className="relative size-5 sm:size-7" />
         </span>
       </div>
-      <p className="mt-auto pt-3 text-2xl font-bold tabular-nums tracking-tight text-neutral-900">{taka(value)}</p>
-      {hint && <p className="mt-0.5 text-[13px] text-neutral-500">{tr(hint)}</p>}
+      <p className="mt-auto pt-1.5 text-xl font-bold tabular-nums tracking-tight text-neutral-900 sm:pt-3 sm:text-2xl">{taka(value)}</p>
+      {hint && <p className="mt-0.5 text-xs text-neutral-500 sm:text-[13px]">{tr(hint)}</p>}
     </section>
   );
 }

@@ -5,21 +5,27 @@ import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { CalendarDays, ChevronDown, FileText, Search, Undo2, Wallet, X } from "lucide-react";
 import { can } from "@/src/lib/hotel-store/auth";
-import { dateLabel, formatDateTime, payLabels, paymentKindLabels, rangeLabel, shiftDay, taka, todayKey } from "@/src/lib/hotel-store/format";
+import { dateLabel, formatDateTime, payLabels, paymentKindLabels, rangeLabel, shiftDay, shortRange, taka, todayKey } from "@/src/lib/hotel-store/format";
 import { ledger } from "@/src/lib/hotel-store/reports";
 import { creditOf, dueOf, folioTotal, paidOf, refundedOf, useCurrentStaff, useHotelDB } from "@/src/lib/hotel-store/store";
 import type { Booking, PaymentKind, PayMethod } from "@/src/lib/hotel-store/types";
 import { useT } from "@/src/lib/hotel-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { PaymentModal } from "./BookingModals";
+import { ChoiceGroup, FilterChips, FilterPopover, type FilterChip } from "./filters";
 import { MoneyCard } from "./MoneyCard";
-import { Empty, hbtn, Pager, StatusBadge, tableCardClass, Tabs, usePagination } from "./ui";
+import { Empty, focusRing, hbtn, Pager, StatusBadge, tableCardClass, Tabs, usePagination } from "./ui";
 
 type Tab = "transactions" | "outstanding" | "refunds";
 type Range = "today" | "7d" | "30d" | "month" | "all";
 
 const rangeStart = (r: Range, today: string) =>
   r === "today" ? today : r === "7d" ? shiftDay(today, -6) : r === "30d" ? shiftDay(today, -29) : r === "month" ? `${today.slice(0, 8)}01` : "";
+
+const rangeLabels: Record<Range, string> = { today: "Today", "7d": "Last 7 days", "30d": "Last 30 days", month: "This month", all: "All time" };
+const DEFAULT_RANGE: Range = "30d";
+
+const kindTone = (k: PaymentKind) => (k === "refund" ? "bg-violet-50 text-violet-700" : k === "deposit" ? "bg-sky-50 text-sky-700" : "bg-emerald-50 text-emerald-700");
 
 export default function Payments() {
   const t = useT();
@@ -28,7 +34,7 @@ export default function Payments() {
   const params = useSearchParams();
   const initial = params.get("tab");
   const [tab, setTab] = useState<Tab>(initial === "refunds" || initial === "outstanding" ? initial : "transactions");
-  const [range, setRange] = useState<Range>("30d");
+  const [range, setRange] = useState<Range>(DEFAULT_RANGE);
   const [method, setMethod] = useState<"any" | PayMethod>("any");
   const [kind, setKind] = useState<"any" | PaymentKind>("any");
   const [q, setQ] = useState("");
@@ -58,15 +64,21 @@ export default function Payments() {
     return rank(a) - rank(b) || a.checkIn.localeCompare(b.checkIn);
   });
   const refunds = db.bookings.filter((b) => creditOf(b) > 0).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  const depositsHeld = db.bookings.filter((b) => (b.status === "confirmed" || b.status === "pending") && b.checkIn > today).reduce((s, b) => s + paidOf(b), 0);
 
-  const rangeOptions: { value: Range; label: string }[] = [
-    { value: "today", label: "Today" },
-    { value: "7d", label: "Last 7 days" },
-    { value: "30d", label: "Last 30 days" },
-    { value: "month", label: "This month" },
-    { value: "all", label: "All time" },
-  ];
+  const chips = [
+    range !== DEFAULT_RANGE && { key: "range", label: t(rangeLabels[range]), clear: () => setRange(DEFAULT_RANGE) },
+    method !== "any" && { key: "method", label: t(payLabels[method]), clear: () => setMethod("any") },
+    kind !== "any" && { key: "kind", label: t(paymentKindLabels[kind]), clear: () => setKind("any") },
+  ].filter(Boolean) as FilterChip[];
+  const clearFilters = () => {
+    setRange(DEFAULT_RANGE);
+    setMethod("any");
+    setKind("any");
+  };
+  const clearAll = () => {
+    clearFilters();
+    setQ("");
+  };
 
   const bookingCell = (b: Booking) => (
     <td className="px-4 py-3">
@@ -79,16 +91,16 @@ export default function Payments() {
 
   return (
     <div>
-      <div className="mb-4 grid grid-cols-2 gap-4 xl:grid-cols-5">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <MoneyCard index={0} label="Collected today" value={net(rows.filter((r) => r.day === today))} hint="Net of refunds" icon="wallet" tone="green" />
         <MoneyCard index={1} label="This month" value={net(monthRows)} hint={t("{n} transactions", { n: monthRows.filter((r) => !r.void).length })} icon="calendar" tone="sky" />
-        <MoneyCard index={2} label="Outstanding" value={outstanding.reduce((s, b) => s + dueOf(b), 0)} hint={t("{n} folios with a balance", { n: outstanding.length })} icon="bill" tone="rose" />
+        <MoneyCard index={2} label="Outstanding" value={outstanding.reduce((s, b) => s + dueOf(b), 0)} hint={t("{n} unpaid folios", { n: outstanding.length })} icon="bill" tone="rose" />
         <MoneyCard index={3} label="Refunds due" value={refunds.reduce((s, b) => s + creditOf(b), 0)} hint={t(refunds.length === 1 ? "{n} booking" : "{n} bookings", { n: refunds.length })} icon="refund" tone="violet" />
-        <MoneyCard index={4} label="Advance deposits held" value={depositsHeld} hint="Paid on future stays" icon="vault" tone="slate" />
       </div>
 
       <div className={tableCardClass}>
         <Tabs
+          fit
           value={tab}
           onChange={setTab}
           tabs={[
@@ -99,27 +111,54 @@ export default function Payments() {
         />
 
         {tab === "transactions" && (
-          <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 p-3 sm:px-4">
-            {tab === "transactions" && (
-              <>
-                <label className="relative min-w-56 flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" aria-hidden />
-                  <input
-                    type="search"
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder={t("Search booking, guest or TrxID")}
-                    aria-label={t("Search payments")}
-                    className="h-10 w-full rounded-lg border border-neutral-200 bg-white pl-9 pr-3 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-                  />
-                </label>
-                <FilterSelect label="Method" value={method} onChange={setMethod} options={[{ value: "any", label: "All methods" }, ...(Object.keys(payLabels) as PayMethod[]).map((m) => ({ value: m, label: payLabels[m] }))]} />
-                <FilterSelect label="Type" value={kind} onChange={setKind} options={[{ value: "any", label: "All types" }, ...(Object.keys(paymentKindLabels) as PaymentKind[]).map((k) => ({ value: k, label: paymentKindLabels[k] }))]} />
-              </>
-            )}
-            <div className="ml-auto">
-              <FilterSelect label="Date range" icon={CalendarDays} value={range} onChange={setRange} options={rangeOptions} />
+          <div className="border-b border-neutral-100 p-3 sm:px-4">
+            <div className="flex items-center gap-2">
+              <label className="relative min-w-0 flex-1 sm:max-w-96">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" aria-hidden />
+                <input
+                  type="search"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder={t("Search payments")}
+                  aria-label={t("Search payments")}
+                  className="h-10 w-full rounded-md border border-neutral-300 bg-white pl-9 pr-3 text-sm outline-none transition placeholder:text-neutral-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                />
+              </label>
+              {/* Wide screens have room for the three filters inline; smaller ones fold them behind one button. */}
+              <div className="ml-auto hidden items-center gap-2 lg:flex">
+                <FilterSelect label="Date range" icon={CalendarDays} value={range} onChange={setRange} options={(Object.keys(rangeLabels) as Range[]).map((r) => ({ value: r, label: rangeLabels[r] }))} active={range !== DEFAULT_RANGE} />
+                <FilterSelect
+                  label="Method"
+                  value={method}
+                  onChange={setMethod}
+                  options={[{ value: "any", label: "All methods" }, ...(Object.keys(payLabels) as PayMethod[]).map((m) => ({ value: m, label: payLabels[m] }))]}
+                  active={method !== "any"}
+                />
+                <FilterSelect
+                  label="Type"
+                  value={kind}
+                  onChange={setKind}
+                  options={[{ value: "any", label: "All types" }, ...(Object.keys(paymentKindLabels) as PaymentKind[]).map((k) => ({ value: k, label: paymentKindLabels[k] }))]}
+                  active={kind !== "any"}
+                />
+              </div>
+              <FilterPopover active={chips.length} applyLabel={t("Show {n} results", { n: filtered.length })} onClear={clearFilters} className="lg:hidden">
+                <ChoiceGroup label="Date range" value={range} onChange={setRange} options={(Object.keys(rangeLabels) as Range[]).map((r) => ({ value: r, label: t(rangeLabels[r]) }))} />
+                <ChoiceGroup
+                  label="Method"
+                  value={method}
+                  onChange={setMethod}
+                  options={[{ value: "any", label: t("All") }, ...(Object.keys(payLabels) as PayMethod[]).map((m) => ({ value: m, label: t(payLabels[m]) }))]}
+                />
+                <ChoiceGroup
+                  label="Type"
+                  value={kind}
+                  onChange={setKind}
+                  options={[{ value: "any", label: t("All") }, ...(Object.keys(paymentKindLabels) as PaymentKind[]).map((k) => ({ value: k, label: t(paymentKindLabels[k]) }))]}
+                />
+              </FilterPopover>
             </div>
+            {(chips.length > 0 || !!q.trim()) && <FilterChips count={filtered.length} chips={chips} onClear={clearAll} className="mt-2" />}
           </div>
         )}
 
@@ -128,7 +167,37 @@ export default function Payments() {
             <Empty icon={Wallet} title="No transactions" text="Nothing matches this range and filters." />
           ) : (
             <>
-              <div className="overflow-x-auto">
+              {/* Phones and tablets: one tappable row per payment instead of a sideways-scrolling table. */}
+              <ul className="divide-y divide-neutral-100 lg:hidden">
+                {page.rows.map((r) => (
+                  <li key={r.id}>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryId(r.booking.id)}
+                      className={cn("flex w-full items-center gap-3 px-4 py-3 text-left transition active:bg-sky-50/60", focusRing, "focus-visible:ring-inset focus-visible:ring-offset-0", r.void && "opacity-50")}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-neutral-900">{r.booking.guest.name}</p>
+                        <p className="mt-0.5 truncate text-[13px] text-neutral-500">
+                          {format(new Date(r.at), "dd MMM, h:mm a")} · {t(payLabels[r.method])}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className={cn("font-semibold tabular-nums", r.kind === "refund" ? "text-violet-700" : "text-neutral-900", r.void && "line-through")}>
+                          {r.kind === "refund" ? "−" : ""}
+                          {taka(r.amount)}
+                        </p>
+                        {r.void ? (
+                          <span className="text-[11px] font-semibold text-rose-600">{t("Voided")}</span>
+                        ) : (
+                          <span className={cn("rounded px-1.5 py-px text-[11px] font-semibold", kindTone(r.kind))}>{t(paymentKindLabels[r.kind])}</span>
+                        )}
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto lg:block">
                 <table className="w-full min-w-[880px] text-sm">
                   <thead className="bg-neutral-50 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                     <tr>
@@ -147,7 +216,7 @@ export default function Payments() {
                         <td className="px-4 py-3 text-neutral-600">{format(new Date(r.at), "dd MMM, h:mm a")}</td>
                         {bookingCell(r.booking)}
                         <td className="px-4 py-3">
-                          <span className={cn("rounded-md px-2 py-0.5 text-xs font-semibold", r.kind === "refund" ? "bg-violet-50 text-violet-700" : r.kind === "deposit" ? "bg-sky-50 text-sky-700" : "bg-emerald-50 text-emerald-700")}>
+                          <span className={cn("rounded-md px-2 py-0.5 text-xs font-semibold", kindTone(r.kind))}>
                             {t(paymentKindLabels[r.kind])}
                           </span>
                           {r.void && <span className="ml-1.5 text-xs text-rose-600">{t("Voided")}</span>}
@@ -172,94 +241,142 @@ export default function Payments() {
           (outstandingSorted.length === 0 ? (
             <Empty icon={FileText} title="Nothing outstanding" text="Every in-house and departed guest has settled." />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] text-sm">
-                <thead className="bg-neutral-50 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  <tr>
-                    <th className="px-4 py-3">{t("Booking")}</th>
-                    <th className="px-4 py-3">{t("Status")}</th>
-                    <th className="px-4 py-3">{t("Stay")}</th>
-                    <th className="px-4 py-3 text-right">{t("Total")}</th>
-                    <th className="px-4 py-3 text-right">{t("Paid")}</th>
-                    <th className="px-4 py-3 text-right">{t("Due")}</th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  {outstandingSorted.map((b) => (
-                    <tr key={b.id}>
-                      {bookingCell(b)}
-                      <td className="px-4 py-3">
-                        <StatusBadge status={b.status} />
-                        {b.status === "checked-out" && <p className="mt-0.5 text-[11px] text-rose-600">{t("Left without settling")}</p>}
-                      </td>
-                      <td className="px-4 py-3 text-neutral-600">{rangeLabel(b.checkIn, b.checkOut)}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{taka(folioTotal(b))}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{taka(paidOf(b))}</td>
-                      <td className="px-4 py-3 text-right font-semibold tabular-nums text-rose-600">{taka(dueOf(b))}</td>
-                      <td className="px-4 py-3 text-right">
-                        <button onClick={() => setAction({ booking: b, kind: "payment" })} className={cn(hbtn.small, "border-emerald-200 text-emerald-700")}>
-                          {t("Collect")}
-                        </button>
-                      </td>
+            <>
+              <ul className="divide-y divide-neutral-100 lg:hidden">
+                {outstandingSorted.map((b) => (
+                  <li key={b.id} className="flex items-center gap-3 px-4 py-3">
+                    <button type="button" onClick={() => setHistoryId(b.id)} className={cn("min-w-0 flex-1 rounded-sm text-left", focusRing)}>
+                      <p className="truncate font-semibold text-neutral-900">{b.guest.name}</p>
+                      <p className="mt-1 flex min-w-0 items-center gap-2 text-[13px] text-neutral-500">
+                        <StatusBadge status={b.status} className="shrink-0" />
+                        <span className="truncate">{shortRange(b.checkIn, b.checkOut)}</span>
+                      </p>
+                    </button>
+                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <p className="font-semibold tabular-nums text-rose-600">{taka(dueOf(b))}</p>
+                      <button onClick={() => setAction({ booking: b, kind: "payment" })} className={cn(hbtn.small, "border-emerald-200 text-emerald-700")}>
+                        {t("Collect")}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto lg:block">
+                <table className="w-full min-w-[820px] text-sm">
+                  <thead className="bg-neutral-50 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    <tr>
+                      <th className="px-4 py-3">{t("Booking")}</th>
+                      <th className="px-4 py-3">{t("Status")}</th>
+                      <th className="px-4 py-3">{t("Stay")}</th>
+                      <th className="px-4 py-3 text-right">{t("Total")}</th>
+                      <th className="px-4 py-3 text-right">{t("Paid")}</th>
+                      <th className="px-4 py-3 text-right">{t("Due")}</th>
+                      <th className="px-4 py-3" />
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {outstandingSorted.map((b) => (
+                      <tr key={b.id}>
+                        {bookingCell(b)}
+                        <td className="px-4 py-3">
+                          <StatusBadge status={b.status} />
+                          {b.status === "checked-out" && <p className="mt-0.5 text-[11px] text-rose-600">{t("Left without settling")}</p>}
+                        </td>
+                        <td className="px-4 py-3 text-neutral-600">{rangeLabel(b.checkIn, b.checkOut)}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{taka(folioTotal(b))}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{taka(paidOf(b))}</td>
+                        <td className="px-4 py-3 text-right font-semibold tabular-nums text-rose-600">{taka(dueOf(b))}</td>
+                        <td className="px-4 py-3 text-right">
+                          <button onClick={() => setAction({ booking: b, kind: "payment" })} className={cn(hbtn.small, "border-emerald-200 text-emerald-700")}>
+                            {t("Collect")}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           ))}
 
         {tab === "refunds" &&
           (refunds.length === 0 ? (
             <Empty icon={Undo2} title="No refunds due" text="Cancelled and overpaid bookings needing money back show up here." />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] text-sm">
-                <thead className="bg-neutral-50 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  <tr>
-                    <th className="px-4 py-3">{t("Booking")}</th>
-                    <th className="px-4 py-3">{t("Status")}</th>
-                    <th className="px-4 py-3">{t("Paid via")}</th>
-                    <th className="px-4 py-3 text-right">{t("Paid")}</th>
-                    <th className="px-4 py-3 text-right">{t("Fee kept")}</th>
-                    <th className="px-4 py-3 text-right">{t("To refund")}</th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  {refunds.map((b) => {
-                    const first = b.payments.find((p) => !p.void && p.kind !== "refund");
-                    return (
-                      <tr key={b.id}>
-                        {bookingCell(b)}
-                        <td className="px-4 py-3">
-                          <StatusBadge status={b.status} />
-                          <p className="mt-0.5 text-[11px] text-neutral-500">{dateLabel(b.checkIn, "dd MMM yyyy")}</p>
-                        </td>
-                        <td className="px-4 py-3 text-neutral-700">
-                          {first ? t(payLabels[first.method]) : "—"}
-                          {first?.ref && <p className="font-mono text-[11px] text-neutral-400">{first.ref}</p>}
-                        </td>
-                        <td className="px-4 py-3 text-right tabular-nums">{taka(paidOf(b))}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{taka(b.cancellationFee ?? 0)}</td>
-                        <td className="px-4 py-3 text-right font-semibold tabular-nums text-violet-700">{taka(creditOf(b))}</td>
-                        <td className="px-4 py-3 text-right">
-                          {canRefund ? (
-                            <button onClick={() => setAction({ booking: b, kind: "refund" })} className={cn(hbtn.small, "border-violet-200 text-violet-700")}>
-                              {t("Refund")}
-                            </button>
-                          ) : (
-                            <span className="text-xs text-neutral-400">{t("Manager only")}</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <>
+              <ul className="divide-y divide-neutral-100 lg:hidden">
+                {refunds.map((b) => {
+                  const first = b.payments.find((p) => !p.void && p.kind !== "refund");
+                  return (
+                    <li key={b.id} className="flex items-center gap-3 px-4 py-3">
+                      <button type="button" onClick={() => setHistoryId(b.id)} className={cn("min-w-0 flex-1 rounded-sm text-left", focusRing)}>
+                        <p className="truncate font-semibold text-neutral-900">{b.guest.name}</p>
+                        <p className="mt-1 flex min-w-0 items-center gap-2 text-[13px] text-neutral-500">
+                          <StatusBadge status={b.status} className="shrink-0" />
+                          {first && <span className="truncate">{t(payLabels[first.method])}</span>}
+                        </p>
+                      </button>
+                      <div className="flex shrink-0 flex-col items-end gap-1.5">
+                        <p className="font-semibold tabular-nums text-violet-700">{taka(creditOf(b))}</p>
+                        {canRefund ? (
+                          <button onClick={() => setAction({ booking: b, kind: "refund" })} className={cn(hbtn.small, "border-violet-200 text-violet-700")}>
+                            {t("Refund")}
+                          </button>
+                        ) : (
+                          <span className="text-xs text-neutral-400">{t("Manager only")}</span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="hidden overflow-x-auto lg:block">
+                <table className="w-full min-w-[820px] text-sm">
+                  <thead className="bg-neutral-50 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    <tr>
+                      <th className="px-4 py-3">{t("Booking")}</th>
+                      <th className="px-4 py-3">{t("Status")}</th>
+                      <th className="px-4 py-3">{t("Paid via")}</th>
+                      <th className="px-4 py-3 text-right">{t("Paid")}</th>
+                      <th className="px-4 py-3 text-right">{t("Fee kept")}</th>
+                      <th className="px-4 py-3 text-right">{t("To refund")}</th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {refunds.map((b) => {
+                      const first = b.payments.find((p) => !p.void && p.kind !== "refund");
+                      return (
+                        <tr key={b.id}>
+                          {bookingCell(b)}
+                          <td className="px-4 py-3">
+                            <StatusBadge status={b.status} />
+                            <p className="mt-0.5 text-[11px] text-neutral-500">{dateLabel(b.checkIn, "dd MMM yyyy")}</p>
+                          </td>
+                          <td className="px-4 py-3 text-neutral-700">
+                            {first ? t(payLabels[first.method]) : "—"}
+                            {first?.ref && <p className="font-mono text-[11px] text-neutral-400">{first.ref}</p>}
+                          </td>
+                          <td className="px-4 py-3 text-right tabular-nums">{taka(paidOf(b))}</td>
+                          <td className="px-4 py-3 text-right tabular-nums">{taka(b.cancellationFee ?? 0)}</td>
+                          <td className="px-4 py-3 text-right font-semibold tabular-nums text-violet-700">{taka(creditOf(b))}</td>
+                          <td className="px-4 py-3 text-right">
+                            {canRefund ? (
+                              <button onClick={() => setAction({ booking: b, kind: "refund" })} className={cn(hbtn.small, "border-violet-200 text-violet-700")}>
+                                {t("Refund")}
+                              </button>
+                            ) : (
+                              <span className="text-xs text-neutral-400">{t("Manager only")}</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           ))}
-
       </div>
 
       {historyId && (() => {
@@ -285,17 +402,17 @@ function FilterSelect<T extends string>({
   value,
   onChange,
   options,
+  active,
   icon: Icon,
 }: {
   label: string;
   value: T;
   onChange: (v: T) => void;
   options: { value: T; label: string }[];
+  active: boolean;
   icon?: React.ComponentType<{ className?: string }>;
 }) {
   const t = useT();
-  // An "any" choice means the filter is off; selects without one (like the date range) are never highlighted.
-  const active = options.some((o) => o.value === "any") && value !== "any";
   return (
     <label className="relative">
       <span className="sr-only">{t(label)}</span>
@@ -304,9 +421,9 @@ function FilterSelect<T extends string>({
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
         className={cn(
-          "h-10 appearance-none rounded-lg border bg-white pr-9 text-sm outline-none transition focus:ring-2 focus:ring-sky-100",
+          "h-10 appearance-none rounded-md border bg-white pr-9 text-sm outline-none transition focus:ring-2 focus:ring-sky-100",
           Icon ? "pl-9" : "pl-3",
-          active ? "border-sky-500 bg-sky-50 font-medium text-sky-900" : "border-neutral-200 text-neutral-700 hover:border-neutral-300"
+          active ? "border-sky-500 bg-sky-50 font-medium text-sky-900" : "border-neutral-300 text-neutral-800 hover:border-sky-400"
         )}
       >
         {options.map((o) => (
@@ -404,7 +521,7 @@ function PaymentHistory({
                       <div className="min-w-0">
                         <p className="flex flex-wrap items-center gap-1.5 text-sm">
                           <span className={cn("font-medium", p.void ? "text-neutral-400 line-through" : "text-neutral-900")}>{t(payLabels[p.method])}</span>
-                          <span className={cn("rounded px-1.5 py-px text-[11px] font-semibold", refund ? "bg-violet-50 text-violet-700" : p.kind === "deposit" ? "bg-sky-50 text-sky-700" : "bg-emerald-50 text-emerald-700")}>
+                          <span className={cn("rounded px-1.5 py-px text-[11px] font-semibold", kindTone(p.kind))}>
                             {t(paymentKindLabels[p.kind])}
                           </span>
                           {p.void && <span className="rounded bg-rose-50 px-1.5 py-px text-[11px] font-semibold text-rose-700">{t("Voided")}</span>}

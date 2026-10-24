@@ -42,37 +42,42 @@ export function RoomCard({ row }: { row: Row }) {
   return (
     <article className="flex flex-col gap-2 rounded-md border border-neutral-200 bg-white p-3 transition hover:border-sky-300 hover:shadow-sm hover:shadow-neutral-900/5">
       <div className="flex items-start gap-3">
-        <Thumb row={row} className="size-12" />
+        <Thumb row={row} className="size-14" />
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold leading-tight text-neutral-900">
-            <Link
-              href={`${ADMIN}/rooms/${u.id}`}
-              className="rounded-sm outline-none hover:text-sky-700 hover:underline hover:underline-offset-2 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
-            >
-              {tr("Room")} {u.number}
-            </Link>
-          </h3>
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-base font-semibold leading-tight text-neutral-900">
+              <Link
+                href={`${ADMIN}/rooms/${u.id}`}
+                className="rounded-sm outline-none hover:text-sky-700 hover:underline hover:underline-offset-2 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
+              >
+                {tr("Room")} {u.number}
+              </Link>
+            </h3>
+            <Price row={row} />
+          </div>
           <p className={cn("mt-0.5 truncate text-sm", t?.name ? "text-neutral-700" : "italic text-neutral-500")} title={t?.name}>
             {t?.name || tr("No name yet")}
           </p>
+          <p className="mt-1 flex items-center gap-3 text-[13px] text-neutral-600">
+            <span className="flex min-w-0 items-center gap-1">
+              <BedDouble className="size-3.5 shrink-0 text-neutral-500" aria-hidden /> <span className="truncate">{t?.beds || tr("Beds not set")}</span>
+            </span>
+            {t && t.capacity > 0 && (
+              // Just the icon and number on the card; the full wording stays for screen readers and on hover.
+              <span className="flex shrink-0 items-center gap-1" title={tr(t.capacity === 1 ? "Up to {n} guest" : "Up to {n} guests", { n: t.capacity })}>
+                <Users className="size-3.5 text-neutral-500" aria-hidden />
+                <span aria-hidden>{t.capacity}</span>
+                <span className="sr-only">{tr(t.capacity === 1 ? "Up to {n} guest" : "Up to {n} guests", { n: t.capacity })}</span>
+              </span>
+            )}
+          </p>
         </div>
-        <Price row={row} />
       </div>
 
-      <p className="flex flex-wrap gap-x-3 gap-y-0.5 pl-15 text-[13px] text-neutral-600">
-        <span className="flex items-center gap-1">
-          <BedDouble className="size-3.5 text-neutral-500" aria-hidden /> {t?.beds || tr("Beds not set")}
-        </span>
-        {t && t.capacity > 0 && (
-          <span className="flex items-center gap-1">
-            <Users className="size-3.5 text-neutral-500" aria-hidden /> {tr(t.capacity === 1 ? "Up to {n} guest" : "Up to {n} guests", { n: t.capacity })}
-          </span>
-        )}
-      </p>
-
-      <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-2 pt-0.5">
+      <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-2">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <WebChip web={web} />
+          {/* Published is the normal state, so phones only flag hidden and draft rooms. */}
+          <WebChip web={web} className={cn(web === "published" && "max-sm:hidden")} />
           <TonightChip tonight={tonight} />
           <HousekeepingChip row={row} />
         </div>

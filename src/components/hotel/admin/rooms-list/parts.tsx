@@ -23,11 +23,11 @@ import { tonightStyles, webStyles, type Row, type Tonight, type Web } from "./mo
 
 const chipClass = "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset";
 
-export function WebChip({ web }: { web: Web }) {
+export function WebChip({ web, className }: { web: Web; className?: string }) {
   const t = useT();
   const s = webStyles[web];
   return (
-    <span className={cn(chipClass, s.chip)}>
+    <span className={cn(chipClass, s.chip, className)}>
       <span className={cn("size-1.5 rounded-full", s.dot)} aria-hidden /> {t(s.label)}
     </span>
   );
@@ -73,9 +73,9 @@ export const editClass =
 export function EditButton({ row }: { row: Row }) {
   const t = useT();
   return (
-    <Link href={`${ADMIN}/rooms/${row.u.id}/edit`} className={editClass} aria-label={`${t("Edit")} ${t("Room")} ${row.u.number}`}>
+    <Link href={`${ADMIN}/rooms/${row.u.id}/edit`} className={cn(editClass, "max-sm:w-8 max-sm:px-0")} aria-label={`${t("Edit")} ${t("Room")} ${row.u.number}`}>
       <Pencil className="size-3.5" aria-hidden />
-      {t("Edit")}
+      <span className="max-sm:hidden">{t("Edit")}</span>
     </Link>
   );
 }

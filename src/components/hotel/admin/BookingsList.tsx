@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 import { BadgeCheck, CalendarDays, ChevronDown, ChevronRight, ClipboardList, Download, LogIn, LogOut, Plus, Search, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { Calendar } from "@/src/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/src/components/ui/popover";
-import { dateLabel, downloadCsv, formatDateTime, initials, rangeLabel, sourceLabels, statusDots, statusLabels, statusStyles, taka, todayKey } from "@/src/lib/hotel-store/format";
+import { dateLabel, downloadCsv, formatDateTime, initials, rangeLabel, shortRange, sourceLabels, statusDots, statusLabels, statusStyles, taka, todayKey } from "@/src/lib/hotel-store/format";
 import { isArrival } from "@/src/lib/hotel-store/frontDesk";
 import { confirmBooking, creditOf, dueOf, folioTotal, isLive, paidOf, paymentStatus, unitNumbers, useHotelDB } from "@/src/lib/hotel-store/store";
 import type { Booking, BookingSource } from "@/src/lib/hotel-store/types";
@@ -525,9 +525,6 @@ function RoomCell({ b }: { b: Booking }) {
 }
 
 /** Phone list: "6–8 Nov" in the same month, otherwise "30 Oct – 2 Nov". */
-const shortRange = (a: string, b: string) =>
-  a.slice(0, 7) === b.slice(0, 7) ? `${Number(a.slice(8))}–${dateLabel(b, "d MMM")}` : `${dateLabel(a, "d MMM")} – ${dateLabel(b, "d MMM")}`;
-
 /** Phone list: room number only, or a red "No room" when one still needs assigning. */
 function RoomShort({ b }: { b: Booking }) {
   const t = useT();

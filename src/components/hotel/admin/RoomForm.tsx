@@ -425,7 +425,7 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
         aria-busy={busy}
         className="[&_:is(input,select,textarea,button)]:scroll-mb-24"
       >
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5">
           <div className="flex min-w-0 items-center gap-3">
             <Link
               href={unit ? `${ADMIN}/rooms/${unit.id}` : `${ADMIN}/rooms`}
@@ -438,7 +438,7 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
               <ArrowLeft className="size-4" />
             </Link>
             <div className="min-w-0">
-              <h1 className="flex flex-wrap items-center gap-2 text-xl font-bold text-neutral-900">
+              <h1 className="flex items-center gap-2 text-lg font-bold text-neutral-900 sm:text-xl">
                 {unit ? `Edit room ${unit.number}` : "Add a room"}
                 {type?.draft && (
                   <span className="rounded bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-800 ring-1 ring-inset ring-violet-200">
@@ -446,7 +446,7 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
                   </span>
                 )}
               </h1>
-              <p className="text-sm text-neutral-600">
+              <p className={cn("truncate text-sm text-neutral-600", !unit && "max-sm:hidden")}>
                 {unit
                   ? `${floorLabel(unit.floor)} · ${type?.name || "No name yet"}`
                   : "Fill in what you have — you can save a draft and finish later."}
@@ -458,16 +458,19 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
               type="button"
               onClick={remove}
               disabled={busy}
-              className={hbtn.danger}
+              aria-label="Delete room"
+              className={cn(hbtn.danger, "shrink-0 max-sm:size-10 max-sm:px-0")}
             >
-              <Trash2 className="size-4" /> Delete room
+              <Trash2 className="size-4" />
+              <span className="max-sm:hidden">Delete room</span>
             </button>
           )}
         </div>
 
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
-          <div className="min-w-0 space-y-5">
-            <Section id="room" title="Room details">
+          {/* Phones: one column with Pricing right after Room details, since the rate is required. */}
+          <div className="min-w-0 max-lg:contents lg:space-y-5">
+            <Section id="room" title="Room details" className="max-lg:order-1">
               {siblings.length > 0 && (
                 <label className="mb-4 flex items-start gap-2.5 rounded-md bg-sky-50 px-3 py-2.5 text-sm text-sky-950">
                   <input
@@ -478,11 +481,11 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
                   <span>
                     Apply changes to rooms{" "}
                     {siblings.map((u) => u.number).join(", ")} too
-                    <span className="block text-xs text-sky-900">
-                      {v.shareDetails
-                        ? "They currently have the same details as this room."
-                        : `Only room ${unit?.number} changes; it gets its own details from now on.`}
-                    </span>
+                    {!v.shareDetails && (
+                      <span className="block text-xs text-sky-900">
+                        Only room {unit?.number} changes.
+                      </span>
+                    )}
                   </span>
                 </label>
               )}
@@ -510,7 +513,7 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
                   error={err("floor")}
                   hint={
                     !unit && !floorTouched && suggestedFloor !== undefined
-                      ? `Suggested from room ${v.number.trim()} — you can change it`
+                      ? "From room number"
                       : undefined
                   }
                 >
@@ -535,12 +538,11 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
                 label="Room name"
                 required
                 error={err("name")}
-                hint="What guests see on the website."
                 className="mt-4"
               >
                 <input
                   {...register("name")}
-                  {...described("name", err("name"), true)}
+                  {...described("name", err("name"))}
                   autoComplete="off"
                   maxLength={60}
                   placeholder="e.g. Deluxe Sea View"
@@ -558,7 +560,7 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
                   {...described("description")}
                   rows={3}
                   maxLength={300}
-                  placeholder="e.g. Bright room on the first floor with a private balcony facing the sea."
+                  placeholder="e.g. Sea-view room with a private balcony"
                   className={cn(
                     textareaClass,
                     "border-neutral-300 text-neutral-900"
@@ -597,7 +599,7 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
                             "min-w-0 flex-1 pr-8"
                           )}
                         >
-                          <option value="">Choose bed type</option>
+                          <option value="">Bed type</option>
                           {options.map((o) => (
                             <option key={o} value={o}>
                               {o}
@@ -733,17 +735,13 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
               </div>
 
               <Disclosure
-                title="Additional details"
-                summary={
-                  v.highlight.trim()
-                    ? `Badge: ${v.highlight.trim()}`
-                    : "Website badge"
-                }
+                title="Website badge"
+                summary={v.highlight.trim() || undefined}
                 className="mt-5"
               >
                 <Field
                   id="highlight"
-                  label="Website badge"
+                  label="Badge text"
                   className="sm:max-w-sm"
                 >
                   <input
@@ -757,11 +755,7 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
               </Disclosure>
             </Section>
 
-            <Section
-              id="photos"
-              title="Photos"
-              sub="The main photo is shown first on the website."
-            >
+            <Section id="photos" title="Photos" className="max-lg:order-3">
               <PhotoManager
                 photos={photos}
                 setPhotos={setPhotos}
@@ -769,11 +763,7 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
               />
             </Section>
 
-            <Section
-              id="facilities"
-              title="Facilities"
-              sub="Tap what this room has. Search or add anything else."
-            >
+            <Section id="facilities" title="Facilities" className="max-lg:order-4">
               <FacilityPicker
                 value={v.amenities}
                 onChange={(a) =>
@@ -782,7 +772,7 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
               />
             </Section>
 
-            <Section id="visibility" title="Website & operational status">
+            <Section id="visibility" title="Website & operational status" className="max-lg:order-5">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-md border border-neutral-200 p-3.5">
                   <label className="flex cursor-pointer items-start justify-between gap-3">
@@ -792,8 +782,8 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
                       </span>
                       <span className="mt-0.5 block text-xs text-neutral-600">
                         {v.active
-                          ? "Guests can see and book it online."
-                          : "Hidden from guests. Staff can still book it at the desk."}
+                          ? "Guests can book it online."
+                          : "Hidden — desk bookings only."}
                       </span>
                     </span>
                     <input
@@ -843,11 +833,11 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
                       </label>
                     ))}
                   </div>
-                  <p className="mt-1.5 text-xs text-neutral-600">
-                    {v.outOfService
-                      ? "Can’t be booked by anyone, online or at the desk — use for repairs or renovation."
-                      : "Ready for guests. Whether it’s free on a given date is checked when you make a booking."}
-                  </p>
+                  {v.outOfService && (
+                    <p className="mt-1.5 text-xs text-neutral-600">
+                      Can’t be booked, online or at the desk.
+                    </p>
+                  )}
                   {v.outOfService && (
                     <input
                       {...register("oosReason")}
@@ -868,10 +858,10 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
 
           {/* Clears the 64px admin header; scrolls on its own when taller than the space above the footer. */}
           <aside
-            className="min-w-0 space-y-5 lg:sticky lg:top-20 lg:-m-1 lg:max-h-[calc(100dvh-10rem)] lg:overflow-y-auto lg:overscroll-contain lg:p-1"
+            className="min-w-0 max-lg:contents lg:space-y-5 lg:sticky lg:top-20 lg:-m-1 lg:max-h-[calc(100dvh-10rem)] lg:overflow-y-auto lg:overscroll-contain lg:p-1"
             aria-label="Pricing and preview"
           >
-            <Section id="pricing" title="Pricing">
+            <Section id="pricing" title="Pricing" className="max-lg:order-2">
               <Field
                 id="price"
                 label="Nightly rate"
@@ -896,19 +886,17 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
                 </div>
               </Field>
               <p className="mt-2 rounded-md bg-neutral-50 px-3 py-2 text-xs leading-relaxed text-neutral-700">
-                Taxes not included. {serviceFeeRate}% service charge and{" "}
-                {vatRate}% VAT are added at checkout
-                {price > 0 && (
+                {price > 0 ? (
                   <>
-                    {" "}
-                    — guests pay{" "}
+                    Guests pay{" "}
                     <b className="font-semibold text-neutral-900">
                       {taka(guestNightly(price, db.settings))}
-                    </b>{" "}
-                    per night
+                    </b>
+                    /night with {serviceFeeRate}% service + {vatRate}% VAT.
                   </>
+                ) : (
+                  `+${serviceFeeRate}% service + ${vatRate}% VAT at checkout.`
                 )}
-                .
               </p>
 
               {v.showCompare ? (
@@ -916,7 +904,7 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
                   id="originalPrice"
                   label="Comparison price"
                   error={err("originalPrice")}
-                  hint="A real regular price you’ve charged before. Shown crossed out."
+                  hint="Shown crossed out on the website."
                   className="mt-4"
                 >
                   <div className="flex gap-2">
@@ -969,7 +957,7 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
               )}
             </Section>
 
-            <Card className="p-4 sm:p-5">
+            <Card className="p-4 max-lg:order-6 sm:p-5">
               <h2 className="mb-3 text-base font-semibold text-neutral-900">
                 Website preview
               </h2>
@@ -1006,7 +994,7 @@ function Editor({ unit, type }: { unit?: RoomUnit; type?: RoomTypeRecord }) {
                     <CheckCircle2 className="size-4" aria-hidden />
                     {v.active
                       ? "Ready to publish"
-                      : "Ready to save — hidden from website"}
+                      : "Ready — hidden from website"}
                   </p>
                 )}
               </div>

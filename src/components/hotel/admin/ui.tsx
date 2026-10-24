@@ -175,16 +175,22 @@ export function Tabs<T extends string>({
   value,
   onChange,
   tabs,
+  fit,
   className,
 }: {
   value: T;
   onChange: (v: T) => void;
   tabs: { value: T; label: string; count?: number; dot?: string }[];
+  /** Phones: equal columns with the count under the label, so every tab stays in view instead of scrolling off. */
+  fit?: boolean;
   className?: string;
 }) {
   const tr = useT();
   return (
-    <div role="tablist" className={cn("flex gap-1 overflow-x-auto border-b border-neutral-100 px-3 [scrollbar-width:none]", className)}>
+    <div
+      role="tablist"
+      className={cn("flex gap-1 overflow-x-auto border-b border-neutral-100 px-3 [scrollbar-width:none]", fit && "max-sm:grid max-sm:auto-cols-fr max-sm:grid-flow-col max-sm:gap-0 max-sm:px-1", className)}
+    >
       {tabs.map((t) => {
         const selected = value === t.value;
         return (
@@ -193,10 +199,14 @@ export function Tabs<T extends string>({
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(t.value)}
-            className={cn("relative flex shrink-0 items-center gap-2 px-3 py-3.5 text-sm font-medium transition", selected ? "text-neutral-900" : "text-neutral-500 hover:text-neutral-800")}
+            className={cn(
+              "relative flex shrink-0 items-center gap-2 px-3 py-3.5 text-sm font-medium transition",
+              fit && "max-sm:min-w-0 max-sm:flex-col max-sm:gap-1 max-sm:px-1 max-sm:py-2.5 max-sm:text-[13px]",
+              selected ? "text-neutral-900" : "text-neutral-500 hover:text-neutral-800"
+            )}
           >
-            {t.dot && <span className={cn("size-2 rounded-full", t.dot)} />}
-            {tr(t.label)}
+            {t.dot && <span className={cn("size-2 rounded-full", fit && "max-sm:hidden", t.dot)} />}
+            <span className={cn(fit && "max-sm:max-w-full max-sm:truncate")}>{tr(t.label)}</span>
             {t.count !== undefined && (
               <span className={cn("rounded-md px-1.5 text-[11px] tabular-nums", selected ? "bg-sky-600 text-white" : "bg-neutral-100 text-neutral-500")}>{t.count}</span>
             )}

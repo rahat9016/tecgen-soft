@@ -193,8 +193,9 @@ export default function PhotoManager({ photos, setPhotos, error }: { photos: Pho
           </li>
         ))}
 
+        {/* With no photos yet, the drop zone fills the row instead of sitting in one small tile. */}
         {!full && (
-          <li>
+          <li className={cn(!photos.length && "col-span-full")}>
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
@@ -211,23 +212,29 @@ export default function PhotoManager({ photos, setPhotos, error }: { photos: Pho
                 addFiles(Array.from(e.dataTransfer.files));
               }}
               className={cn(
-                "flex aspect-4/3 w-full flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed px-2 text-center text-sm font-medium transition",
+                "flex w-full flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed px-2 text-center text-sm font-medium transition",
+                photos.length ? "aspect-4/3" : "h-32 sm:h-36",
                 dropping ? "border-sky-500 bg-sky-50 text-sky-800" : error ? "border-rose-400 text-rose-700" : "border-neutral-300 text-neutral-700 hover:border-sky-400 hover:bg-sky-50/60 hover:text-sky-800",
                 focusRing
               )}
             >
               <ImagePlus className="size-6" aria-hidden />
               {photos.length ? "Add more" : "Upload photos"}
-              <span className="text-xs font-normal text-neutral-600">or drop them here</span>
+              {photos.length ? (
+                <span className="text-xs font-normal text-neutral-600 max-sm:hidden">or drop them here</span>
+              ) : (
+                <span className="text-xs font-normal text-neutral-600">JPG, PNG or WebP · max {MAX_MB} MB</span>
+              )}
             </button>
           </li>
         )}
       </ul>
 
-      <p className="mt-2.5 text-xs text-neutral-600">
-        JPG, PNG or WebP · up to {MAX_MB} MB each · landscape 4:3 looks best (e.g. 1600 × 1200) · {photos.length}/{MAX_PHOTOS} added
-        {photos.length > 1 && " · drag or use the arrows to reorder"}
-      </p>
+      {photos.length > 0 && (
+        <p className="mt-2.5 text-xs text-neutral-600">
+          {photos.length}/{MAX_PHOTOS} photos · JPG, PNG or WebP · max {MAX_MB} MB
+        </p>
+      )}
 
       <FieldError id="field-photos-error" message={error} />
 
