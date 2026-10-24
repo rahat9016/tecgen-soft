@@ -69,9 +69,9 @@ function FacilitiesBackdrop() {
 export default function FacilitiesSection() {
   const { hotel, facilities } = useHotelDB().content;
   return (
-    <section id="facilities" className="relative mt-10 scroll-mt-24 overflow-hidden bg-white py-14 md:py-20">
+    <section id="facilities" className="relative mt-6 scroll-mt-24 overflow-hidden bg-sky-50/70 py-8 md:mt-10 md:py-20">
       <FacilitiesBackdrop />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-white to-transparent md:h-24" />
 
       <div className="container relative">
         <SectionHeading
@@ -79,18 +79,19 @@ export default function FacilitiesSection() {
           subtitle={`Everything included with your stay at ${hotel.name}.`}
         />
 
-        <ul className="mt-8 grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-5">
+        <ul className="mt-5 grid grid-cols-2 gap-3 md:mt-8 md:gap-4 lg:grid-cols-5">
           {facilities.map(({ name: amenity, detail }) => {
             const Icon = amenityIcons[amenity] ?? CheckCircle2;
             return (
               <li
                 key={amenity}
-                className="group rounded-md border border-white/80 bg-white/40 p-4 shadow-[0_8px_32px_rgba(12,74,110,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl backdrop-saturate-150 transition duration-300 hover:-translate-y-1 hover:bg-white/60 hover:shadow-[0_16px_40px_rgba(12,74,110,0.14),inset_0_1px_0_rgba(255,255,255,0.9)] md:p-5"
+                className="group rounded-md border border-sky-200/70 bg-gradient-to-br from-sky-50/80 to-sky-100/80 p-4 shadow-[0_8px_32px_rgba(12,74,110,0.08)] backdrop-blur-xl backdrop-saturate-150 transition duration-300 hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_16px_40px_rgba(12,74,110,0.14)] md:p-5"
               >
-                <span className="flex size-11 items-center justify-center rounded-md bg-white/70 text-sky-600 shadow-sm ring-1 ring-white transition duration-300 group-hover:bg-sky-600 group-hover:text-white group-hover:ring-sky-600 md:size-12">
+                {/* Every card gets the brand-blue icon tile, so the grid reads as one set. */}
+                <span className="flex size-11 items-center justify-center rounded-md bg-sky-600 text-white shadow-md shadow-sky-600/25 transition duration-300 group-hover:bg-sky-700 md:size-12">
                   <Icon className="size-5 md:size-6" />
                 </span>
-                <p className="mt-4 text-sm font-semibold text-neutral-900 md:text-base">{amenity}</p>
+                <p className="mt-3 text-sm font-semibold text-neutral-900 md:mt-4 md:text-base">{amenity}</p>
                 {detail && <p className="mt-1 text-xs leading-relaxed text-neutral-600">{detail}</p>}
               </li>
             );

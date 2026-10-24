@@ -28,14 +28,14 @@ function Half({
   return (
     <span
       className={`flex min-w-0 items-center transition ${
-        compact ? "gap-2 rounded-md p-2.5" : "min-h-16 gap-2.5 rounded-md px-3 py-3"
+        compact ? "gap-2 rounded-md p-2.5" : "gap-2 rounded-md px-2.5 py-2 sm:min-h-16 sm:gap-2.5 sm:px-3 sm:py-3"
       } ${
         active ? "bg-white shadow-md ring-2 ring-sky-400" : "bg-white ring-1 ring-neutral-900/10"
       }`}
     >
       <span
         className={`flex shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-600 ${
-          compact ? "size-8" : "size-9"
+          compact ? "size-8" : "size-8 sm:size-9"
         }`}
       >
         <Icon className="size-4" />

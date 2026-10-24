@@ -53,7 +53,7 @@ export default function SearchWidget() {
 
       <Button
         onClick={handleSearch}
-        className="h-16! rounded-md bg-gradient-to-r from-sky-500 to-sky-700 px-6 text-sm font-semibold shadow-lg shadow-sky-600/30 transition hover:from-sky-600 hover:to-sky-800 md:h-auto!"
+        className="h-13! rounded-md bg-gradient-to-r from-sky-500 to-sky-700 px-6 text-sm font-semibold shadow-lg shadow-sky-600/30 transition hover:from-sky-600 hover:to-sky-800 sm:h-16! md:h-auto!"
       >
         <CalendarSearch className="size-5" />
         Check Availability
