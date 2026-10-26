@@ -7,23 +7,32 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
+  Check,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Clock,
   CreditCard,
-  Flame,
   Hourglass,
   LayoutGrid,
   Lock,
-  MapPin,
   Rows3,
   ShieldCheck,
-  Sun,
-  Sunrise,
-  Sunset,
-  MoonStar,
+  Users,
 } from "lucide-react";
-import { addDays, dateLabel, formatDuration, hourLabel, hourShort, payLabels, rangeLabel, slotTime, sportLabels, taka, todayYmd } from "@/src/lib/turf-store/format";
+import {
+  addDays,
+  dateLabel,
+  formatDuration,
+  hourLabel,
+  hourShort,
+  payLabels,
+  rangeLabel,
+  slotTime,
+  sportLabels,
+  taka,
+  todayYmd,
+} from "@/src/lib/turf-store/format";
 import {
   createOnlineBooking,
   findConflict,
@@ -41,16 +50,9 @@ import {
 } from "@/src/lib/turf-store/store";
 import type { Court, PayMethod } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
-import { inputClass, labelClass, LiveBadge, Loader, SportIcon, tbtn } from "./ui";
+import { inputClass, labelClass, Loader, SportIcon, tbtn } from "./ui";
 
 const PHONE_KEY = "turfhub:phone";
-
-const periods = [
-  { label: "Morning", icon: Sunrise, from: 0, to: 12 },
-  { label: "Afternoon", icon: Sun, from: 12, to: 17 },
-  { label: "Evening", icon: Sunset, from: 17, to: 21 },
-  { label: "Night", icon: MoonStar, from: 21, to: 25 },
-];
 
 function cellTone(info: SlotInfo, selected: boolean) {
   if (selected) return "bg-emerald-800 text-white ring-emerald-800";
@@ -69,7 +71,17 @@ function cellTone(info: SlotInfo, selected: boolean) {
 }
 
 const cellNote = (info: SlotInfo) =>
-  info.kind === "free" ? taka(info.price) : info.kind === "held" ? (info.mine ? "Yours" : "On hold") : info.kind === "booked" ? "Booked" : info.kind === "blocked" ? "Closed" : "Past";
+  info.kind === "free"
+    ? taka(info.price)
+    : info.kind === "held"
+      ? info.mine
+        ? "Yours"
+        : "On hold"
+      : info.kind === "booked"
+        ? "Booked"
+        : info.kind === "blocked"
+          ? "Closed"
+          : "Past";
 
 export default function SlotBooking() {
   const db = useTurfDB();
@@ -89,7 +101,7 @@ export default function SlotBooking() {
   // With a single ground the ground picker and the all-courts grid add nothing.
   const multiCourt = courts.length > 1;
   const [paying, setPaying] = useState(false);
-  // Week of the date strip on show; until the visitor pages, it follows the selected date.
+  // Week shown in the day picker; until the visitor pages, it follows the selected date.
   const [weekPick, setWeekPick] = useState<number | null>(null);
 
   const today = hydrated ? todayYmd() : "";
@@ -99,9 +111,6 @@ export default function SlotBooking() {
   const hours = hoursOf(db.settings);
   // Hours that have started can never be booked again, so today's grid only lists what is still ahead.
   const upcoming = hours.filter((h) => slotTime(day, h) > now);
-  const weeks = Math.ceil(days.length / 7);
-  const week = weekPick ?? Math.max(0, Math.floor(days.indexOf(day) / 7));
-  const weekDays = days.slice(week * 7, week * 7 + 7);
 
   const myHold = db.holds.find((h) => h.clientId === clientId && h.expiresAt > now);
 
@@ -155,37 +164,27 @@ export default function SlotBooking() {
 
   if (!hydrated || !clientId || !court) return <Loader />;
 
-  return (
-    <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <LiveBadge now={now} />
-          <h1 className="mt-3 text-3xl font-semibold text-neutral-900 md:text-4xl">Live slot checker</h1>
-          <p className="mt-1 text-sm text-neutral-500">
-            Availability updates the moment anyone books, holds or cancels. Lock a slot with a {db.settings.advancePercent}% advance.
-          </p>
-        </div>
-        {!paying && multiCourt && (
-          <div className="flex rounded-full bg-neutral-100 p-1">
-            {[
-              { v: "court" as const, l: "By court", i: Rows3 },
-              { v: "all" as const, l: "All courts", i: LayoutGrid },
-            ].map((o) => (
-              <button
-                key={o.v}
-                onClick={() => setView(o.v)}
-                className={cn("flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium", view === o.v ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500")}
-              >
-                <o.i className="size-3.5" /> {o.l}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+  const weeks = Math.ceil(days.length / 7);
+  const week = weekPick ?? Math.max(0, Math.floor(days.indexOf(day) / 7));
+  const weekDays = days.slice(week * 7, week * 7 + 7);
+  const { peakStartHour, advancePercent, holdMinutes, maxDuration } = db.settings;
+  const groups = [
+    { label: `Morning & Afternoon`, hs: upcoming.filter((h) => h < peakStartHour) },
+    { label: "Evening", hs: upcoming.filter((h) => h >= peakStartHour) },
+  ];
+  const offPeakOnly = peakHours === 0;
+  const allPeak = selection ? peakHours === selection.duration : false;
 
-      <div className={cn("mt-8 grid gap-6", !paying && "lg:grid-cols-[1fr_360px]")}>
-        <div className="min-w-0 space-y-6">
-          {paying && selection && price ? (
+  return (
+    <div className="bg-[#f7f6f1]">
+      <div className="mx-auto max-w-7xl px-4 pb-16 pt-10 md:px-8">
+        <h1 className="text-4xl font-semibold tracking-tight text-neutral-900 md:text-6xl">{paying ? "Complete your booking" : "Book the ground"}</h1>
+        <p className="mt-3 text-lg text-neutral-500">
+          {paying ? `Your slot is held while you pay the ${advancePercent}% advance.` : "Pick your day. Choose your time. Get playing."}
+        </p>
+
+        {paying && selection && price ? (
+          <div className="mt-8 max-w-4xl">
             <PaymentStep
               court={court}
               selection={selection}
@@ -204,239 +203,319 @@ export default function SlotBooking() {
                 router.push(`/turf/my-bookings?code=${code}`);
               }}
             />
-          ) : (
-            <>
-              {/* Date strip */}
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="flex items-center gap-1.5 text-sm font-medium text-neutral-900">
-                    <CalendarDays className="size-4 text-emerald-700" /> Date
-                  </p>
-                  <div className="flex items-center gap-1.5">
-                    <span className="mr-1 text-xs text-neutral-500">
-                      {dateLabel(weekDays[0], { day: "numeric", month: "short" })} – {dateLabel(weekDays[weekDays.length - 1], { day: "numeric", month: "short" })}
-                    </span>
-                    <button onClick={() => setWeekPick(week - 1)} disabled={week === 0} aria-label="Previous week" className={cn(tbtn.icon, "size-8")}>
-                      <ChevronLeft className="size-4" />
-                    </button>
-                    <button onClick={() => setWeekPick(week + 1)} disabled={week >= weeks - 1} aria-label="Next week" className={cn(tbtn.icon, "size-8")}>
-                      <ChevronRight className="size-4" />
-                    </button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-                  {weekDays.map((d) => {
-                    const dt = new Date(`${d}T00:00`);
-                    const active = d === day;
-                    return (
-                      <button
-                        key={d}
-                        onClick={() => {
-                          setDate(d);
-                          setStart(null);
-                        }}
-                        aria-pressed={active}
-                        className={cn(
-                          "flex min-w-0 flex-col items-center rounded-2xl py-2.5 ring-1 transition",
-                          active ? "bg-emerald-800 text-white ring-emerald-800" : "bg-white text-neutral-700 ring-neutral-200 hover:ring-emerald-500"
-                        )}
-                      >
-                        <span className={cn("text-xs", active ? "text-lime-300" : "text-neutral-500")}>
-                          {d === today ? "Today" : dt.toLocaleDateString("en-GB", { weekday: "short" })}
-                        </span>
-                        <span className="text-lg font-semibold">{dt.getDate()}</span>
-                        <span className={cn("text-xs", active ? "text-white/70" : "text-neutral-400")}>{dt.toLocaleDateString("en-GB", { month: "short" })}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {view === "court" || !multiCourt ? (
-                <>
-                  {multiCourt && (
-                    <div>
-                      <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-neutral-900">
-                        <MapPin className="size-4 text-emerald-700" /> Ground
-                      </p>
-                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {courts.map((c) => {
-                          const free = freeSlots(db, c, day, now);
-                          const active = c.id === court.id;
-                          return (
-                            <button
-                              key={c.id}
-                              onClick={() => {
-                                setCourtId(c.id);
-                                setStart(null);
-                              }}
-                              aria-pressed={active}
-                              className={cn(
-                                "flex min-w-0 items-center gap-2.5 rounded-2xl px-3 py-2.5 text-left ring-1 transition sm:p-2",
-                                active ? "bg-emerald-950 text-white ring-emerald-950" : "bg-white ring-neutral-200 hover:ring-emerald-500"
-                              )}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={c.image} alt="" className="hidden size-11 shrink-0 rounded-xl object-cover sm:block" />
-                              <span className="min-w-0">
-                                <span className="line-clamp-2 text-sm font-semibold leading-snug">{c.name}</span>
-                                <span className={cn("flex items-center gap-1 text-xs", free === 0 ? "text-rose-500" : active ? "text-lime-300" : "text-emerald-700")}>
-                                  <SportIcon sport={c.sport} className="size-3 shrink-0" />
-                                  <span className="truncate">{free === 0 ? "Fully booked" : `${free} slot${free === 1 ? "" : "s"} free`}</span>
-                                </span>
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="rounded-3xl border border-neutral-200 bg-white p-4 md:p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-neutral-900">{court.name}</p>
-                        <p className="text-xs text-neutral-500">
-                          {dateLabel(day, { weekday: "long", day: "numeric", month: "long" })} · {court.size}
-                        </p>
-                      </div>
-                      <Legend />
-                    </div>
-                    <div className="mt-5 space-y-5">
-                      {upcoming.length === 0 && (
-                        <div className="rounded-2xl bg-neutral-50 px-4 py-6 text-center text-sm text-neutral-600">
-                          No more slots today.{" "}
-                          {days[1] && (
-                            <button
-                              onClick={() => {
-                                setDate(days[1]);
-                                setStart(null);
-                              }}
-                              className="font-semibold text-emerald-800 underline"
-                            >
-                              See tomorrow
-                            </button>
+          </div>
+        ) : (
+          <>
+            <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_440px] lg:items-start">
+              {/* Steps */}
+              <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-black/[0.04] md:p-6">
+                {multiCourt && (
+                  <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-6">
+                    <select
+                      aria-label="Ground"
+                      value={court.id}
+                      onChange={(e) => {
+                        setCourtId(e.target.value);
+                        setStart(null);
+                      }}
+                      className="h-10 rounded-lg border border-neutral-200 bg-white px-3 text-sm"
+                    >
+                      {courts.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex rounded-lg bg-neutral-100 p-1">
+                      {[
+                        { v: "court" as const, l: "One ground", i: Rows3 },
+                        { v: "all" as const, l: "All grounds", i: LayoutGrid },
+                      ].map((o) => (
+                        <button
+                          key={o.v}
+                          onClick={() => setView(o.v)}
+                          className={cn(
+                            "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium",
+                            view === o.v ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
                           )}
-                        </div>
-                      )}
-                      {periods.map((p) => {
-                        const hs = upcoming.filter((h) => h >= p.from && h < p.to);
-                        if (!hs.length) return null;
-                        return (
-                          <div key={p.label}>
-                            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-neutral-500">
-                              <p.icon className="size-3.5" /> {p.label}
-                            </p>
-                            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-6">
-                              {hs.map((h) => {
-                                const info = slotInfo(db, court, day, h, now, clientId);
-                                const selected = start !== null && h >= start && h < start + duration;
-                                const clickable = info.kind === "free" || (info.kind === "held" && info.mine);
-                                const peak = info.kind === "free" && h >= db.settings.peakStartHour;
-                                return (
-                                  <button
-                                    key={h}
-                                    disabled={!clickable}
-                                    onClick={() => pickCell(court, h)}
-                                    className={cn("rounded-xl px-2 py-2.5 text-center ring-1 transition disabled:cursor-not-allowed", cellTone(info, selected))}
-                                  >
-                                    <span className="block text-sm font-semibold">{hourLabel(h)}</span>
-                                    <span className={cn("flex items-center justify-center gap-0.5 text-xs", selected ? "text-lime-300" : "opacity-80")}>
-                                      {peak && !selected && <Flame className="size-3 text-orange-500" />}
-                                      {selected ? "Selected" : cellNote(info)}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
+                        >
+                          <o.i className="size-3.5" /> {o.l}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                </>
-              ) : (
-                <Matrix day={day} now={now} clientId={clientId} selection={selection} onPick={(c, h) => {
-                  pickCell(c, h);
-                  setView("court");
-                }} />
-              )}
-            </>
-          )}
-        </div>
+                )}
 
-        {/* Summary */}
-        {!paying && (
-          <aside className="lg:sticky lg:top-24 lg:self-start">
-            <div className="overflow-hidden rounded-3xl bg-emerald-950 text-white">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={court.image} alt="" className="h-36 w-full object-cover opacity-80" />
-              <div className="space-y-4 p-5">
-                <div>
-                  <p className="text-xs text-lime-300">{sportLabels[court.sport]} · {court.surface}</p>
-                  <p className="text-lg font-semibold">{court.name}</p>
-                </div>
-                <dl className="space-y-2 text-sm">
-                  <Row k="Date" v={dateLabel(day, { weekday: "short", day: "numeric", month: "short" })} />
-                  <Row k="Time" v={start === null ? "Pick a start time" : rangeLabel(start, duration)} />
-                </dl>
-                <div>
-                  <p className="mb-1.5 text-xs text-white/60">Duration</p>
-                  <div className="flex gap-1.5">
-                    {Array.from({ length: db.settings.maxDuration }, (_, i) => i + 1).map((d) => {
+                {/* 01 Day */}
+                <Step n={1} state="done">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <StepTitle n={1}>Choose a day</StepTitle>
+                    <div className="flex items-center gap-2 text-sm text-neutral-600">
+                      <span>{new Date(`${weekDays[0]}T00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</span>
+                      <CalendarDays className="size-4 text-neutral-500" />
+                      <button
+                        onClick={() => setWeekPick(week - 1)}
+                        disabled={week === 0}
+                        aria-label="Previous week"
+                        className="flex size-8 items-center justify-center rounded-lg hover:bg-neutral-100 disabled:opacity-30"
+                      >
+                        <ChevronLeft className="size-4" />
+                      </button>
+                      <button
+                        onClick={() => setWeekPick(week + 1)}
+                        disabled={week >= weeks - 1}
+                        aria-label="Next week"
+                        className="flex size-8 items-center justify-center rounded-lg hover:bg-neutral-100 disabled:opacity-30"
+                      >
+                        <ChevronRight className="size-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-7 gap-2">
+                    {weekDays.map((d) => {
+                      const dt = new Date(`${d}T00:00`);
+                      const active = d === day;
+                      const full = freeSlots(db, court, d, now) === 0;
+                      return (
+                        <button
+                          key={d}
+                          onClick={() => {
+                            setDate(d);
+                            setStart(null);
+                          }}
+                          aria-pressed={active}
+                          className={cn(
+                            "relative flex flex-col items-center rounded-lg border py-3 transition",
+                            active ? "border-emerald-900 bg-emerald-900 text-white" : "border-neutral-200 bg-white text-neutral-900 hover:border-emerald-700",
+                            full && !active && "text-neutral-300"
+                          )}
+                        >
+                          <span className={cn("text-[11px] font-medium uppercase", active ? "text-white/70" : "text-neutral-500")}>
+                            {dt.toLocaleDateString("en-GB", { weekday: "short" })}
+                          </span>
+                          <span className="mt-1 text-xl font-semibold tabular-nums md:text-2xl">{String(dt.getDate()).padStart(2, "0")}</span>
+                          {active && <span className="absolute bottom-2 h-0.5 w-6 rounded-full bg-lime-400" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Step>
+
+                {/* 02 Length */}
+                <Step n={2} state="done">
+                  <StepTitle n={2}>How long?</StepTitle>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {Array.from({ length: maxDuration }, (_, i) => i + 1).map((d) => {
                       const bad = start !== null && !!findConflict(db, { courtId: court.id, date: day, startHour: start, duration: d }, { clientId, now });
                       return (
                         <button
                           key={d}
                           disabled={bad}
                           onClick={() => setDuration(d)}
+                          aria-pressed={d === duration}
                           className={cn(
-                            "h-9 flex-1 rounded-lg text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-30",
-                            d === duration ? "bg-lime-400 text-emerald-950" : "bg-white/10 hover:bg-white/20"
+                            "h-11 rounded-lg border px-6 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-30",
+                            d === duration ? "border-emerald-900 bg-emerald-900 text-white" : "border-neutral-200 text-neutral-800 hover:border-emerald-700"
                           )}
                         >
-                          {d} hr
+                          {d} hour{d > 1 ? "s" : ""}
                         </button>
                       );
                     })}
                   </div>
-                </div>
-                {price && selection && (
-                  <dl className="space-y-2 border-t border-white/10 pt-4 text-sm">
-                    <Row k="Court fee" v={taka(price.total)} />
-                    {peakHours > 0 && (
-                      <div className="flex items-center gap-1.5 text-xs text-orange-300">
-                        <Flame className="size-3.5" /> {peakHours === selection.duration ? "Peak" : `${peakHours} hr at peak`} rate ({taka(court.peakPrice)}/hr from{" "}
-                        {hourLabel(db.settings.peakStartHour)})
-                      </div>
-                    )}
-                    <Row k={`Advance (${db.settings.advancePercent}%)`} v={taka(price.advance)} strong />
-                    <Row k="Pay at venue" v={taka(price.total - price.advance)} />
-                  </dl>
-                )}
-                {conflict && start !== null && (
-                  <p className="rounded-xl bg-rose-500/15 px-3 py-2 text-xs text-rose-200">This selection is no longer available. Pick another time.</p>
-                )}
-                <button onClick={proceed} disabled={!selection || !!conflict} className={cn(tbtn.lime, "w-full")}>
-                  <Lock className="size-4" /> Hold slot & pay advance
-                </button>
-                <p className="flex items-center gap-1.5 text-[11px] text-white/50">
-                  <Hourglass className="size-3" /> Slot is reserved for {db.settings.holdMinutes} minutes while you pay.
-                </p>
+                </Step>
+
+                {/* 03 Kick-off */}
+                <Step n={3} state={start !== null ? "done" : "active"} last>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <StepTitle n={3}>Pick your kick-off</StepTitle>
+                    <div className="flex items-center gap-4 text-xs text-neutral-600">
+                      <span className="flex items-center gap-1.5">
+                        <span className="size-3.5 rounded-full border border-neutral-300" /> Available
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="size-3.5 rounded-full bg-lime-400" /> Selected
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="size-3.5 rounded-full bg-neutral-200" /> Already booked
+                      </span>
+                    </div>
+                  </div>
+
+                  {multiCourt && view === "all" ? (
+                    <div className="mt-5">
+                      <Matrix
+                        day={day}
+                        now={now}
+                        clientId={clientId}
+                        selection={selection}
+                        onPick={(c, h) => {
+                          pickCell(c, h);
+                          setView("court");
+                        }}
+                      />
+                    </div>
+                  ) : upcoming.length === 0 ? (
+                    <p className="mt-5 rounded-lg bg-neutral-50 px-4 py-8 text-center text-sm text-neutral-600">
+                      No kick-off times left on this day.{" "}
+                      {days[days.indexOf(day) + 1] && (
+                        <button
+                          onClick={() => {
+                            setDate(days[days.indexOf(day) + 1]);
+                            setStart(null);
+                          }}
+                          className="font-semibold text-emerald-800 underline"
+                        >
+                          See the next day
+                        </button>
+                      )}
+                    </p>
+                  ) : (
+                    groups.map(
+                      (g) =>
+                        g.hs.length > 0 && (
+                          <div key={g.label} className="mt-5">
+                            <p className="mb-2.5 text-sm font-semibold text-neutral-800">{g.label}</p>
+                            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 xl:grid-cols-7">
+                              {g.hs.map((h) => {
+                                const info = slotInfo(db, court, day, h, now, clientId);
+                                const selected = start !== null && h >= start && h < start + duration;
+                                const clickable = info.kind === "free" || (info.kind === "held" && info.mine);
+                                return (
+                                  <button
+                                    key={h}
+                                    disabled={!clickable}
+                                    onClick={() => pickCell(court, h)}
+                                    aria-pressed={selected}
+                                    className={cn(
+                                      "rounded-lg border px-2 py-3 text-center transition disabled:cursor-not-allowed",
+                                      selected
+                                        ? "border-lime-400 bg-lime-400 text-emerald-950"
+                                        : clickable
+                                          ? "border-neutral-200 bg-white text-neutral-900 hover:border-emerald-700"
+                                          : "border-transparent bg-neutral-100 text-neutral-400"
+                                    )}
+                                  >
+                                    <span className={cn("block text-sm font-semibold tabular-nums", !clickable && !selected && "line-through decoration-neutral-300")}>{clock(h)}</span>
+                                    <span className={cn("mt-0.5 block text-xs leading-tight", selected ? "text-emerald-950/80" : clickable ? "text-emerald-700" : "text-neutral-400")}>
+                                      {selected
+                                        ? "Selected"
+                                        : clickable
+                                          ? "Available"
+                                          : info.kind === "blocked"
+                                            ? "Closed"
+                                            : info.kind === "held"
+                                              ? "Being paid"
+                                              : "Already booked"}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )
+                    )
+                  )}
+                </Step>
               </div>
+
+              {/* Your match */}
+              <aside className="relative rounded-lg bg-emerald-950 p-6 text-white lg:sticky lg:top-28 md:p-8">
+                <svg
+                  aria-hidden
+                  viewBox="0 0 150 110"
+                  className="absolute right-6 top-6 h-24 text-white/15 md:right-8 md:top-8"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <rect x="1" y="1" width="148" height="108" />
+                  <path d="M75 1v108M1 30h22v50H1M149 30h-22v50h22" />
+                  <circle cx="75" cy="55" r="16" />
+                </svg>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/60">Your match</p>
+                <p className="mt-4 max-w-[14rem] text-3xl font-semibold leading-tight md:text-4xl">
+                  {new Date(`${day}T00:00`).toLocaleDateString("en-GB", { weekday: "long" })},
+                  <br />
+                  {dateLabel(day, { day: "numeric", month: "long" })}
+                </p>
+                <p className="mt-6 flex items-center gap-4 text-2xl font-semibold md:text-3xl">
+                  <Clock className="size-7 shrink-0 text-white/80" />
+                  {start === null ? <span className="text-white/40">Pick a time</span> : clockRange(start, start + duration)}
+                </p>
+                <p className="mt-3 flex items-center gap-4 text-white/85">
+                  <Users className="size-7 shrink-0 text-white/60" />
+                  {duration} hour{duration > 1 ? "s" : ""} · Entire ground
+                </p>
+
+                {/* Perforation */}
+                <div className="relative -mx-6 my-7 border-t-2 border-dashed border-white/20 md:-mx-8">
+                  <span className="absolute -left-3 -top-3 size-6 rounded-full bg-[#f7f6f1]" />
+                  <span className="absolute -right-3 -top-3 size-6 rounded-full bg-[#f7f6f1]" />
+                </div>
+
+                <dl className="text-sm">
+                  <div className="flex justify-between gap-3 py-1.5">
+                    <dt className="text-white/80">
+                      {offPeakOnly
+                        ? `Hourly rate (before ${hourLabel(peakStartHour)})`
+                        : allPeak
+                          ? `Hourly rate (from ${hourLabel(peakStartHour)})`
+                          : "Hourly rate (mixed)"}
+                    </dt>
+                    <dd className="tabular-nums">
+                      {offPeakOnly ? taka(court.price) : allPeak ? taka(court.peakPrice) : `${taka(court.price)} / ${taka(court.peakPrice)}`}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3 py-1.5">
+                    <dt className="text-white/80">Duration</dt>
+                    <dd>
+                      {duration} hour{duration > 1 ? "s" : ""}
+                    </dd>
+                  </div>
+                  <div className="mt-3 flex items-baseline justify-between gap-3 border-y border-white/10 py-4">
+                    <dt className="text-lg">Total</dt>
+                    <dd className="text-2xl font-semibold tabular-nums">{price ? taka(price.total) : "—"}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-b border-white/10 py-3.5">
+                    <dt className="text-white/70">Pay now ({advancePercent}%)</dt>
+                    <dd className="text-lg font-semibold tabular-nums">{price ? taka(price.advance) : "—"}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3 py-3.5">
+                    <dt className="text-white/80">Pay at ground</dt>
+                    <dd className="text-lg font-semibold tabular-nums">{price ? taka(price.total - price.advance) : "—"}</dd>
+                  </div>
+                </dl>
+
+                {conflict && start !== null && (
+                  <p className="mt-2 rounded-lg bg-rose-500/15 px-3 py-2 text-xs text-rose-200">That time was just taken. Pick another kick-off.</p>
+                )}
+                <button
+                  onClick={proceed}
+                  disabled={!selection || !!conflict}
+                  className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-lime-400 text-base font-semibold text-emerald-950 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {selection ? "Continue to payment" : "Pick a kick-off time"} <ArrowRight className="size-5" />
+                </button>
+                <p className="mt-4 flex items-center justify-center gap-2 text-xs text-white/70">
+                  <Lock className="size-3.5" /> Slot held for {holdMinutes} minutes once you continue.
+                </p>
+              </aside>
             </div>
-          </aside>
+          </>
         )}
       </div>
 
-      {/* Mobile quick bar */}
+      {/* Phone: keep the next step in reach while scrolling the times. */}
       {!paying && selection && price && !conflict && (
-        <div className="fixed inset-x-3 bottom-3 z-30 flex items-center justify-between gap-3 rounded-2xl bg-emerald-950 p-3 pl-4 text-white shadow-xl lg:hidden">
+        <div className="fixed inset-x-3 bottom-3 z-30 flex items-center justify-between gap-3 rounded-lg bg-emerald-950 p-3 pl-4 text-white shadow-xl lg:hidden">
           <div className="min-w-0 text-sm">
-            <p className="truncate font-semibold">{rangeLabel(selection.startHour, duration)}</p>
-            <p className="text-xs text-white/70">{taka(price.advance)} advance</p>
+            <p className="truncate font-semibold">
+              {clock(selection.startHour)} – {clock(selection.startHour + duration)}
+            </p>
+            <p className="text-xs text-white/70">{taka(price.advance)} to pay now</p>
           </div>
-          <button onClick={proceed} className={tbtn.lime}>
+          <button onClick={proceed} className="flex h-11 items-center gap-2 rounded-lg bg-lime-400 px-4 text-sm font-semibold text-emerald-950">
             Continue <ArrowRight className="size-4" />
           </button>
         </div>
@@ -445,34 +524,39 @@ export default function SlotBooking() {
   );
 }
 
-function Row({ k, v, strong }: { k: string; v: string; strong?: boolean }) {
-  return (
-    <div className="flex justify-between gap-3">
-      <dt className="text-white/60">{k}</dt>
-      <dd className={cn("text-right", strong && "font-semibold text-lime-300")}>{v}</dd>
-    </div>
-  );
+/** "2:00 PM" — hours shown with minutes, as on a match ticket. */
+const clock = (h: number) => {
+  const hh = h % 24;
+  return `${hh % 12 === 0 ? 12 : hh % 12}:00 ${hh < 12 ? "AM" : "PM"}`;
+};
+
+/** "2:00 – 3:00 PM", or "11:00 AM – 1:00 PM" when it crosses noon. */
+const clockRange = (a: number, b: number) => {
+  const [x, y] = [clock(a), clock(b)];
+  return x.slice(-2) === y.slice(-2) ? `${x.slice(0, -3)} – ${y}` : `${x} – ${y}`;
+};
+
+function StepTitle({ children }: { n?: number; children: React.ReactNode }) {
+  return <h2 className="text-xl font-semibold leading-10 text-neutral-900">{children}</h2>;
 }
 
-function Legend() {
-  const items = [
-    { c: "bg-white ring-neutral-300", l: "Free" },
-    { c: "bg-emerald-800 ring-emerald-800", l: "Selected" },
-    { c: "bg-amber-100 ring-amber-300", l: "On hold" },
-    { c: "bg-neutral-200 ring-neutral-200", l: "Booked" },
-    { c: "bg-[repeating-linear-gradient(45deg,#f5f5f5,#f5f5f5_3px,#e5e5e5_3px,#e5e5e5_6px)] ring-neutral-200", l: "Closed" },
-  ];
+/** One step of the vertical stepper: numbered circle, connector line down to the next step, content on the right. */
+function Step({ n, state, last, children }: { n: number; state: "done" | "active"; last?: boolean; children: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap gap-3 text-xs text-neutral-500">
-      {items.map((i) => (
-        <span key={i.l} className="flex items-center gap-1.5">
-          <span className={cn("size-3 rounded ring-1", i.c)} /> {i.l}
+    <section className="grid grid-cols-[2.5rem_1fr] gap-x-4">
+      <div className="relative flex justify-center">
+        <span
+          className={cn(
+            "relative z-10 flex size-10 items-center justify-center rounded-full text-sm font-semibold transition",
+            state === "done" ? "bg-emerald-900 text-white" : "bg-white text-emerald-900 ring-2 ring-emerald-900"
+          )}
+        >
+          {state === "done" ? <Check className="size-5" strokeWidth={2.5} /> : String(n).padStart(2, "0")}
         </span>
-      ))}
-      <span className="flex items-center gap-1">
-        <Flame className="size-3.5 text-orange-500" /> Peak rate
-      </span>
-    </div>
+        {!last && <span className={cn("absolute bottom-0 top-10 w-0.5", state === "done" ? "bg-emerald-900" : "bg-neutral-200")} />}
+      </div>
+      <div className={cn("min-w-0", !last && "pb-10")}>{children}</div>
+    </section>
   );
 }
 
@@ -497,7 +581,6 @@ function Matrix({
     <div className="rounded-3xl border border-neutral-200 bg-white p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="font-semibold text-neutral-900">{dateLabel(day, { weekday: "long", day: "numeric", month: "long" })}</p>
-        <Legend />
       </div>
       <div className="relative overflow-x-auto">
         <table className="w-full border-separate border-spacing-1">
@@ -629,7 +712,9 @@ function PaymentStep({
   return (
     <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[1fr_360px]" noValidate>
       <div className="space-y-6">
-        <div className={cn("flex items-center gap-3 rounded-2xl px-4 py-3 text-sm", left < 120_000 ? "bg-rose-50 text-rose-700" : "bg-lime-50 text-emerald-900")}>
+        <div
+          className={cn("flex items-center gap-3 rounded-2xl px-4 py-3 text-sm", left < 120_000 ? "bg-rose-50 text-rose-700" : "bg-lime-50 text-emerald-900")}
+        >
           <Hourglass className="size-5 shrink-0" />
           <p>
             Slot locked for you — complete payment within <b className="tabular-nums">{formatDuration(left)}</b>.
@@ -640,27 +725,58 @@ function PaymentStep({
           <h2 className="font-semibold text-neutral-900">Your details</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="pf-name" className={labelClass}>Full name *</label>
+              <label htmlFor="pf-name" className={labelClass}>
+                Full name *
+              </label>
               <input id="pf-name" className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="name" />
               {err("name")}
             </div>
             <div>
-              <label htmlFor="pf-phone" className={labelClass}>Mobile number *</label>
-              <input id="pf-phone" className={inputClass} inputMode="numeric" placeholder="01XXXXXXXXX" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/[^\d]/g, "").slice(0, 11) })} autoComplete="tel" />
+              <label htmlFor="pf-phone" className={labelClass}>
+                Mobile number *
+              </label>
+              <input
+                id="pf-phone"
+                className={inputClass}
+                inputMode="numeric"
+                placeholder="01XXXXXXXXX"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/[^\d]/g, "").slice(0, 11) })}
+                autoComplete="tel"
+              />
               {err("phone")}
             </div>
             <div>
-              <label htmlFor="pf-email" className={labelClass}>Email (optional)</label>
-              <input id="pf-email" className={inputClass} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="email" />
+              <label htmlFor="pf-email" className={labelClass}>
+                Email (optional)
+              </label>
+              <input
+                id="pf-email"
+                className={inputClass}
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                autoComplete="email"
+              />
               {err("email")}
             </div>
             <div>
-              <label htmlFor="pf-team" className={labelClass}>Team name (optional)</label>
+              <label htmlFor="pf-team" className={labelClass}>
+                Team name (optional)
+              </label>
               <input id="pf-team" className={inputClass} value={form.team} onChange={(e) => setForm({ ...form, team: e.target.value })} />
             </div>
             <div className="sm:col-span-2">
-              <label htmlFor="pf-note" className={labelClass}>Note for the venue (optional)</label>
-              <input id="pf-note" className={inputClass} placeholder="e.g. need 14 bibs" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+              <label htmlFor="pf-note" className={labelClass}>
+                Note for the venue (optional)
+              </label>
+              <input
+                id="pf-note"
+                className={inputClass}
+                placeholder="e.g. need 14 bibs"
+                value={form.note}
+                onChange={(e) => setForm({ ...form, note: e.target.value })}
+              />
             </div>
           </div>
         </section>
@@ -676,7 +792,10 @@ function PaymentStep({
                 type="button"
                 key={String(o.v)}
                 onClick={() => setFull(o.v)}
-                className={cn("rounded-2xl p-3 text-left ring-1 transition", full === o.v ? "bg-emerald-50 ring-2 ring-emerald-600" : "ring-neutral-200 hover:ring-emerald-400")}
+                className={cn(
+                  "rounded-2xl p-3 text-left ring-1 transition",
+                  full === o.v ? "bg-emerald-50 ring-2 ring-emerald-600" : "ring-neutral-200 hover:ring-emerald-400"
+                )}
               >
                 <span className="block text-xs text-neutral-500">{o.t}</span>
                 <span className="text-lg font-semibold text-neutral-900">{taka(o.a)}</span>
@@ -708,12 +827,40 @@ function PaymentStep({
 
           {method === "card" ? (
             <div className="mt-4 grid grid-cols-[1fr_90px_80px] gap-2">
-              <input aria-label="Card number" className={inputClass} inputMode="numeric" placeholder="Card number" value={card.number} onChange={(e) => setCard({ ...card, number: e.target.value.replace(/\D/g, "").slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 ") })} />
-              <input aria-label="Expiry" className={inputClass} placeholder="MM/YY" value={card.exp} onChange={(e) => {
-                const v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                setCard({ ...card, exp: v.length > 2 ? `${v.slice(0, 2)}/${v.slice(2)}` : v });
-              }} />
-              <input aria-label="CVC" className={inputClass} inputMode="numeric" placeholder="CVC" value={card.cvc} onChange={(e) => setCard({ ...card, cvc: e.target.value.replace(/\D/g, "").slice(0, 4) })} />
+              <input
+                aria-label="Card number"
+                className={inputClass}
+                inputMode="numeric"
+                placeholder="Card number"
+                value={card.number}
+                onChange={(e) =>
+                  setCard({
+                    ...card,
+                    number: e.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 16)
+                      .replace(/(\d{4})(?=\d)/g, "$1 "),
+                  })
+                }
+              />
+              <input
+                aria-label="Expiry"
+                className={inputClass}
+                placeholder="MM/YY"
+                value={card.exp}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                  setCard({ ...card, exp: v.length > 2 ? `${v.slice(0, 2)}/${v.slice(2)}` : v });
+                }}
+              />
+              <input
+                aria-label="CVC"
+                className={inputClass}
+                inputMode="numeric"
+                placeholder="CVC"
+                value={card.cvc}
+                onChange={(e) => setCard({ ...card, cvc: e.target.value.replace(/\D/g, "").slice(0, 4) })}
+              />
               <div className="col-span-3">{err("card")}</div>
             </div>
           ) : (
@@ -722,10 +869,18 @@ function PaymentStep({
                 <li>
                   Open {payLabels[method]} and <b>Send Money</b> {taka(amount)} to <b>{db.settings.phone}</b>
                 </li>
-                <li>Use reference <b>{court.name.split(" ").pop()}</b></li>
+                <li>
+                  Use reference <b>{court.name.split(" ").pop()}</b>
+                </li>
                 <li>Enter the transaction ID you receive by SMS below</li>
               </ol>
-              <input aria-label="Transaction ID" className={cn(inputClass, "mt-3 uppercase")} placeholder="Transaction ID e.g. 9AX4KQ7Z1" value={ref} onChange={(e) => setRef(e.target.value)} />
+              <input
+                aria-label="Transaction ID"
+                className={cn(inputClass, "mt-3 uppercase")}
+                placeholder="Transaction ID e.g. 9AX4KQ7Z1"
+                value={ref}
+                onChange={(e) => setRef(e.target.value)}
+              />
               {err("ref")}
             </div>
           )}
@@ -760,7 +915,11 @@ function PaymentStep({
           <button type="submit" disabled={busy} className={cn(tbtn.lime, "mt-5 w-full")}>
             <CheckCircle2 className="size-4" /> Pay {taka(amount)} & book
           </button>
-          <button type="button" onClick={onBack} className="mt-2 flex w-full items-center justify-center gap-1.5 py-2 text-sm text-neutral-500 hover:text-neutral-800">
+          <button
+            type="button"
+            onClick={onBack}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 py-2 text-sm text-neutral-500 hover:text-neutral-800"
+          >
             <ArrowLeft className="size-4" /> Change slot
           </button>
         </div>

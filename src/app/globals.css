@@ -136,6 +136,14 @@
     @apply border-border outline-ring/50;
   }
 
+  /* Tailwind v4 no longer gives buttons a pointer cursor; restore it for anything clickable. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  select,
+  label[for] {
+    cursor: pointer;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
   }

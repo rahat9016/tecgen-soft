@@ -24,7 +24,7 @@ export default function TurfFooter() {
   const directions = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.address)}`;
 
   return (
-    <footer className="relative overflow-hidden bg-emerald-950 text-emerald-100/70">
+    <footer className="relative overflow-hidden border-t border-white/10 bg-[#021a12] text-emerald-100/70">
       <div className="mx-auto max-w-7xl px-4 pt-16 md:px-8 md:pt-20">
         <div className="grid gap-12 border-b border-white/10 pb-14 sm:grid-cols-3 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="sm:col-span-3 lg:col-span-1">
