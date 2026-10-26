@@ -1,4 +1,5 @@
-export type Sport = "football" | "cricket" | "badminton" | "tennis" | "basketball";
+/** TurfHub is a football-only venue; kept as a type so a sport can be added later. */
+export type Sport = "football";
 
 export type Court = {
   id: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, Trophy } from "lucide-react";
-import { GiBasketballBall, GiCricketBat, GiShuttlecock, GiSoccerBall, GiTennisRacket } from "react-icons/gi";
+import { GiSoccerBall } from "react-icons/gi";
 import { statusLabels, statusStyles } from "@/src/lib/turf-store/format";
 import type { BookingStatus, Sport } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
@@ -75,10 +75,6 @@ export function BookingStatusBadge({ status, className }: { status: BookingStatu
 
 const sportIcons: Record<Sport, React.ComponentType<{ className?: string }>> = {
   football: GiSoccerBall,
-  cricket: GiCricketBat,
-  badminton: GiShuttlecock,
-  tennis: GiTennisRacket,
-  basketball: GiBasketballBall,
 };
 
 export function SportIcon({ sport, className }: { sport: Sport; className?: string }) {

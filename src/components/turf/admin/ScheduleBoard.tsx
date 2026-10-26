@@ -5,9 +5,8 @@ import { toast } from "react-toastify";
 import { ChevronLeft, ChevronRight, Hourglass, Plus, Wrench, X } from "lucide-react";
 import { addDays, dateLabel, formatDuration, hourLabel, slotTime, sportLabels, statusBlock, taka, todayYmd } from "@/src/lib/turf-store/format";
 import { dueOf, hoursOf, occupies, removeBlock, useNow, useTurfDB } from "@/src/lib/turf-store/store";
-import type { Sport } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
-import { Chip, LiveBadge, SportIcon, tbtn } from "../ui";
+import { LiveBadge, SportIcon, tbtn } from "../ui";
 import BookingDrawer from "./BookingDrawer";
 import NewBookingModal, { type SlotDraft } from "./NewBookingModal";
 
@@ -18,15 +17,13 @@ export default function ScheduleBoard() {
   const now = useNow(1000);
   const today = todayYmd();
   const [date, setDate] = useState(today);
-  const [sport, setSport] = useState<Sport | "all">("all");
   const [showCancelled, setShowCancelled] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [draft, setDraft] = useState<SlotDraft | null>(null);
 
   const hours = hoursOf(db.settings);
   const open = db.settings.openHour;
-  const courts = db.courts.filter((c) => c.active && (sport === "all" || c.sport === sport));
-  const sports = [...new Set(db.courts.filter((c) => c.active).map((c) => c.sport))];
+  const courts = db.courts.filter((c) => c.active);
 
   const dayBookings = db.bookings.filter((b) => b.date === date && courts.some((c) => c.id === b.courtId));
   const live = dayBookings.filter(occupies);
@@ -68,16 +65,6 @@ export default function ScheduleBoard() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
-          <Chip active={sport === "all"} onClick={() => setSport("all")}>
-            All courts
-          </Chip>
-          {sports.map((s) => (
-            <Chip key={s} active={sport === s} onClick={() => setSport(s)}>
-              <SportIcon sport={s} className="size-3.5" /> {sportLabels[s]}
-            </Chip>
-          ))}
-        </div>
         <label className="ml-auto flex items-center gap-2 text-sm text-neutral-600">
           <input type="checkbox" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} className="accent-emerald-700" /> Show cancelled
         </label>

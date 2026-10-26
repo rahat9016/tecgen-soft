@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "TurfHub — Book Football, Cricket & Badminton Turfs in Dhaka",
+  title: "TurfHub — Book Our Football Turf in Bashundhara, Dhaka",
   description:
-    "Check live turf availability, pick your slot and lock it with an advance payment. Football, box cricket, badminton, tennis and basketball courts.",
+    "Check live availability of our 7-a-side football turf, pick your slot and lock it with an advance payment.",
 };
 
 export default function TurfRootLayout({ children }: { children: React.ReactNode }) {

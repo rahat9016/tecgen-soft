@@ -86,6 +86,8 @@ export default function SlotBooking() {
   const [start, setStart] = useState<number | null>(params.get("start") ? Number(params.get("start")) : null);
   const [duration, setDuration] = useState(Number(params.get("duration")) || 1);
   const [view, setView] = useState<"court" | "all">("court");
+  // With a single ground the ground picker and the all-courts grid add nothing.
+  const multiCourt = courts.length > 1;
   const [paying, setPaying] = useState(false);
   // Week of the date strip on show; until the visitor pages, it follows the selected date.
   const [weekPick, setWeekPick] = useState<number | null>(null);
@@ -163,7 +165,7 @@ export default function SlotBooking() {
             Availability updates the moment anyone books, holds or cancels. Lock a slot with a {db.settings.advancePercent}% advance.
           </p>
         </div>
-        {!paying && (
+        {!paying && multiCourt && (
           <div className="flex rounded-full bg-neutral-100 p-1">
             {[
               { v: "court" as const, l: "By court", i: Rows3 },
@@ -250,43 +252,45 @@ export default function SlotBooking() {
                 </div>
               </div>
 
-              {view === "court" ? (
+              {view === "court" || !multiCourt ? (
                 <>
-                  <div>
-                    <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-neutral-900">
-                      <MapPin className="size-4 text-emerald-700" /> Ground
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                      {courts.map((c) => {
-                        const free = freeSlots(db, c, day, now);
-                        const active = c.id === court.id;
-                        return (
-                          <button
-                            key={c.id}
-                            onClick={() => {
-                              setCourtId(c.id);
-                              setStart(null);
-                            }}
-                            aria-pressed={active}
-                            className={cn(
-                              "flex min-w-0 items-center gap-2.5 rounded-2xl px-3 py-2.5 text-left ring-1 transition sm:p-2",
-                              active ? "bg-emerald-950 text-white ring-emerald-950" : "bg-white ring-neutral-200 hover:ring-emerald-500"
-                            )}
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={c.image} alt="" className="hidden size-11 shrink-0 rounded-xl object-cover sm:block" />
-                            <span className="min-w-0">
-                              <span className="line-clamp-2 text-sm font-semibold leading-snug">{c.name}</span>
-                              <span className={cn("flex items-center gap-1 text-xs", free === 0 ? "text-rose-500" : active ? "text-lime-300" : "text-emerald-700")}>
-                                <SportIcon sport={c.sport} className="size-3 shrink-0" />
-                                <span className="truncate">{free === 0 ? "Fully booked" : `${free} slot${free === 1 ? "" : "s"} free`}</span>
+                  {multiCourt && (
+                    <div>
+                      <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-neutral-900">
+                        <MapPin className="size-4 text-emerald-700" /> Ground
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {courts.map((c) => {
+                          const free = freeSlots(db, c, day, now);
+                          const active = c.id === court.id;
+                          return (
+                            <button
+                              key={c.id}
+                              onClick={() => {
+                                setCourtId(c.id);
+                                setStart(null);
+                              }}
+                              aria-pressed={active}
+                              className={cn(
+                                "flex min-w-0 items-center gap-2.5 rounded-2xl px-3 py-2.5 text-left ring-1 transition sm:p-2",
+                                active ? "bg-emerald-950 text-white ring-emerald-950" : "bg-white ring-neutral-200 hover:ring-emerald-500"
+                              )}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={c.image} alt="" className="hidden size-11 shrink-0 rounded-xl object-cover sm:block" />
+                              <span className="min-w-0">
+                                <span className="line-clamp-2 text-sm font-semibold leading-snug">{c.name}</span>
+                                <span className={cn("flex items-center gap-1 text-xs", free === 0 ? "text-rose-500" : active ? "text-lime-300" : "text-emerald-700")}>
+                                  <SportIcon sport={c.sport} className="size-3 shrink-0" />
+                                  <span className="truncate">{free === 0 ? "Fully booked" : `${free} slot${free === 1 ? "" : "s"} free`}</span>
+                                </span>
                               </span>
-                            </span>
-                          </button>
-                        );
-                      })}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="rounded-3xl border border-neutral-200 bg-white p-4 md:p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">

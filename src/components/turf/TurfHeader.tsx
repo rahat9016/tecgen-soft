@@ -10,10 +10,8 @@ import { TurfLogo } from "./ui";
 
 const links = [
   { href: "/turf", label: "Home" },
-  { href: "/turf#about", label: "About" },
-  { href: "/turf#services", label: "Service" },
-  { href: "/turf#courts", label: "Court" },
-  { href: "/turf/book", label: "Live Slots" },
+  { href: "/turf#how-it-works", label: "How it works" },
+  { href: "/turf#ground", label: "The Ground" },
   { href: "/turf/my-bookings", label: "My Bookings" },
 ];
 

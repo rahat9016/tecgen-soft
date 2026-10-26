@@ -1,7 +1,8 @@
 import { addDays, slotTime, todayYmd } from "./format";
 import type { Booking, BookingStatus, Court, PayMethod, Payment, Settings, TurfDB } from "./types";
 
-export const DB_VERSION = 1;
+// Bumped when the seed changes so stored demo data is replaced.
+export const DB_VERSION = 3;
 
 export const defaultSettings: Settings = {
   venueName: "TurfHub Bashundhara",
@@ -17,10 +18,11 @@ export const defaultSettings: Settings = {
   cancelCutoffHours: 12,
 };
 
+/** The venue has a single ground; admins can still add more from the Courts page. */
 export const seedCourts: Court[] = [
   {
     id: "ct1",
-    name: "Baseline Ground A",
+    name: "Baseline Ground",
     sport: "football",
     surface: "FIFA-grade artificial grass",
     indoor: false,
@@ -31,88 +33,8 @@ export const seedCourts: Court[] = [
     players: "10–14 players",
     rating: 4.9,
     active: true,
-    features: ["LED floodlights", "Changing room", "Free bibs", "Drinking water"],
-    description: "Our flagship 7-a-side pitch with shock-pad grass, full-height nets and floodlights for night matches.",
-  },
-  {
-    id: "ct2",
-    name: "Baseline Ground B",
-    sport: "football",
-    surface: "Futsal turf, roofed",
-    indoor: true,
-    size: "5-a-side · 120 × 60 ft",
-    image: "/turf/boots.webp",
-    price: 1600,
-    peakPrice: 2400,
-    players: "8–10 players",
-    rating: 4.8,
-    active: true,
-    features: ["Rain-proof roof", "Rebound walls", "Scoreboard", "Locker room"],
-    description: "Fast 5-a-side futsal under a full roof — the match goes on in the monsoon.",
-  },
-  {
-    id: "ct3",
-    name: "Box Cricket Arena",
-    sport: "cricket",
-    surface: "Artificial turf with mat pitch",
-    indoor: false,
-    size: "8-a-side · 150 × 70 ft",
-    image: "/turf/cricket.webp",
-    price: 1800,
-    peakPrice: 2800,
-    players: "12–16 players",
-    rating: 4.7,
-    active: true,
-    features: ["Netted box", "Bowling machine on request", "Stumps & balls", "Floodlights"],
-    description: "Fully netted box cricket with a true-bounce mat — perfect for office leagues.",
-  },
-  {
-    id: "ct4",
-    name: "Shuttle Court 1",
-    sport: "badminton",
-    surface: "BWF synthetic mat",
-    indoor: true,
-    size: "Doubles · 44 × 20 ft",
-    image: "/turf/badminton.webp",
-    price: 600,
-    peakPrice: 900,
-    players: "2–4 players",
-    rating: 4.8,
-    active: true,
-    features: ["AC hall", "Anti-glare lights", "Racket rental"],
-    description: "Air-conditioned hall with a tournament-grade mat and anti-glare lighting.",
-  },
-  {
-    id: "ct5",
-    name: "Hard Court Tennis",
-    sport: "tennis",
-    surface: "Acrylic hard court",
-    indoor: false,
-    size: "Singles / doubles",
-    image: "/turf/tennis2.webp",
-    price: 1000,
-    peakPrice: 1500,
-    players: "2–4 players",
-    rating: 4.6,
-    active: true,
-    features: ["Ball machine", "Coach on request", "Floodlights"],
-    description: "Cushioned acrylic court with consistent bounce, open early for morning hitters.",
-  },
-  {
-    id: "ct6",
-    name: "Hoops Court",
-    sport: "basketball",
-    surface: "Polyurethane sports floor",
-    indoor: false,
-    size: "Full court · 94 × 50 ft",
-    image: "/turf/basketball.webp",
-    price: 1200,
-    peakPrice: 1800,
-    players: "6–10 players",
-    rating: 4.5,
-    active: true,
-    features: ["Glass backboards", "Floodlights", "Shot clock"],
-    description: "Full-size outdoor court with glass boards and a working shot clock.",
+    features: ["LED floodlights", "Changing room", "Free bibs", "Drinking water", "Parking"],
+    description: "Our 7-a-side pitch with shock-pad grass, full-height nets and floodlights for night matches.",
   },
 ];
 
@@ -166,7 +88,7 @@ export function createSeed(): TurfDB {
           h++;
           continue;
         }
-        const duration = Math.min(court.sport === "badminton" ? 1 : rand() < 0.3 ? 2 : 1, s.closeHour - h);
+        const duration = Math.min(rand() < 0.3 ? 2 : 1, s.closeHour - h);
         const start = slotTime(date, h);
         const end = slotTime(date, h + duration);
         const total = (peak ? court.peakPrice : court.price) * duration;
@@ -213,8 +135,8 @@ export function createSeed(): TurfDB {
   }
 
   const blocks = [
-    { id: "bl1", courtId: "ct6", date: addDays(today, 2), startHour: 6, duration: 4, reason: "Floor re-coating" },
-    { id: "bl2", courtId: "ct3", date: addDays(today, 4), startHour: 15, duration: 5, reason: "Corporate tournament" },
+    { id: "bl1", courtId: "ct1", date: addDays(today, 2), startHour: 6, duration: 3, reason: "Turf re-brushing" },
+    { id: "bl2", courtId: "ct1", date: addDays(today, 4), startHour: 15, duration: 5, reason: "Corporate tournament" },
   ];
   // Drop seeded bookings under a block so the demo has no impossible overlaps.
   const free = bookings.filter(

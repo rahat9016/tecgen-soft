@@ -6,11 +6,11 @@ import { Pencil, Plus, Star } from "lucide-react";
 import { Modal, Switch } from "@/src/components/gadgets/admin/kit";
 import { sportLabels, taka, todayYmd } from "@/src/lib/turf-store/format";
 import { freeSlots, newCourtId, occupies, saveCourt, startMs, useNow, useTurfDB } from "@/src/lib/turf-store/store";
-import type { Court, Sport } from "@/src/lib/turf-store/types";
+import type { Court } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
 import { inputClass, labelClass, SportIcon, tbtn } from "../ui";
 
-const IMAGES = ["field", "boots", "cricket", "cricket2", "badminton", "tennis", "tennis2", "basketball", "night-match", "kickoff", "kids", "stadium", "night"].map(
+const IMAGES = ["field", "boots", "kickoff", "player", "night-match", "kids", "stadium", "night", "hero"].map(
   (n) => `/turf/${n}.webp`
 );
 
@@ -136,16 +136,6 @@ function CourtForm({ court, onDone }: { court: Court; onDone: () => void }) {
         <div>
           <label className={labelClass}>Name *</label>
           <input value={c.name} onChange={(e) => set("name", e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Sport</label>
-          <select value={c.sport} onChange={(e) => set("sport", e.target.value as Sport)} className={inputClass}>
-            {Object.entries(sportLabels).map(([v, l]) => (
-              <option key={v} value={v}>
-                {l}
-              </option>
-            ))}
-          </select>
         </div>
         <div>
           <label className={labelClass}>Surface</label>

@@ -67,10 +67,6 @@ export const formatDuration = (ms: number) => {
 
 export const sportLabels: Record<Sport, string> = {
   football: "Football",
-  cricket: "Cricket",
-  badminton: "Badminton",
-  tennis: "Tennis",
-  basketball: "Basketball",
 };
 
 export const statusLabels: Record<BookingStatus, string> = {
