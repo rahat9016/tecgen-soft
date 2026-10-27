@@ -4,10 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
-import { toast } from "react-toastify";
-import { ArrowUpRight, BadgeCheck, CalendarX2, Hourglass, Phone, Search, Ticket as TicketIcon, XCircle } from "lucide-react";
-import { dateLabel, formatDateTime, formatDuration, hourLabel, payLabels, rangeLabel, relativeDay, taka } from "@/src/lib/turf-store/format";
-import { cancelByCustomer, dueOf, endMs, paidOf, startMs, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
+import { ArrowUpRight, Phone, Search, Ticket as TicketIcon } from "lucide-react";
+import { dateLabel, formatDuration, hourLabel, payLabels, rangeLabel, relativeDay, taka } from "@/src/lib/turf-store/format";
+import { dueOf, endMs, paidOf, startMs, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Booking } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
 import { BookingStatusBadge as StatusBadge, Loader, tbtn } from "./ui";
@@ -113,11 +112,15 @@ export default function MyBookings() {
   const isUpcoming = (b: Booking) => endMs(b) > now && b.status !== "cancelled";
   const upcoming = mine.filter(isUpcoming).sort((a, b) => startMs(a) - startMs(b));
   const past = mine.filter((b) => !isUpcoming(b)).sort((a, b) => startMs(b) - startMs(a));
-  const fresh = freshCode ? db.bookings.find((b) => b.code === freshCode) : undefined;
-  // Cancelling needs the phone number the booking was made with, not just its code.
-  const canManage = query?.kind === "phone";
   const featured = query?.kind === "code" ? mine[0] : upcoming[0];
-  const list = tab === "upcoming" ? upcoming.slice(query?.kind === "phone" ? 1 : 0) : past;
+  // Only tabs with bookings in them; the whole list disappears when there's nothing beyond the featured ticket.
+  const groups = (
+    [
+      { k: "upcoming", label: "More upcoming", items: upcoming.slice(query?.kind === "phone" ? 1 : 0) },
+      { k: "past", label: "Past", items: past },
+    ] as const
+  ).filter((g) => g.items.length > 0);
+  const shown = groups.find((g) => g.k === tab) ?? groups[0];
 
   return (
     <div className="bg-neutral-50">
@@ -202,12 +205,6 @@ export default function MyBookings() {
 
       {query && (
         <div key={`${query.kind}:${query.value}`} id="mb-results" className="mx-auto min-h-[40vh] max-w-7xl scroll-mt-24 px-4 pb-20 pt-10 md:px-8">
-          {fresh && query && (fresh.status === "pending" || fresh.code === featured?.code) && (
-            <Reveal>
-              <FreshBanner b={fresh} />
-            </Reveal>
-          )}
-
           {query && !mine.length && (
             <Reveal className="mt-12 text-center">
               <p className="text-lg font-medium text-neutral-900">
@@ -224,43 +221,33 @@ export default function MyBookings() {
 
           {featured && (
             <Reveal delay={0.05} className="mt-10">
-              <h2 className="mb-3 text-sm font-medium text-neutral-500">{query?.kind === "code" ? "Booking" : "Next up"}</h2>
-              <Ticket b={featured} now={now} canManage={canManage} />
+              <Ticket b={featured} now={now} />
             </Reveal>
           )}
 
-          {query?.kind === "phone" && mine.length > 0 && (
+          {query?.kind === "phone" && shown && (
             <Reveal delay={0.25} className="mt-12">
               <div className="flex gap-6 border-b border-neutral-200 text-sm">
-                {(
-                  [
-                    ["upcoming", `More upcoming (${Math.max(0, upcoming.length - 1)})`],
-                    ["past", `Past (${past.length})`],
-                  ] as const
-                ).map(([k, l]) => (
+                {groups.map((g) => (
                   <button
-                    key={k}
-                    onClick={() => setTab(k)}
-                    aria-pressed={tab === k}
+                    key={g.k}
+                    onClick={() => setTab(g.k)}
+                    aria-pressed={shown.k === g.k}
                     className={cn(
                       "-mb-px border-b-2 pb-3",
-                      tab === k ? "border-emerald-800 font-semibold text-neutral-900" : "border-transparent text-neutral-500 hover:text-neutral-900"
+                      shown.k === g.k ? "border-emerald-800 font-semibold text-neutral-900" : "border-transparent text-neutral-500 hover:text-neutral-900"
                     )}
                   >
-                    {l}
+                    {g.label} ({g.items.length})
                   </button>
                 ))}
               </div>
-              {list.length ? (
-                // Keyed by tab so switching tabs replays the row stagger.
-                <ul key={tab} className="divide-y divide-neutral-200">
-                  {list.map((b, i) => (
-                    <Row key={b.id} b={b} now={now} canManage={canManage} index={i} />
-                  ))}
-                </ul>
-              ) : (
-                <p className="py-8 text-sm text-neutral-500">{tab === "upcoming" ? "Nothing else booked yet." : "No past games yet."}</p>
-              )}
+              {/* Keyed by tab so switching tabs replays the row stagger. */}
+              <ul key={shown.k} className="divide-y divide-neutral-200">
+                {shown.items.map((b, i) => (
+                  <Row key={b.id} b={b} index={i} />
+                ))}
+              </ul>
             </Reveal>
           )}
         </div>
@@ -289,58 +276,12 @@ function PitchBackdrop() {
   );
 }
 
-function FreshBanner({ b }: { b: Booking }) {
-  const pending = b.status === "pending";
-  return (
-    <div
-      className={cn(
-        "mt-8 flex items-start gap-4 rounded-2xl p-5",
-        pending ? "bg-white ring-1 ring-orange-200" : b.status === "cancelled" ? "bg-rose-50 ring-1 ring-rose-200" : "bg-emerald-50 ring-1 ring-emerald-200"
-      )}
-    >
-      <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-full text-white", pending ? "bg-orange-500" : "bg-emerald-700")}>
-        {pending ? <Hourglass className="size-5" /> : <BadgeCheck className="size-5" />}
-      </span>
-      <div>
-        <p className="font-semibold text-neutral-900">
-          {pending
-            ? `Booking ${b.code} received — we're checking your advance`
-            : b.status === "cancelled"
-              ? `Booking ${b.code} was cancelled`
-              : `Booking ${b.code} is confirmed. See you on the pitch!`}
-        </p>
-        <p className="mt-0.5 text-sm text-neutral-600">
-          {pending
-            ? "Keep this page open — it turns Confirmed by itself once our team verifies the payment."
-            : (b.cancelReason ?? `Show code ${b.code} at the front desk.`)}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/** Cancellation window for a booking: open until a deadline, closed, or not applicable. */
-function useCancel(b: Booking, now: number) {
-  const { settings } = useTurfDB();
-  const deadline = startMs(b) - settings.cancelCutoffHours * 3600_000;
-  const active = b.status === "pending" || b.status === "confirmed";
-  return { active, open: active && now < deadline, deadline, phone: settings.phone };
-}
-
-function cancel(b: Booking) {
-  if (!confirm(`Cancel booking ${b.code} on ${dateLabel(b.date)}, ${rangeLabel(b.startHour, b.duration)}? Your advance is refunded per venue policy.`)) return;
-  const r = cancelByCustomer(b.code, b.customer.phone);
-  if (r.ok) toast.success("Booking cancelled");
-  else toast.error(r.error);
-}
-
 /** The featured booking, styled as a match ticket with a tear-off stub carrying the code. */
-function Ticket({ b, now, canManage }: { b: Booking; now: number; canManage: boolean }) {
+function Ticket({ b, now }: { b: Booking; now: number }) {
   const db = useTurfDB();
   const court = db.courts.find((c) => c.id === b.courtId);
   const until = startMs(b) - now;
   const live = until <= 0 && endMs(b) > now && b.status !== "cancelled";
-  const c = useCancel(b, now);
   const paid = paidOf(b);
   const due = dueOf(b);
   const directions = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(db.settings.address)}`;
@@ -353,7 +294,7 @@ function Ticket({ b, now, canManage }: { b: Booking; now: number; canManage: boo
         {/* Status and countdown only matter until the game is over. */}
         {!ended && (
           <div className="mb-5 flex flex-wrap items-center gap-3">
-            <BookingStatusBadge status={b.status} />
+            {b.status !== "pending" && <BookingStatusBadge status={b.status} />}
             {b.status !== "cancelled" && (
               <span className="text-sm font-medium text-emerald-700">{live ? "Playing now" : `Kick-off in ${formatDuration(until)}`}</span>
             )}
@@ -395,21 +336,6 @@ function Ticket({ b, now, canManage }: { b: Booking; now: number; canManage: boo
           <a href={directions} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-emerald-800 hover:underline">
             Get directions <ArrowUpRight className="size-4" />
           </a>
-          {c.active &&
-            (!canManage ? (
-              <span className="text-neutral-500">To cancel, look up with your mobile number.</span>
-            ) : c.open ? (
-              <>
-                <button onClick={() => cancel(b)} className="inline-flex items-center gap-1.5 font-semibold text-rose-600 hover:underline">
-                  <CalendarX2 className="size-4" /> Cancel booking
-                </button>
-                <span className="text-neutral-500">Free until {formatDateTime(new Date(c.deadline).toISOString())}</span>
-              </>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-neutral-500">
-                <XCircle className="size-4" /> Online cancellation closed — call {c.phone}
-              </span>
-            ))}
         </div>
       </div>
 
@@ -431,8 +357,7 @@ function Ticket({ b, now, canManage }: { b: Booking; now: number; canManage: boo
   );
 }
 
-function Row({ b, now, canManage, index }: { b: Booking; now: number; canManage: boolean; index: number }) {
-  const c = useCancel(b, now);
+function Row({ b, index }: { b: Booking; index: number }) {
   const due = dueOf(b);
   const reduce = useReducedMotion();
   return (
@@ -447,13 +372,8 @@ function Row({ b, now, canManage, index }: { b: Booking; now: number; canManage:
         <p className="text-sm text-neutral-500">{rangeLabel(b.startHour, b.duration)}</p>
       </div>
       <div className="order-last col-span-2 flex flex-wrap items-center gap-3 md:order-none md:col-span-1">
-        <BookingStatusBadge status={b.status} />
+        {b.status !== "pending" && <BookingStatusBadge status={b.status} />}
         <span className="font-mono text-xs text-neutral-500">{b.code}</span>
-        {canManage && c.open && (
-          <button onClick={() => cancel(b)} className="text-sm font-semibold text-rose-600 hover:underline">
-            Cancel
-          </button>
-        )}
       </div>
       <p className="text-sm text-neutral-500 max-md:hidden">{b.status === "cancelled" ? "—" : due > 0 ? `${taka(due)} due at venue` : "Fully paid"}</p>
       <p className="text-right font-semibold text-neutral-900">{taka(b.total)}</p>

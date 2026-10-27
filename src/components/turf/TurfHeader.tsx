@@ -99,11 +99,12 @@ export default function TurfHeader() {
           </div>
         </div>
 
+        {/* Floats below the bar so opening it never changes the header's height or pushes the page down. */}
         {open && (
           <nav
             className={cn(
-              "mx-auto grid max-w-7xl gap-1 rounded-2xl bg-emerald-950/85 p-2 ring-1 ring-white/15 backdrop-blur-xl lg:hidden",
-              glass ? "mt-2" : "mx-3 mb-3"
+              "absolute top-full mx-auto mt-2 grid max-w-7xl gap-1 rounded-2xl bg-emerald-950/95 p-2 shadow-xl shadow-black/30 ring-1 ring-white/15 backdrop-blur-xl lg:hidden",
+              glass ? "inset-x-3 md:inset-x-6" : "inset-x-3"
             )}
           >
             {links.map((l) => (
@@ -117,6 +118,7 @@ export default function TurfHeader() {
           </nav>
         )}
       </header>
+      {open && <div aria-hidden onClick={() => setOpen(false)} className="fixed inset-0 z-30 bg-black/40 lg:hidden" />}
     </>
   );
 }

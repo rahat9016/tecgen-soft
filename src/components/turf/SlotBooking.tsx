@@ -9,8 +9,10 @@ import {
   ArrowRight,
   CalendarDays,
   Check,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ClipboardPaste,
   Clock,
   Copy,
   Hourglass,
@@ -34,6 +36,7 @@ import {
   createOnlineBooking,
   findConflict,
   freeSlots,
+  trxUsed,
   getClientId,
   holdSlot,
   hoursOf,
@@ -199,6 +202,8 @@ export default function SlotBooking() {
                 try {
                   localStorage.setItem(PHONE_KEY, phone);
                 } catch {}
+                // Booking consumed the hold; leaving payment mode stops the "hold expired" warning from firing.
+                setPaying(false);
                 router.push(`/turf/my-bookings?code=${code}`);
               }}
             />
@@ -616,6 +621,18 @@ function Matrix({
 
 const BD_PHONE = /^01[3-9]\d{8}$/;
 
+/** bKash and Nagad transaction IDs: 8–10 capital letters and digits. */
+const TRX_ID = /^[A-Z0-9]{8,10}$/;
+
+/**
+ * Takes whatever the customer pasted — the bare ID or the whole confirmation SMS ("… TrxID BJ74K3XQ2M at …")
+ * — and returns the ID in canonical form.
+ */
+function parseTrxId(text: string) {
+  const fromSms = text.match(/\b(?:trx|txn)\s*id\s*[:#.-]?\s*([a-z0-9]{8,10})\b/i);
+  return (fromSms ? fromSms[1] : text.replace(/[^a-z0-9]/gi, "")).toUpperCase().slice(0, 20);
+}
+
 /** Logos on the "Pay with" tiles (files in /public/payments); sized so all three fit a 320px phone. */
 const payLogos = {
   bkash: [{ src: "/payments/bkash.webp", w: 208, h: 96, cls: "h-7 sm:h-8" }],
@@ -698,6 +715,7 @@ function PaymentStep({
   const [method, setMethod] = useState<Exclude<PayMethod, "cash">>("bkash");
   const [full, setFull] = useState(false);
   const [ref, setRef] = useState("");
+  const [refLeft, setRefLeft] = useState(false);
   const [card, setCard] = useState({ number: "", exp: "", cvc: "" });
   const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -716,9 +734,11 @@ function PaymentStep({
       if (cardDigits.length !== 16) e.card = "Card number must be 16 digits";
       else if (!/^\d{2}\/\d{2}$/.test(card.exp)) e.card = "Expiry as MM/YY";
       else if (!/^\d{3,4}$/.test(card.cvc)) e.card = "Enter the CVC";
-    } else if (ref.trim().length < 6) e.ref = "Enter the transaction ID from your SMS";
+    } else if (!ref) e.ref = "Enter the transaction ID from the SMS";
+    else if (!TRX_ID.test(ref)) e.ref = "A transaction ID is 8–10 letters and numbers";
+    else if (trxUsed(db, method, ref)) e.ref = "This transaction ID has already been used";
     return e;
-  }, [form, method, ref, card, cardDigits]);
+  }, [db, form, method, ref, card, cardDigits]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -731,7 +751,7 @@ function PaymentStep({
         customer: { name: form.name.trim(), phone: form.phone.trim() },
         method,
         amount,
-        ref: method === "card" ? `CARD •••• ${cardDigits.slice(-4)}` : ref.trim().toUpperCase(),
+        ref: method === "card" ? `CARD •••• ${cardDigits.slice(-4)}` : ref,
       },
       clientId
     );
@@ -742,6 +762,15 @@ function PaymentStep({
     }
     toast.success(`Booking ${r.value.code} received!`);
     onDone(r.value.code, r.value.customer.phone);
+  };
+
+  // Clipboard reads need a secure origin and, on some browsers, a one-time permission.
+  const canPaste = typeof navigator !== "undefined" && !!navigator.clipboard?.readText;
+  const pasteRef = async () => {
+    try {
+      setRef(parseTrxId(await navigator.clipboard.readText()));
+      setRefLeft(true);
+    } catch {}
   };
 
   const err = (k: string) => touched && errors[k] && <p className="mt-1.5 text-xs text-rose-600">{errors[k]}</p>;
@@ -940,14 +969,45 @@ function PaymentStep({
                   <label htmlFor="pf-ref" className={labelClass}>
                     {payLabels[method]} transaction ID
                   </label>
-                  <input
-                    id="pf-ref"
-                    className={cn(input, "uppercase placeholder:normal-case")}
-                    placeholder="e.g. 9AX4KQ7Z1"
-                    value={ref}
-                    onChange={(e) => setRef(e.target.value)}
-                  />
-                  {err("ref")}
+                  <div className="relative">
+                    <input
+                      id="pf-ref"
+                      className={cn(input, "pr-20 font-medium tracking-wider placeholder:font-normal placeholder:tracking-normal")}
+                      placeholder={method === "bkash" ? "e.g. BJ74K3XQ2M" : "e.g. 7A3F9K2L"}
+                      value={ref}
+                      onChange={(e) => setRef(parseTrxId(e.target.value))}
+                      onBlur={() => setRefLeft(!!ref)}
+                      autoComplete="off"
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      enterKeyHint="done"
+                      aria-invalid={(touched || refLeft) && !!errors.ref}
+                      aria-describedby="pf-ref-hint"
+                    />
+                    <span className="absolute inset-y-0 right-2 flex items-center">
+                      {ref && !errors.ref ? (
+                        <CheckCircle2 className="mr-1.5 size-5 text-emerald-600" aria-label="Looks right" />
+                      ) : (
+                        canPaste && (
+                          <button
+                            type="button"
+                            onClick={pasteRef}
+                            className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-50"
+                          >
+                            <ClipboardPaste className="size-3.5" /> Paste
+                          </button>
+                        )
+                      )}
+                    </span>
+                  </div>
+                  {(touched || refLeft) && errors.ref ? (
+                    <p className="mt-1.5 text-xs text-rose-600">{errors.ref}</p>
+                  ) : (
+                    <p id="pf-ref-hint" className="mt-1.5 text-xs text-neutral-500">
+                      Paste the ID or the whole {payLabels[method]} SMS.
+                    </p>
+                  )}
                 </div>
               </>
             )}

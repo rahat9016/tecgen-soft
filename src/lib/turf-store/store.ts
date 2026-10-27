@@ -285,12 +285,21 @@ export type OnlineBookingInput = SlotRequest & {
   note?: string;
 };
 
+/** Whether a wallet transaction ID has already paid for a booking — one transfer can't pay twice. */
+export function trxUsed(db: TurfDB, method: PayMethod, ref: string) {
+  return db.bookings.some((b) => b.payments.some((p) => p.method === method && p.ref === ref));
+}
+
 export function createOnlineBooking(input: OnlineBookingInput, clientId: string): Result<Booking> {
   let result: Result<Booking> = { ok: false, error: "Booking failed." };
   update((s) => {
     const conflict = findConflict(s, input, { clientId });
     if (conflict) {
       result = { ok: false, error: conflictMessage(conflict) };
+      return s;
+    }
+    if (input.method !== "card" && trxUsed(s, input.method, input.ref)) {
+      result = { ok: false, error: "This transaction ID has already been used for a booking." };
       return s;
     }
     const court = s.courts.find((c) => c.id === input.courtId)!;
