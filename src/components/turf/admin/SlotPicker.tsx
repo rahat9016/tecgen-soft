@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CalendarDays, Minus, Plus } from "lucide-react";
 import { addDays, dateLabel, hourLabel, slotTime, taka, todayYmd } from "@/src/lib/turf-store/format";
 import { conflictMessage, findConflict, freeSlots, groundOf, hoursOf, slotInfo, useNow, useTurfDB, type Conflict } from "@/src/lib/turf-store/store";
+import { useT } from "@/src/lib/turf-store/i18n";
 import { cn } from "@/src/lib/utils";
 import DateCalendar from "../DateCalendar";
 
@@ -15,7 +16,6 @@ const chipOff = "bg-neutral-100 text-neutral-800 hover:bg-emerald-50";
 /** One-tap lengths; anything else goes through Custom. */
 const PRESETS = [1, 2, 3];
 const segment = "min-w-0 whitespace-nowrap rounded-lg px-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-30 sm:min-w-14 sm:px-3";
-const hrs = (n: number) => `${n} hr${n === 1 ? "" : "s"}`;
 /** "7:00 PM", as on the booking site's kick-off grid. */
 const clock = (h: number) => {
   const hh = h % 24;
@@ -63,6 +63,7 @@ export default function SlotPicker({
 }) {
   const db = useTurfDB();
   const now = useNow(30_000);
+  const t = useT();
   const [custom, setCustom] = useState(!PRESETS.includes(duration));
   const ground = groundOf(db);
   if (!ground) return null;
@@ -86,7 +87,7 @@ export default function SlotPicker({
     const info = slotInfo(db, ground, date, h, now, "");
     const own = info.kind === "booked" && info.booking.id === bookingId;
     const open = own || info.kind === "free" || (info.kind === "past" && nowHour(h));
-    const note = open ? "Available" : info.kind === "blocked" ? "Closed" : info.kind === "held" ? "Being paid" : "Booked";
+    const note = t(open ? "Available" : info.kind === "blocked" ? "Closed" : info.kind === "held" ? "Being paid" : "Booked");
     return { open, note };
   };
 
@@ -108,7 +109,7 @@ export default function SlotPicker({
       <div role="group" aria-labelledby="sp-date">
         <div className="mb-2 flex items-center justify-between gap-3">
           <p id="sp-date" className="flex items-center text-sm font-medium text-neutral-800">
-            <Step n={1} show={numbered} /> Date
+            <Step n={1} show={numbered} /> {t("Date")}
           </p>
           <span className="text-sm text-neutral-500">{dateLabel(date)}</span>
         </div>
@@ -124,15 +125,15 @@ export default function SlotPicker({
                 aria-label={dateLabel(d, { weekday: "long", day: "numeric", month: "long" })}
                 className={cn(chip, on ? chipOn : chipOff)}
               >
-                <span className={cn("text-[11px] font-medium", on ? "text-white/75" : "text-neutral-500")}>{i === 0 ? "Today" : dateLabel(d, { weekday: "short" })}</span>
+                <span className={cn("text-[11px] font-medium", on ? "text-white/75" : "text-neutral-500")}>{i === 0 ? t("Today") : dateLabel(d, { weekday: "short" })}</span>
                 <span className="text-lg font-semibold leading-tight tabular-nums">{dateLabel(d, { day: "numeric" })}</span>
               </button>
             );
           })}
           <DateCalendar value={date} first={today} last={date > last ? date : last} isFull={(d) => freeSlots(db, ground, d, now) === 0} onChange={onDate}>
-            <button type="button" aria-label="Pick a later date" aria-pressed={later} className={cn(chip, "gap-1", later ? chipOn : chipOff)}>
+            <button type="button" aria-label={t("Pick a later date")} aria-pressed={later} className={cn(chip, "gap-1", later ? chipOn : chipOff)}>
               <CalendarDays className="size-4" />
-              <span className="text-[11px] font-medium">{later ? dateLabel(date, { day: "numeric", month: "short" }) : "More"}</span>
+              <span className="text-[11px] font-medium">{later ? dateLabel(date, { day: "numeric", month: "short" }) : t("More")}</span>
             </button>
           </DateCalendar>
         </div>
@@ -141,7 +142,7 @@ export default function SlotPicker({
       <div>
         {/* Phones: label on its own line and the four lengths share the full width. */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-          <p className="text-sm font-medium text-neutral-800">Duration</p>
+          <p className="text-sm font-medium text-neutral-800">{t("Duration")}</p>
           <div className="grid h-11 grid-cols-4 gap-1 rounded-xl bg-neutral-100 p-1 sm:flex sm:h-10">
             {PRESETS.map((d) => {
               const on = !custom && d === duration;
@@ -158,34 +159,34 @@ export default function SlotPicker({
                   aria-pressed={on}
                   className={cn(segment, on ? "bg-emerald-800 text-white" : "text-neutral-600 hover:bg-white")}
                 >
-                  {d} hr
+                  {t("{n} hr", { n: d })}
                 </button>
               );
             })}
             <button type="button" onClick={() => setCustom(true)} aria-pressed={custom} className={cn(segment, custom ? "bg-emerald-800 text-white" : "text-neutral-600 hover:bg-white")}>
-              Custom
+              {t("Custom")}
             </button>
           </div>
         </div>
         {custom && (
           <div className="mt-2 flex items-center justify-between gap-3 rounded-xl bg-neutral-50 px-3 py-2">
-            <p className="text-sm text-neutral-600">Hours</p>
+            <p className="text-sm text-neutral-600">{t("Hours")}</p>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => onDuration(Math.max(1, duration - 1))}
                 disabled={duration <= 1}
-                aria-label="One hour less"
+                aria-label={t("One hour less")}
                 className="flex size-9 items-center justify-center rounded-lg bg-white text-neutral-700 ring-1 ring-neutral-200 transition hover:ring-emerald-500 disabled:opacity-40"
               >
                 <Minus className="size-4" />
               </button>
-              <span className="min-w-16 text-center text-sm font-semibold tabular-nums text-neutral-900">{hrs(duration)}</span>
+              <span className="min-w-16 text-center text-sm font-semibold tabular-nums text-neutral-900">{t(duration === 1 ? "{n} hr" : "{n} hrs", { n: duration })}</span>
               <button
                 type="button"
                 onClick={() => onDuration(Math.min(maxHours, duration + 1))}
                 disabled={duration >= maxHours || (start !== null && !fits(start, duration + 1))}
-                aria-label="One hour more"
+                aria-label={t("One hour more")}
                 className="flex size-9 items-center justify-center rounded-lg bg-white text-neutral-700 ring-1 ring-neutral-200 transition hover:ring-emerald-500 disabled:opacity-40"
               >
                 <Plus className="size-4" />
@@ -198,26 +199,26 @@ export default function SlotPicker({
       <div role="group" aria-labelledby="sp-time">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <p id="sp-time" className="flex items-center text-sm font-medium text-neutral-800">
-            <Step n={2} show={numbered} /> Pick your kick-off
+            <Step n={2} show={numbered} /> {t("Pick your kick-off")}
           </p>
           <div className="flex items-center gap-3 text-xs text-neutral-600">
             <span className="flex items-center gap-1.5">
-              <span className="size-3 rounded-full border border-neutral-300" /> Available
+              <span className="size-3 rounded-full border border-neutral-300" /> {t("Available")}
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="size-3 rounded-full bg-lime-400" /> Selected
+              <span className="size-3 rounded-full bg-lime-400" /> {t("Selected")}
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="size-3 rounded-full bg-neutral-200" /> Booked
+              <span className="size-3 rounded-full bg-neutral-200" /> {t("Booked")}
             </span>
           </div>
         </div>
 
         {hours.length === 0 ? (
           <p className="mt-3 rounded-lg bg-neutral-50 px-4 py-6 text-center text-sm text-neutral-600">
-            No kick-off times left on this day.{" "}
+            {t("No kick-off times left on this day.")}{" "}
             <button type="button" onClick={() => onDate(addDays(date, 1))} className="font-semibold text-emerald-800 underline">
-              See the next day
+              {t("See the next day")}
             </button>
           </p>
         ) : (
@@ -226,8 +227,8 @@ export default function SlotPicker({
               g.hs.length > 0 && (
                 <div key={g.label} className="mt-4">
                   <p className="mb-2 flex items-baseline justify-between gap-2 text-sm">
-                    <span className="font-semibold text-neutral-800">{g.label}</span>
-                    <span className="text-xs text-neutral-500">{taka(g.rate)}/hr</span>
+                    <span className="font-semibold text-neutral-800">{t(g.label)}</span>
+                    <span className="text-xs text-neutral-500">{t("{amount}/hr", { amount: taka(g.rate) })}</span>
                   </p>
                   <div className={cn("grid grid-cols-3 gap-2 sm:grid-cols-4", className)}>
                     {g.hs.map((h) => {
@@ -246,7 +247,7 @@ export default function SlotPicker({
                           )}
                         >
                           <span className={cn("block whitespace-nowrap text-sm font-semibold tabular-nums", !open && !selected && "line-through decoration-neutral-300")}>{clock(h)}</span>
-                          <span className={cn("mt-0.5 block text-xs leading-tight", selected ? "text-emerald-950/80" : open ? "text-emerald-700" : "text-neutral-400")}>{selected ? "Selected" : note}</span>
+                          <span className={cn("mt-0.5 block text-xs leading-tight", selected ? "text-emerald-950/80" : open ? "text-emerald-700" : "text-neutral-400")}>{selected ? t("Selected") : note}</span>
                         </button>
                       );
                     })}
@@ -257,7 +258,9 @@ export default function SlotPicker({
         )}
         {conflict && start !== null && (
           <p className="mt-3 rounded-lg bg-rose-50 px-3.5 py-3 text-sm text-rose-700">
-            {conflict.kind === "booking" ? `${hrs(duration)} from ${hourLabel(start)} clashes with ${conflict.booking.code}.` : conflictMessage(conflict)}
+            {conflict.kind === "booking"
+              ? t("{hours} from {time} clashes with {code}.", { hours: t(duration === 1 ? "{n} hr" : "{n} hrs", { n: duration }), time: hourLabel(start), code: conflict.booking.code })
+              : t(conflictMessage(conflict))}
           </p>
         )}
       </div>

@@ -7,6 +7,7 @@ import { ChevronRight, ClipboardList, Plus, Wallet } from "lucide-react";
 import { dateLabel, rangeLabel, sourceLabels, statusLabels, statusStyles, taka, todayYmd } from "@/src/lib/turf-store/format";
 import { dueOf, paidOf, phaseOf, startMs, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Booking, Phase } from "@/src/lib/turf-store/types";
+import { useT } from "@/src/lib/turf-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { abtn, ADMIN, Avatar, Empty, focusRing, PageHeader, Pager, SearchInput, StatusBadge, tableCardClass, ToolbarSelect, usePagination, ViewPills } from "./ui";
 
@@ -32,6 +33,7 @@ function inView(b: Booking, v: View, today: string) {
 const detail = (b: Booking) => `${ADMIN}/bookings/${b.id}`;
 
 export default function BookingsList() {
+  const t = useT();
   const db = useTurfDB();
   const [view, setView] = useState<View>("all");
   const [q, setQ] = useState("");
@@ -57,8 +59,8 @@ export default function BookingsList() {
     <div>
       <PageHeader title="Bookings">
         <Link href={`${ADMIN}/bookings/new`} className={abtn.primary}>
-          <Plus className="size-4" aria-hidden /> <span className="sm:hidden">New</span>
-          <span className="hidden sm:inline">New booking</span>
+          <Plus className="size-4" aria-hidden /> <span className="sm:hidden">{t("New")}</span>
+          <span className="hidden sm:inline">{t("New booking")}</span>
         </Link>
       </PageHeader>
 
@@ -94,7 +96,7 @@ export default function BookingsList() {
                 setView(v);
                 page.setPage(1);
               }}
-              options={views.map((v) => ({ value: v.value, label: `${v.label} (${counts[v.value]})` }))}
+              options={views.map((v) => ({ value: v.value, label: `${t(v.label)} (${counts[v.value]})` }))}
             />
           </div>
         </div>
@@ -102,7 +104,7 @@ export default function BookingsList() {
         {list.length === 0 ? (
           <Empty
             icon={ClipboardList}
-            title={filtering ? "No bookings match" : view === "all" ? "No bookings yet" : `Nothing in “${views.find((v) => v.value === view)?.label}”`}
+            title={filtering ? "No bookings match" : view === "all" ? "No bookings yet" : t("Nothing in “{view}”", { view: t(views.find((v) => v.value === view)?.label ?? "") })}
             text={filtering ? "Try another search." : view === "all" ? "New bookings will show up here." : "Pick another view."}
           >
             {filtering && (
@@ -110,7 +112,7 @@ export default function BookingsList() {
                 onClick={() => setQ("")}
                 className={cn(abtn.outline, "mt-2")}
               >
-                Clear search
+                {t("Clear search")}
               </button>
             )}
           </Empty>
@@ -125,7 +127,7 @@ export default function BookingsList() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <p className="truncate font-semibold text-neutral-900">{b.customer.name}</p>
-                        <span className={cn("inline-flex max-w-[50%] shrink-0 truncate rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset", statusStyles[phaseOf(b, now)])}>{statusLabels[phaseOf(b, now)]}</span>
+                        <span className={cn("inline-flex max-w-[50%] shrink-0 truncate rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset", statusStyles[phaseOf(b, now)])}>{t(statusLabels[phaseOf(b, now)])}</span>
                       </div>
                       <div className="mt-1 flex items-center justify-between gap-2 text-[13px]">
                         <p className="truncate text-neutral-600">
@@ -152,12 +154,12 @@ export default function BookingsList() {
                 </colgroup>
                 <thead className="border-b border-neutral-200 bg-neutral-50 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
                   <tr>
-                    <th className="py-2.5 pl-4 pr-3">Customer</th>
-                    <th className="px-3 py-2.5">Slot</th>
-                    <th className="px-3 py-2.5">Status</th>
-                    <th className="px-3 py-2.5 text-right">Payment</th>
+                    <th className="py-2.5 pl-4 pr-3">{t("Customer")}</th>
+                    <th className="px-3 py-2.5">{t("Slot")}</th>
+                    <th className="px-3 py-2.5">{t("Status")}</th>
+                    <th className="px-3 py-2.5 text-right">{t("Payment")}</th>
                     <th className="py-2.5 pr-4">
-                      <span className="sr-only">Actions</span>
+                      <span className="sr-only">{t("Actions")}</span>
                     </th>
                   </tr>
                 </thead>
@@ -177,6 +179,7 @@ export default function BookingsList() {
 }
 
 function Row({ b, today, phase }: { b: Booking; today: string; phase: Phase }) {
+  const t = useT();
   const router = useRouter();
   return (
     <tr onClick={() => router.push(detail(b))} className="group cursor-pointer transition hover:bg-neutral-50">
@@ -188,7 +191,7 @@ function Row({ b, today, phase }: { b: Booking; today: string; phase: Phase }) {
               {b.customer.name}
             </Link>
             <p className="truncate text-xs text-neutral-500">
-              <span className="font-mono">{b.code}</span> · {sourceLabels[b.source]}
+              <span className="font-mono">{b.code}</span> · {t(sourceLabels[b.source])}
             </p>
           </div>
         </div>
@@ -196,10 +199,10 @@ function Row({ b, today, phase }: { b: Booking; today: string; phase: Phase }) {
       <td className="px-3 py-3">
         <p className="flex items-center gap-1.5 whitespace-nowrap text-neutral-900">
           {dateLabel(b.date)}
-          {b.date === today && b.status !== "cancelled" && <span className="rounded bg-emerald-50 px-1.5 text-[11px] font-medium text-emerald-700">Today</span>}
+          {b.date === today && b.status !== "cancelled" && <span className="rounded bg-emerald-50 px-1.5 text-[11px] font-medium text-emerald-700">{t("Today")}</span>}
         </p>
         <p className="whitespace-nowrap text-xs text-neutral-500">
-          {rangeLabel(b.startHour, b.duration)} · {b.duration} hr{b.duration > 1 ? "s" : ""}
+          {rangeLabel(b.startHour, b.duration)} · {t(b.duration > 1 ? "{n} hrs" : "{n} hr", { n: b.duration })}
         </p>
       </td>
       <td className="px-3 py-3">
@@ -236,23 +239,25 @@ function DateTile({ b, phase }: { b: Booking; phase: Phase }) {
 }
 
 function PayShort({ b }: { b: Booking }) {
+  const t = useT();
   const due = dueOf(b);
-  if (due > 0) return <span className="shrink-0 font-medium tabular-nums text-rose-700">{taka(due)} due</span>;
+  if (due > 0) return <span className="shrink-0 font-medium tabular-nums text-rose-700">{t("{amount} due", { amount: taka(due) })}</span>;
   return <span className="shrink-0 tabular-nums text-neutral-500">{taka(b.total)}</span>;
 }
 
 /** Total and one plain line on what's owed. */
 function PayLine({ b }: { b: Booking }) {
+  const t = useT();
   const due = dueOf(b);
   const paid = paidOf(b);
   const [text, tone] =
     b.status === "cancelled"
-      ? [paid > 0 ? `${taka(paid)} kept` : "No charge", "text-neutral-600"]
+      ? [paid > 0 ? t("{amount} kept", { amount: taka(paid) }) : t("No charge"), "text-neutral-600"]
       : due === 0
-        ? ["Paid in full", "text-emerald-700"]
+        ? [t("Paid in full"), "text-emerald-700"]
         : paid > 0
-          ? [`${taka(due)} due`, "text-rose-700"]
-          : ["Not paid", "text-rose-700"];
+          ? [t("{amount} due", { amount: taka(due) }), "text-rose-700"]
+          : [t("Not paid"), "text-rose-700"];
   return (
     <div className="whitespace-nowrap">
       <p className="font-medium tabular-nums text-neutral-900">{taka(b.total)}</p>
@@ -268,6 +273,7 @@ const actionTones = {
 
 /** The one thing the desk most likely wants to do next: take the rest of the money at the ground. */
 function RowAction({ b, phase }: { b: Booking; phase: Phase }) {
+  const t = useT();
   const router = useRouter();
   const stop = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -284,7 +290,7 @@ function RowAction({ b, phase }: { b: Booking; phase: Phase }) {
         }}
         className={actionTones.collect}
       >
-        <Wallet className="size-3.5" aria-hidden /> Collect
+        <Wallet className="size-3.5" aria-hidden /> {t("Collect")}
       </button>
     );
   return null;

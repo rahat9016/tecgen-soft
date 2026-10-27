@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
 import { MoneyGlyph, type MoneyIcon } from "@/src/components/hotel/admin/MoneyCard";
 import { statusLabels, statusStyles, taka } from "@/src/lib/turf-store/format";
+import { useT } from "@/src/lib/turf-store/i18n";
 import { phaseOf, useNow } from "@/src/lib/turf-store/store";
 import type { Booking, Phase } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
@@ -48,20 +49,22 @@ export const initials = (name: string) =>
     .join("");
 
 export function Field({ label, hint, className, children }: { label: string; hint?: string; className?: string; children: React.ReactNode }) {
+  const tr = useT();
   return (
     <label className={cn("block", className)}>
-      <span className={labelClass}>{label}</span>
+      <span className={labelClass}>{tr(label)}</span>
       {children}
-      {hint && <span className="mt-1 block text-[11px] text-neutral-400">{hint}</span>}
+      {hint && <span className="mt-1 block text-[11px] text-neutral-400">{tr(hint)}</span>}
     </label>
   );
 }
 
 /** Small titled group of fields inside a section. */
 export function Group({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
+  const tr = useT();
   return (
     <fieldset className={cn("rounded-lg border border-neutral-200 p-3 sm:p-4", className)}>
-      <legend className="-ml-1 px-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{title}</legend>
+      <legend className="-ml-1 px-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">{tr(title)}</legend>
       {children}
     </fieldset>
   );
@@ -69,11 +72,12 @@ export function Group({ title, children, className }: { title: string; children:
 
 /** White header card at the top of a list page. */
 export function PageHeader({ title, subtitle, children }: { title: string; subtitle?: string; children?: React.ReactNode }) {
+  const tr = useT();
   return (
     <div className="mb-3 flex items-center justify-between gap-3 rounded-md border border-neutral-200 bg-white px-4 py-3 sm:mb-4 sm:px-5 sm:py-3.5">
       <div className="min-w-0">
-        <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl">{title}</h1>
-        {subtitle && <p className="mt-0.5 truncate text-[13px] text-neutral-600 sm:text-sm">{subtitle}</p>}
+        <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl">{tr(title)}</h1>
+        {subtitle && <p className="mt-0.5 truncate text-[13px] text-neutral-600 sm:text-sm">{tr(subtitle)}</p>}
       </div>
       {children && <div className="flex shrink-0 items-center gap-2">{children}</div>}
     </div>
@@ -82,12 +86,13 @@ export function PageHeader({ title, subtitle, children }: { title: string; subti
 
 /** Titled card used on detail pages. */
 export function Panel({ title, icon: Icon, action, children, className }: { title: string; icon?: React.ComponentType<{ className?: string }>; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
+  const tr = useT();
   return (
     <section className={cn(cardClass, "p-4 sm:p-5", className)}>
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-semibold text-neutral-900">
           {Icon && <Icon className="size-4.5 text-emerald-700" />}
-          {title}
+          {tr(title)}
         </h2>
         {action}
       </div>
@@ -98,11 +103,12 @@ export function Panel({ title, icon: Icon, action, children, className }: { titl
 
 /** Label/value row with an icon, as on the hotel booking page. */
 export function InfoRow({ icon: Icon, label, children }: { icon: React.ComponentType<{ className?: string }>; label: string; children: React.ReactNode }) {
+  const tr = useT();
   return (
     <div className="grid grid-cols-[6.5rem_1fr] items-start gap-3 border-t border-neutral-100 py-3 text-sm first:border-t-0 sm:grid-cols-[9rem_1fr]">
       <dt className="flex items-center gap-2 text-neutral-500">
         <Icon className="size-4 shrink-0 text-neutral-400" />
-        {label}
+        {tr(label)}
       </dt>
       <dd className="min-w-0 text-neutral-900">{children}</dd>
     </div>
@@ -120,11 +126,12 @@ const moneyTones = {
 /** Money tile: ৳ icon on an animated backdrop (hover), the amount and one line of context. */
 export function MoneyCard({ label, value, hint, icon, tone, index = 0, className }: { label: string; value: number; hint?: string; icon: MoneyIcon; tone: keyof typeof moneyTones; index?: number; className?: string }) {
   const t = moneyTones[tone];
+  const tr = useT();
   return (
     <section className={cn("group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white p-3 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-md sm:p-4", className)}>
       <span aria-hidden className={cn("absolute inset-x-0 top-0 h-0.5 opacity-70", t.bar)} />
       <div className="flex items-start justify-between gap-2">
-        <p className="min-w-0 pt-0.5 text-[13px] font-medium text-neutral-600 sm:pt-1">{label}</p>
+        <p className="min-w-0 pt-0.5 text-[13px] font-medium text-neutral-600 sm:pt-1">{tr(label)}</p>
         <span className={cn("relative flex size-10 shrink-0 items-center justify-center rounded-full sm:size-14", t.badge)}>
           <svg viewBox="0 0 56 56" aria-hidden className="absolute inset-0 size-full">
             <circle cx="28" cy="28" r="26" fill="currentColor" className="tw-ripple opacity-0" style={{ animationDelay: `${index * 300}ms` }} />
@@ -135,7 +142,7 @@ export function MoneyCard({ label, value, hint, icon, tone, index = 0, className
         </span>
       </div>
       <p className="mt-auto pt-1.5 text-xl font-bold tabular-nums tracking-tight text-neutral-900 sm:pt-3 sm:text-2xl">{taka(value)}</p>
-      {hint && <p className="mt-0.5 text-xs text-neutral-500 sm:text-[13px]">{hint}</p>}
+      {hint && <p className="mt-0.5 text-xs text-neutral-500 sm:text-[13px]">{tr(hint)}</p>}
     </section>
   );
 }
@@ -149,10 +156,11 @@ const statusDots: Record<Phase, string> = {
 
 export function StatusBadge({ booking, className }: { booking: Booking; className?: string }) {
   const phase = phaseOf(booking, useNow(30_000));
+  const tr = useT();
   return (
     <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset", statusStyles[phase], className)}>
       <span aria-hidden className={cn("size-1.5 rounded-full", statusDots[phase])} />
-      {statusLabels[phase]}
+      {tr(statusLabels[phase])}
     </span>
   );
 }
@@ -166,11 +174,12 @@ export function Avatar({ name }: { name: string }) {
 }
 
 export function Empty({ icon: Icon, title, text, children }: { icon: React.ComponentType<{ className?: string }>; title: string; text?: string; children?: React.ReactNode }) {
+  const tr = useT();
   return (
     <div className="flex flex-col items-center gap-2 px-6 py-14 text-center">
       <Icon className="size-8 text-neutral-300" />
-      <p className="font-medium text-neutral-800">{title}</p>
-      {text && <p className="max-w-sm text-sm text-neutral-500">{text}</p>}
+      <p className="font-medium text-neutral-800">{tr(title)}</p>
+      {text && <p className="max-w-sm text-sm text-neutral-500">{tr(text)}</p>}
       {children}
     </div>
   );
@@ -178,6 +187,7 @@ export function Empty({ icon: Icon, title, text, children }: { icon: React.Compo
 
 /** Underlined tab strip with counts, used at the top of table and editor cards. */
 export function Tabs<T extends string>({ value, onChange, tabs }: { value: T; onChange: (v: T) => void; tabs: { value: T; label: string; count?: number; dot?: string }[] }) {
+  const tr = useT();
   return (
     <div role="tablist" className="flex overflow-x-auto border-b border-neutral-100 px-1 [scrollbar-width:none] sm:gap-1 sm:px-3">
       {tabs.map((t) => {
@@ -192,7 +202,7 @@ export function Tabs<T extends string>({ value, onChange, tabs }: { value: T; on
             className={cn("relative flex shrink-0 items-center gap-1.5 px-2.5 py-3.5 text-sm font-medium transition sm:gap-2 sm:px-3", selected ? "text-neutral-900" : "text-neutral-500 hover:text-neutral-800")}
           >
             {t.dot && <span className={cn("size-2 rounded-full", t.dot)} />}
-            {t.label}
+            {tr(t.label)}
             {t.count !== undefined && (
               <span className={cn("rounded-md px-1.5 text-[11px] tabular-nums", selected ? "bg-emerald-700 text-white" : "bg-neutral-100 text-neutral-500")}>{t.count}</span>
             )}
@@ -206,8 +216,9 @@ export function Tabs<T extends string>({ value, onChange, tabs }: { value: T; on
 
 /** Row of rounded view pills; `group` changes insert a thin divider, and only views with a count show one. */
 export function ViewPills<T extends string>({ value, onChange, views, label }: { value: T; onChange: (v: T) => void; views: { value: T; label: string; count?: number; group: number }[]; label: string }) {
+  const tr = useT();
   return (
-    <div role="group" aria-label={label} className="flex items-center gap-1.5 overflow-x-auto border-b border-neutral-100 p-3 [scrollbar-width:none] sm:flex-wrap sm:px-4">
+    <div role="group" aria-label={tr(label)} className="flex items-center gap-1.5 overflow-x-auto border-b border-neutral-100 p-3 [scrollbar-width:none] sm:flex-wrap sm:px-4">
       {views.map((v, i) => {
         const selected = value === v.value;
         return (
@@ -223,7 +234,7 @@ export function ViewPills<T extends string>({ value, onChange, views, label }: {
                 selected ? "border-emerald-700 bg-emerald-700 text-white" : "border-neutral-200 bg-white text-neutral-700 hover:border-emerald-300 hover:text-emerald-800"
               )}
             >
-              {v.label}
+              {tr(v.label)}
               {v.count !== undefined && (
                 <span
                   className={cn(
@@ -243,10 +254,11 @@ export function ViewPills<T extends string>({ value, onChange, views, label }: {
 }
 
 export function SearchInput({ value, onChange, placeholder, className }: { value: string; onChange: (v: string) => void; placeholder: string; className?: string }) {
+  const tr = useT();
   return (
     <label className={cn("relative block min-w-0 flex-1", className)}>
       <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" aria-hidden />
-      <input type="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={placeholder} className={cn(control, "w-full pl-9 pr-3 placeholder:text-neutral-500")} />
+      <input type="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder={tr(placeholder)} aria-label={tr(placeholder)} className={cn(control, "w-full pl-9 pr-3 placeholder:text-neutral-500")} />
     </label>
   );
 }
@@ -265,13 +277,14 @@ export function ToolbarSelect<T extends string>({
   /** A filter that's narrowing the list gets the brand outline, so it's easy to spot. */
   active?: boolean;
 }) {
+  const tr = useT();
   return (
     <label className="relative block min-w-0">
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{tr(label)}</span>
       <select value={value} onChange={(e) => onChange(e.target.value as T)} className={cn(control, "w-full appearance-none pl-3 pr-9 lg:w-auto", active && "border-emerald-500 bg-emerald-50 font-medium text-emerald-900")}>
         {options.map((o) => (
           <option key={o.value} value={o.value}>
-            {o.label}
+            {tr(o.label)}
           </option>
         ))}
       </select>
@@ -281,16 +294,17 @@ export function ToolbarSelect<T extends string>({
 }
 
 export function Pager({ page, pages, setPage, from, to, total, noun = "items" }: { page: number; pages: number; setPage: (n: number) => void; from: number; to: number; total: number; noun?: string }) {
+  const tr = useT();
   if (!total) return null;
   const nums = Array.from({ length: pages }, (_, i) => i + 1).filter((n) => n === 1 || n === pages || Math.abs(n - page) <= 1);
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 px-4 py-3 text-sm text-neutral-500">
       <p>
-        <b className="text-neutral-800">{from}</b>–<b className="text-neutral-800">{to}</b> of <b className="text-neutral-800">{total}</b> {noun}
+        <b className="text-neutral-800">{from}</b>–<b className="text-neutral-800">{to}</b> {tr("of")} <b className="text-neutral-800">{total}</b> {tr(noun)}
       </p>
       {pages > 1 && (
         <div className="flex items-center gap-1">
-          <button onClick={() => setPage(page - 1)} disabled={page === 1} aria-label="Previous page" className="flex size-8 items-center justify-center rounded-md border border-neutral-200 hover:border-emerald-400 disabled:opacity-40">
+          <button onClick={() => setPage(page - 1)} disabled={page === 1} aria-label={tr("Previous page")} className="flex size-8 items-center justify-center rounded-md border border-neutral-200 hover:border-emerald-400 disabled:opacity-40">
             <ChevronLeft className="size-4" />
           </button>
           {nums.map((n, i) => (
@@ -305,7 +319,7 @@ export function Pager({ page, pages, setPage, from, to, total, noun = "items" }:
               </button>
             </span>
           ))}
-          <button onClick={() => setPage(page + 1)} disabled={page === pages} aria-label="Next page" className="flex size-8 items-center justify-center rounded-md border border-neutral-200 hover:border-emerald-400 disabled:opacity-40">
+          <button onClick={() => setPage(page + 1)} disabled={page === pages} aria-label={tr("Next page")} className="flex size-8 items-center justify-center rounded-md border border-neutral-200 hover:border-emerald-400 disabled:opacity-40">
             <ChevronRight className="size-4" />
           </button>
         </div>
@@ -316,6 +330,7 @@ export function Pager({ page, pages, setPage, from, to, total, noun = "items" }:
 
 /** Editor save bar: sticks to the bottom of the card and turns green once something has changed. */
 export function SaveBar({ dirty, onSave, onDiscard }: { dirty: boolean; onSave: () => void; onDiscard: () => void }) {
+  const tr = useT();
   return (
     <div
       className={cn(
@@ -323,16 +338,16 @@ export function SaveBar({ dirty, onSave, onDiscard }: { dirty: boolean; onSave: 
         dirty ? "border-emerald-200 bg-emerald-50/95" : "border-neutral-100 bg-white/95"
       )}
     >
-      <p className={cn("min-w-0 truncate text-[13px] sm:text-sm", dirty ? "font-medium text-emerald-900" : "text-neutral-500")}>{dirty ? "You have unsaved changes." : "All changes saved"}</p>
+      <p className={cn("min-w-0 truncate text-[13px] sm:text-sm", dirty ? "font-medium text-emerald-900" : "text-neutral-500")}>{dirty ? tr("You have unsaved changes.") : tr("All changes saved")}</p>
       <div className="flex shrink-0 gap-2">
         {dirty && (
           <button type="button" onClick={onDiscard} className={cn(abtn.outline, "bg-white")}>
-            Discard
+            {tr("Discard")}
           </button>
         )}
         <button type="button" onClick={onSave} disabled={!dirty} className={abtn.primary}>
-          <span className="sm:hidden">Save</span>
-          <span className="hidden sm:inline">Save changes</span>
+          <span className="sm:hidden">{tr("Save")}</span>
+          <span className="hidden sm:inline">{tr("Save changes")}</span>
         </button>
       </div>
     </div>

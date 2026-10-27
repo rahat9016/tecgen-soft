@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Banknote, Check, CheckCircle2, ClipboardPaste, Copy } from "lucide-react";
 import { payLabels } from "@/src/lib/turf-store/format";
+import { plainT, type T } from "@/src/lib/turf-store/i18n";
 import type { PayMethod } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
 
@@ -78,7 +79,7 @@ export function AmountChoice<T extends string | boolean>({
 }
 
 /** "Pay with" tiles: wallet and card logos, plus a cash tile where the desk takes cash. */
-export function MethodTiles<M extends PayMethod>({ methods, value, onChange }: { methods: M[]; value: M; onChange: (m: M) => void }) {
+export function MethodTiles<M extends PayMethod>({ methods, value, onChange, t = plainT }: { methods: M[]; value: M; onChange: (m: M) => void; t?: T }) {
   return (
     <div className="flex gap-2">
       {methods.map((m) => {
@@ -89,12 +90,12 @@ export function MethodTiles<M extends PayMethod>({ methods, value, onChange }: {
             key={m}
             onClick={() => onChange(m)}
             aria-pressed={on}
-            aria-label={payLabels[m]}
+            aria-label={t(payLabels[m])}
             className={cn("relative flex h-14 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border bg-white px-1.5 transition sm:gap-1.5 sm:px-3", on ? picked : unpicked)}
           >
             {m === "cash" ? (
               <span className="flex items-center gap-1.5 text-sm font-semibold text-emerald-900">
-                <Banknote className="size-5" /> Cash
+                <Banknote className="size-5" /> {t("Cash")}
               </span>
             ) : (
               payLogos[m as Exclude<PayMethod, "cash">].map((l) => (
@@ -114,7 +115,7 @@ export function MethodTiles<M extends PayMethod>({ methods, value, onChange }: {
 }
 
 /** A value to type into the wallet app, with a copy button where the browser allows it. */
-export function CopyRow({ label, value, copy = value }: { label: string; value: string; copy?: string }) {
+export function CopyRow({ label, value, copy = value, t = plainT }: { label: string; value: string; copy?: string; t?: T }) {
   const [copied, setCopied] = useState(false);
   // Clipboard is only exposed on secure origins (not on a phone hitting the dev server by LAN IP).
   const canCopy = typeof navigator !== "undefined" && !!navigator.clipboard;
@@ -126,7 +127,7 @@ export function CopyRow({ label, value, copy = value }: { label: string; value: 
         {canCopy && (
           <button
             type="button"
-            aria-label={`Copy ${label.toLowerCase()}`}
+            aria-label={t("Copy {what}", { what: label.toLowerCase() })}
             onClick={() =>
               navigator.clipboard
                 .writeText(copy)
@@ -147,12 +148,12 @@ export function CopyRow({ label, value, copy = value }: { label: string; value: 
 }
 
 /** "Send Money to" and "Amount" for a bKash/Nagad payment, both copyable. */
-export function WalletDetails({ venuePhone, amount, amountLabel }: { venuePhone: string; amount: number; amountLabel: string }) {
+export function WalletDetails({ venuePhone, amount, amountLabel, t = plainT }: { venuePhone: string; amount: number; amountLabel: string; t?: T }) {
   const n = walletNumber(venuePhone);
   return (
     <dl className="divide-y divide-neutral-200/70 rounded-lg bg-neutral-50 px-4 text-sm">
-      <CopyRow label="Send Money to" value={n.shown} copy={n.copy} />
-      <CopyRow label="Amount" value={amountLabel} copy={String(amount)} />
+      <CopyRow label={t("Send Money to")} value={n.shown} copy={n.copy} t={t} />
+      <CopyRow label={t("Amount")} value={amountLabel} copy={String(amount)} t={t} />
     </dl>
   );
 }
@@ -167,6 +168,7 @@ export function TrxIdField({
   error,
   inputClassName,
   labelClassName,
+  t = plainT,
 }: {
   id: string;
   method: PayMethod;
@@ -178,6 +180,7 @@ export function TrxIdField({
   error?: string;
   inputClassName: string;
   labelClassName: string;
+  t?: T;
 }) {
   // Clipboard reads need a secure origin and, on some browsers, a one-time permission.
   const canPaste = typeof navigator !== "undefined" && !!navigator.clipboard?.readText;
@@ -192,13 +195,13 @@ export function TrxIdField({
   return (
     <div>
       <label htmlFor={id} className={labelClassName}>
-        {payLabels[method]} transaction ID
+        {t("{method} transaction ID", { method: payLabels[method] })}
       </label>
       <div className="relative">
         <input
           id={id}
           className={cn(inputClassName, "pr-20 font-medium tracking-wider placeholder:font-normal placeholder:tracking-normal")}
-          placeholder={method === "bkash" ? "e.g. BJ74K3XQ2M" : "e.g. 7A3F9K2L"}
+          placeholder={t("e.g. {id}", { id: method === "bkash" ? "BJ74K3XQ2M" : "7A3F9K2L" })}
           value={value}
           onChange={(e) => onChange(parseTrxId(e.target.value))}
           onBlur={() => onCommit?.(value)}
@@ -212,11 +215,11 @@ export function TrxIdField({
         />
         <span className="absolute inset-y-0 right-2 flex items-center">
           {valid && !error ? (
-            <CheckCircle2 className="mr-1.5 size-5 text-emerald-600" aria-label="Looks right" />
+            <CheckCircle2 className="mr-1.5 size-5 text-emerald-600" aria-label={t("Looks right")} />
           ) : (
             canPaste && (
               <button type="button" onClick={paste} className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-50">
-                <ClipboardPaste className="size-3.5" /> Paste
+                <ClipboardPaste className="size-3.5" /> {t("Paste")}
               </button>
             )
           )}
@@ -226,7 +229,7 @@ export function TrxIdField({
         <p className="mt-1.5 text-xs text-rose-600">{error}</p>
       ) : (
         <p id={`${id}-hint`} className="mt-1.5 text-xs text-neutral-500">
-          Paste the ID or the whole {payLabels[method]} SMS.
+          {t("Paste the ID or the whole {method} SMS.", { method: payLabels[method] })}
         </p>
       )}
     </div>

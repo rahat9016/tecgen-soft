@@ -7,6 +7,7 @@ import { compressImage } from "@/src/components/hotel/admin/ImageInput";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/src/components/ui/dropdown-menu";
 import { addGalleryImage, moveGalleryImage, removeGalleryImage, updateGalleryImage, useTurfDB } from "@/src/lib/turf-store/store";
 import type { GalleryImage } from "@/src/lib/turf-store/types";
+import { useT } from "@/src/lib/turf-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { abtn, cardClass, Empty, Field, inputClass, Modal, ViewPills } from "./ui";
 
@@ -14,12 +15,13 @@ type Filter = "all" | "shown" | "hidden";
 
 /** Add a photo by pasting a link or uploading files (downscaled to fit browser storage). */
 function ImageInput({ onAdd }: { onAdd: (src: string) => void }) {
+  const t = useT();
   const fileRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const addUrl = () => {
     const v = url.trim();
-    if (!/^https?:\/\/\S+$/i.test(v)) return toast.error("Paste a full image link starting with https://");
+    if (!/^https?:\/\/\S+$/i.test(v)) return toast.error(t("Paste a full image link starting with https://"));
     onAdd(v);
     setUrl("");
   };
@@ -36,16 +38,16 @@ function ImageInput({ onAdd }: { onAdd: (src: string) => void }) {
               addUrl();
             }
           }}
-          placeholder="Paste image link (https://…)"
-          aria-label="Image link"
+          placeholder={t("Paste image link (https://…)")}
+          aria-label={t("Image link")}
           className={cn(inputClass, "pl-9")}
         />
       </div>
       <button type="button" onClick={addUrl} className={abtn.outline}>
-        Add link
+        {t("Add link")}
       </button>
       <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className={abtn.outline}>
-        {busy ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />} Upload
+        {busy ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />} {t("Upload")}
       </button>
       <input
         ref={fileRef}
@@ -61,7 +63,7 @@ function ImageInput({ onAdd }: { onAdd: (src: string) => void }) {
           try {
             for (const f of files) onAdd(await compressImage(f));
           } catch {
-            toast.error("That file couldn't be read as an image.");
+            toast.error(t("That file couldn't be read as an image."));
           } finally {
             setBusy(false);
           }
@@ -73,18 +75,19 @@ function ImageInput({ onAdd }: { onAdd: (src: string) => void }) {
 
 /** Caption first, then a link or upload adds the photo straight away. */
 function AddModal({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const [title, setTitle] = useState("");
   return (
-    <Modal open onClose={onClose} title="Add photos">
+    <Modal open onClose={onClose} title={t("Add photos")}>
       <div className="space-y-3">
         <Field label="Caption">
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Friday night league" className={inputClass} />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("e.g. Friday night league")} className={inputClass} />
         </Field>
         <div className="border-t border-neutral-100 pt-3">
           <ImageInput
             onAdd={(src) => {
               addGalleryImage({ src, title: title.trim(), visible: true });
-              toast.success("Photo added to the gallery");
+              toast.success(t("Photo added to the gallery"));
             }}
           />
         </div>
@@ -94,9 +97,10 @@ function AddModal({ onClose }: { onClose: () => void }) {
 }
 
 function EditModal({ image, onClose }: { image: GalleryImage; onClose: () => void }) {
+  const t = useT();
   const [title, setTitle] = useState(image.title);
   return (
-    <Modal open onClose={onClose} title="Edit photo">
+    <Modal open onClose={onClose} title={t("Edit photo")}>
       {/* eslint-disable-next-line @next/next/no-img-element -- admin preview */}
       <img src={image.src} alt="" className="aspect-video w-full rounded-lg object-cover" />
       <div className="mt-4 space-y-3">
@@ -105,17 +109,17 @@ function EditModal({ image, onClose }: { image: GalleryImage; onClose: () => voi
         </Field>
         <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-4">
           <button onClick={onClose} className={abtn.outline}>
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             onClick={() => {
               updateGalleryImage(image.id, { title: title.trim() });
-              toast.success("Photo updated");
+              toast.success(t("Photo updated"));
               onClose();
             }}
             className={abtn.primary}
           >
-            Save
+            {t("Save")}
           </button>
         </div>
       </div>
@@ -124,6 +128,7 @@ function EditModal({ image, onClose }: { image: GalleryImage; onClose: () => voi
 }
 
 export default function GalleryManager() {
+  const t = useT();
   const db = useTurfDB();
   const gallery = db.gallery;
   const [filter, setFilter] = useState<Filter>("all");
@@ -133,9 +138,9 @@ export default function GalleryManager() {
   const shown = gallery.filter((g) => g.visible).length;
 
   const remove = (g: GalleryImage) => {
-    if (!confirm(`Delete “${g.title || "this photo"}”?`)) return;
+    if (!confirm(t("Delete “{title}”?", { title: g.title || t("this photo") }))) return;
     removeGalleryImage(g.id);
-    toast.success("Photo deleted");
+    toast.success(t("Photo deleted"));
   };
   const iconBtn = "flex size-8 items-center justify-center rounded-full bg-white/90 text-neutral-700 shadow-sm backdrop-blur transition hover:bg-white hover:text-emerald-700 disabled:opacity-40";
 
@@ -154,8 +159,8 @@ export default function GalleryManager() {
             ]}
           />
         </div>
-        <button onClick={() => setAdding(true)} aria-label="Add photos" className={cn(abtn.primary, "mr-3 size-10 shrink-0 px-0 sm:w-auto sm:px-4")}>
-          <ImagePlus className="size-4" /> <span className="hidden sm:inline">Add photos</span>
+        <button onClick={() => setAdding(true)} aria-label={t("Add photos")} className={cn(abtn.primary, "mr-3 size-10 shrink-0 px-0 sm:w-auto sm:px-4")}>
+          <ImagePlus className="size-4" /> <span className="hidden sm:inline">{t("Add photos")}</span>
         </button>
       </div>
 
@@ -173,48 +178,48 @@ export default function GalleryManager() {
                   {/* eslint-disable-next-line @next/next/no-img-element -- admin preview */}
                   <img src={g.src} alt={g.title} loading="lazy" className={cn("size-full object-cover transition duration-300 group-hover:scale-[1.03]", !g.visible && "opacity-40 grayscale")} />
                   <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">{index + 1}</span>
-                  {!g.visible && <span className="absolute inset-x-0 top-1/2 mx-auto w-fit -translate-y-1/2 rounded-full bg-neutral-900/80 px-2.5 py-1 text-xs font-semibold text-white">Hidden</span>}
+                  {!g.visible && <span className="absolute inset-x-0 top-1/2 mx-auto w-fit -translate-y-1/2 rounded-full bg-neutral-900/80 px-2.5 py-1 text-xs font-semibold text-white">{t("Hidden")}</span>}
                   {/* Phones: every action in one menu button; with a mouse: a row of buttons on hover. */}
                   <DropdownMenu modal={false}>
-                    <DropdownMenuTrigger aria-label="Actions" className="absolute bottom-2 right-2 flex size-8 items-center justify-center rounded-full bg-white/90 text-neutral-800 shadow-sm backdrop-blur sm:hidden">
+                    <DropdownMenuTrigger aria-label={t("Actions")} className="absolute bottom-2 right-2 flex size-8 items-center justify-center rounded-full bg-white/90 text-neutral-800 shadow-sm backdrop-blur sm:hidden">
                       <MoreVertical className="size-4" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" sideOffset={6} className="w-52 rounded-md">
                       <DropdownMenuItem onSelect={() => setEditing(g)} className="cursor-pointer py-2.5">
-                        <Pencil /> Edit caption
+                        <Pencil /> {t("Edit caption")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => updateGalleryImage(g.id, { visible: !g.visible })} className="cursor-pointer py-2.5">
-                        {g.visible ? <EyeOff /> : <Eye />} {g.visible ? "Hide from site" : "Show on site"}
+                        {g.visible ? <EyeOff /> : <Eye />} {g.visible ? t("Hide from site") : t("Show on site")}
                       </DropdownMenuItem>
                       <DropdownMenuItem disabled={index === 0} onSelect={() => moveGalleryImage(g.id, -1)} className="cursor-pointer py-2.5">
-                        <ArrowLeft /> Move earlier
+                        <ArrowLeft /> {t("Move earlier")}
                       </DropdownMenuItem>
                       <DropdownMenuItem disabled={index === gallery.length - 1} onSelect={() => moveGalleryImage(g.id, 1)} className="cursor-pointer py-2.5">
-                        <ArrowRight /> Move later
+                        <ArrowRight /> {t("Move later")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem variant="destructive" onSelect={() => remove(g)} className="cursor-pointer py-2.5">
-                        <Trash2 /> Delete photo
+                        <Trash2 /> {t("Delete photo")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                   <div className="absolute inset-x-0 bottom-0 hidden items-center justify-between gap-1 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100 sm:flex">
                     <span className="flex gap-1">
-                      <button onClick={() => moveGalleryImage(g.id, -1)} disabled={index === 0} aria-label="Move earlier" className={iconBtn}>
+                      <button onClick={() => moveGalleryImage(g.id, -1)} disabled={index === 0} aria-label={t("Move earlier")} className={iconBtn}>
                         <ArrowLeft className="size-4" />
                       </button>
-                      <button onClick={() => moveGalleryImage(g.id, 1)} disabled={index === gallery.length - 1} aria-label="Move later" className={iconBtn}>
+                      <button onClick={() => moveGalleryImage(g.id, 1)} disabled={index === gallery.length - 1} aria-label={t("Move later")} className={iconBtn}>
                         <ArrowRight className="size-4" />
                       </button>
                     </span>
                     <span className="flex gap-1">
-                      <button onClick={() => updateGalleryImage(g.id, { visible: !g.visible })} aria-label={g.visible ? "Hide from site" : "Show on site"} title={g.visible ? "Hide from site" : "Show on site"} className={iconBtn}>
+                      <button onClick={() => updateGalleryImage(g.id, { visible: !g.visible })} aria-label={g.visible ? t("Hide from site") : t("Show on site")} title={g.visible ? t("Hide from site") : t("Show on site")} className={iconBtn}>
                         {g.visible ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
                       </button>
-                      <button onClick={() => setEditing(g)} aria-label="Edit caption" className={iconBtn}>
+                      <button onClick={() => setEditing(g)} aria-label={t("Edit caption")} className={iconBtn}>
                         <Pencil className="size-4" />
                       </button>
-                      <button onClick={() => remove(g)} aria-label="Delete photo" className={cn(iconBtn, "hover:text-rose-600")}>
+                      <button onClick={() => remove(g)} aria-label={t("Delete photo")} className={cn(iconBtn, "hover:text-rose-600")}>
                         <Trash2 className="size-4" />
                       </button>
                     </span>

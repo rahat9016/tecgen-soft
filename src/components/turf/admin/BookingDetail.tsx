@@ -39,12 +39,14 @@ import {
   useTurfDB,
 } from "@/src/lib/turf-store/store";
 import type { Booking, PayMethod } from "@/src/lib/turf-store/types";
+import { useT } from "@/src/lib/turf-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { AmountChoice, CopyRow, MethodTiles, TRX_ID, TrxIdField, WalletDetails } from "../pay";
 import SlotPicker from "./SlotPicker";
 import { abtn, ADMIN, cardClass, Empty, Field, InfoRow, inputClass, labelClass, Modal, Panel, StatusBadge } from "./ui";
 
 export default function BookingDetail({ id }: { id: string }) {
+  const t = useT();
   const db = useTurfDB();
   const now = useNow(30_000);
   const params = useSearchParams();
@@ -59,7 +61,7 @@ export default function BookingDetail({ id }: { id: string }) {
       <div className={cardClass}>
         <Empty icon={ReceiptText} title="Booking not found" text="It may have been removed when the demo data was reset.">
           <Link href={`${ADMIN}/bookings`} className={cn(abtn.outline, "mt-2")}>
-            Back to bookings
+            {t("Back to bookings")}
           </Link>
         </Empty>
       </div>
@@ -86,33 +88,34 @@ export default function BookingDetail({ id }: { id: string }) {
           <section className={cn(cardClass, "space-y-3 p-4")}>
             {closed && (
               <p className="rounded-md bg-rose-50 px-3 py-2.5 text-sm text-rose-800">
-                Cancelled{b.cancelReason && <> — {b.cancelReason}</>}
+                {t("Cancelled")}
+                {b.cancelReason && <> — {b.cancelReason}</>}
               </p>
             )}
             <dl className="overflow-hidden rounded-md border border-neutral-200 text-sm">
               <div className="flex justify-between px-3 py-2.5">
-                <dt className="text-neutral-600">Total</dt>
+                <dt className="text-neutral-600">{t("Total")}</dt>
                 <dd className="tabular-nums">{taka(b.total)}</dd>
               </div>
               <div className="flex justify-between border-t border-neutral-100 px-3 py-2.5">
-                <dt className="text-neutral-600">Paid</dt>
+                <dt className="text-neutral-600">{t("Paid")}</dt>
                 <dd className="tabular-nums text-emerald-700">{taka(paid)}</dd>
               </div>
               {closed ? (
                 <div className={cn("flex items-center justify-between border-t px-3 py-3 font-semibold", refundRow.tone)}>
-                  <dt>{refundRow.label}</dt>
+                  <dt>{t(refundRow.label)}</dt>
                   <dd className="text-lg tabular-nums">{taka(refund.amount)}</dd>
                 </div>
               ) : (
                 <>
                   <div className={cn("flex items-center justify-between border-t px-3 py-3 font-semibold", due > 0 ? "border-rose-100 bg-rose-50 text-rose-800" : "border-emerald-100 bg-emerald-50 text-emerald-800")}>
-                    <dt>{due > 0 ? "Due" : "Fully paid"}</dt>
+                    <dt>{due > 0 ? t("Due") : t("Fully paid")}</dt>
                     <dd className="text-lg tabular-nums">{taka(due)}</dd>
                   </div>
                   {/* Paid more than the price (e.g. a shorter game after rescheduling). */}
                   {credit > 0 && (
                     <div className="flex items-center justify-between border-t border-violet-100 bg-violet-50 px-3 py-3 font-semibold text-violet-800">
-                      <dt>To refund</dt>
+                      <dt>{t("To refund")}</dt>
                       <dd className="text-lg tabular-nums">{taka(credit)}</dd>
                     </div>
                   )}
@@ -122,17 +125,17 @@ export default function BookingDetail({ id }: { id: string }) {
             {/* The rest of the money is taken at the ground. */}
             {!closed && due > 0 && (
               <button onClick={() => setModal("pay")} className={cn(abtn.primary, "w-full")}>
-                <Wallet className="size-4" /> Collect {taka(due)}
+                <Wallet className="size-4" /> {t("Collect {amount}", { amount: taka(due) })}
               </button>
             )}
             {phase === "booked" && (
               <button onClick={() => setModal("cancel")} className={cn(abtn.danger, "w-full")}>
-                <CalendarX className="size-4" /> Cancel booking
+                <CalendarX className="size-4" /> {t("Cancel booking")}
               </button>
             )}
             {credit > 0 && (
               <button onClick={() => setModal("refund")} className={cn(abtn.primary, "w-full bg-violet-700 hover:bg-violet-800")}>
-                <Undo2 className="size-4" /> Refund {taka(credit)}
+                <Undo2 className="size-4" /> {t("Refund {amount}", { amount: taka(credit) })}
               </button>
             )}
             <BackButton />
@@ -146,7 +149,7 @@ export default function BookingDetail({ id }: { id: string }) {
             action={
               phase === "booked" && (
                 <button onClick={() => setModal("move")} className={abtn.small}>
-                  <CalendarClock className="size-3.5" /> Reschedule
+                  <CalendarClock className="size-3.5" /> {t("Reschedule")}
                 </button>
               )
             }
@@ -162,13 +165,13 @@ export default function BookingDetail({ id }: { id: string }) {
                 {dateLabel(b.date, { weekday: "short", day: "numeric", month: "short" })}
               </InfoRow>
               <InfoRow icon={Clock} label="Time">
-                {rangeLabel(b.startHour, b.duration)} · {b.duration} hr{b.duration > 1 ? "s" : ""}
+                {rangeLabel(b.startHour, b.duration)} · {t(b.duration > 1 ? "{n} hrs" : "{n} hr", { n: b.duration })}
               </InfoRow>
               <InfoRow icon={Tag} label="Price">
                 {taka(b.total)}
               </InfoRow>
               <InfoRow icon={ReceiptText} label="Source">
-                {sourceLabels[b.source]}
+                {t(sourceLabels[b.source])}
               </InfoRow>
             </dl>
           </Panel>
@@ -216,16 +219,18 @@ export default function BookingDetail({ id }: { id: string }) {
 
 /** Back to the list the booking was opened from — Payments when it came from there, otherwise Bookings. */
 function BackButton() {
+  const t = useT();
   const from = useSearchParams().get("from");
   return (
     <Link href={`${ADMIN}/${from === "payments" ? "payments" : "bookings"}`} className={cn(abtn.outline, "w-full")}>
-      <ArrowLeft className="size-4" /> Back
+      <ArrowLeft className="size-4" /> {t("Back")}
     </Link>
   );
 }
 
 /** Collect the balance, or (with `refund`) send money back — same layout as the booking site's payment step. */
 function PaymentModal({ b, refund, onClose }: { b: Booking; refund?: boolean; onClose: () => void }) {
+  const t = useT();
   const db = useTurfDB();
   const router = useRouter();
   const now = useNow(30_000);
@@ -240,7 +245,15 @@ function PaymentModal({ b, refund, onClose }: { b: Booking; refund?: boolean; on
   const wallet = method === "bkash" || method === "nagad";
   // Money coming in by wallet must carry the customer's transaction ID; a refund's ID is optional (it's the venue's own transfer).
   const refError =
-    refund || !wallet ? undefined : !ref ? "Enter the transaction ID from the SMS" : !TRX_ID.test(ref) ? "A transaction ID is 8–10 letters and numbers" : trxUsed(db, method, ref) ? "This transaction ID has already been used" : undefined;
+    refund || !wallet
+      ? undefined
+      : !ref
+        ? t("Enter the transaction ID from the SMS")
+        : !TRX_ID.test(ref)
+          ? t("A transaction ID is 8–10 letters and numbers")
+          : trxUsed(db, method, ref)
+            ? t("This transaction ID has already been used")
+            : undefined;
   const close = () => {
     // Drop ?do=… so a refresh doesn't reopen the form; keep ?from for the Back button.
     const q = new URLSearchParams(window.location.search);
@@ -250,27 +263,28 @@ function PaymentModal({ b, refund, onClose }: { b: Booking; refund?: boolean; on
   };
 
   return (
-    <Modal open onClose={close} title={refund ? "Refund" : "Collect payment"}>
+    <Modal open onClose={close} title={refund ? t("Refund") : t("Collect payment")}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           setTouched(true);
-          if (n <= 0) return toast.error("Enter an amount");
-          if (n > limit) return toast.error(`At most ${taka(limit)} can be refunded`);
+          if (n <= 0) return toast.error(t("Enter an amount"));
+          if (n > limit) return toast.error(t("At most {amount} can be refunded", { amount: taka(limit) }));
           if (refError) return;
           addPayment(b.id, n, method, refund ? "refund" : "balance", wallet ? ref : "");
-          toast.success(refund ? `${taka(n)} refunded to ${b.customer.name}` : `${taka(n)} received`);
+          toast.success(refund ? t("{amount} refunded to {name}", { amount: taka(n), name: b.customer.name }) : t("{amount} received", { amount: taka(n) }));
           close();
         }}
         className="space-y-4"
       >
-        <Field label="Amount (৳)" hint={refund ? `Owed back ${taka(credit)}` : `Due ${taka(due)}`}>
+        <Field label="Amount (৳)" hint={refund ? t("Owed back {amount}", { amount: taka(credit) }) : t("Due {amount}", { amount: taka(due) })}>
           <input autoFocus inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} className={cn(inputClass, "h-12 text-base font-semibold tabular-nums")} />
         </Field>
 
         <div>
-          <p className="mb-2 text-sm font-medium text-neutral-800">{refund ? "Refund by" : "Pay with"}</p>
+          <p className="mb-2 text-sm font-medium text-neutral-800">{refund ? t("Refund by") : t("Pay with")}</p>
           <MethodTiles
+            t={t}
             methods={(refund ? ["cash", "bkash", "nagad"] : ["cash", "bkash", "nagad", "card"]) as PayMethod[]}
             value={method}
             onChange={(m) => {
@@ -283,14 +297,15 @@ function PaymentModal({ b, refund, onClose }: { b: Booking; refund?: boolean; on
         {wallet &&
           (refund ? (
             <dl className="divide-y divide-neutral-200/70 rounded-lg bg-neutral-50 px-4 text-sm">
-              <CopyRow label="Send Money to" value={b.customer.phone || "—"} copy={b.customer.phone} />
-              <CopyRow label="Amount" value={taka(n)} copy={String(n)} />
+              <CopyRow label={t("Send Money to")} value={b.customer.phone || "—"} copy={b.customer.phone} />
+              <CopyRow label={t("Amount")} value={taka(n)} copy={String(n)} />
             </dl>
           ) : (
-            <WalletDetails venuePhone={db.settings.phone} amount={n} amountLabel={taka(n)} />
+            <WalletDetails t={t} venuePhone={db.settings.phone} amount={n} amountLabel={taka(n)} />
           ))}
         {wallet && (
           <TrxIdField
+            t={t}
             id="pm-ref"
             method={method}
             value={ref}
@@ -303,10 +318,10 @@ function PaymentModal({ b, refund, onClose }: { b: Booking; refund?: boolean; on
 
         <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-4">
           <button type="button" onClick={close} className={abtn.outline}>
-            Cancel
+            {t("Cancel")}
           </button>
           <button className={refund ? cn(abtn.primary, "bg-violet-700 hover:bg-violet-800") : abtn.primary}>
-            {refund ? "Refund" : "Collect"} {n ? taka(n) : ""}
+            {refund ? t("Refund") : t("Collect")} {n ? taka(n) : ""}
           </button>
         </div>
       </form>
@@ -315,6 +330,7 @@ function PaymentModal({ b, refund, onClose }: { b: Booking; refund?: boolean; on
 }
 
 function RescheduleModal({ b, onClose }: { b: Booking; onClose: () => void }) {
+  const t = useT();
   const db = useTurfDB();
   const now = useNow(15_000);
   const [date, setDate] = useState(b.date);
@@ -326,16 +342,16 @@ function RescheduleModal({ b, onClose }: { b: Booking; onClose: () => void }) {
   const slot = (d: string, h: number, n: number) => `${dateLabel(d, { weekday: "short", day: "numeric", month: "short" })} · ${rangeLabel(h, n)}`;
 
   return (
-    <Modal open onClose={onClose} title="Reschedule booking">
+    <Modal open onClose={onClose} title={t("Reschedule booking")}>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-2 text-[13px] sm:text-sm">
           <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
-            <p className="text-xs text-neutral-500">Now</p>
+            <p className="text-xs text-neutral-500">{t("Now")}</p>
             <p className="font-medium text-neutral-900">{slot(b.date, b.startHour, b.duration)}</p>
           </div>
           <div className={cn("rounded-md border px-3 py-2", !unchanged && req && !conflict ? "border-emerald-300 bg-emerald-50" : "border-neutral-200")}>
-            <p className="text-xs text-neutral-500">New</p>
-            <p className="font-medium text-neutral-900">{start !== null ? slot(date, start, duration) : "Pick a time"}</p>
+            <p className="text-xs text-neutral-500">{t("New")}</p>
+            <p className="font-medium text-neutral-900">{start !== null ? slot(date, start, duration) : t("Pick a time")}</p>
           </div>
         </div>
 
@@ -355,20 +371,20 @@ function RescheduleModal({ b, onClose }: { b: Booking; onClose: () => void }) {
 
         <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-4">
           <button onClick={onClose} className={abtn.outline}>
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             disabled={!req || unchanged || !!conflict}
             onClick={() => {
               if (!req) return;
               const r = rescheduleBooking(b.id, req);
-              if (!r.ok) return toast.error(r.error);
-              toast.success(`${b.code} moved`);
+              if (!r.ok) return toast.error(t(r.error));
+              toast.success(t("{code} moved", { code: b.code }));
               onClose();
             }}
             className={abtn.primary}
           >
-            Move booking
+            {t("Move booking")}
           </button>
         </div>
       </div>
@@ -380,6 +396,7 @@ type MoneyChoice = "now" | "later" | "keep";
 
 /** Cancel with a reason, and decide on the money already paid: refund it now, owe it, or keep it. */
 function CancelModal({ b, onClose }: { b: Booking; onClose: () => void }) {
+  const t = useT();
   const db = useTurfDB();
   const now = useNow(60_000);
   const paid = paidOf(b);
@@ -394,24 +411,24 @@ function CancelModal({ b, onClose }: { b: Booking; onClose: () => void }) {
   const refundNow = paid > 0 && money === "now";
 
   return (
-    <Modal open onClose={onClose} title={`Cancel ${b.code}`}>
+    <Modal open onClose={onClose} title={t("Cancel {code}", { code: b.code })}>
       <div className="space-y-4">
         <Field label="Reason" hint="Shown to the customer under My Bookings">
-          <input autoFocus value={reason} onChange={(e) => setReason(e.target.value)} className={inputClass} placeholder="e.g. Rain, ground closed" />
+          <input autoFocus value={reason} onChange={(e) => setReason(e.target.value)} className={inputClass} placeholder={t("e.g. Rain, ground closed")} />
         </Field>
 
         {paid > 0 && (
           <div>
             <div className="mb-2 flex items-baseline justify-between gap-2">
               <p className="text-sm font-medium text-neutral-800">{taka(paid)} paid</p>
-              <p className={cn("text-xs font-medium", free ? "text-emerald-700" : "text-rose-700")}>{free ? `Free cancellation (over ${hours} hrs before)` : `Late cancellation (under ${hours} hrs before)`}</p>
+              <p className={cn("text-xs font-medium", free ? "text-emerald-700" : "text-rose-700")}>{free ? t("Free cancellation (over {n} hrs before)", { n: hours }) : t("Late cancellation (under {n} hrs before)", { n: hours })}</p>
             </div>
             <AmountChoice
               className="sm:grid-cols-1"
               options={[
-                { v: "now" as MoneyChoice, t: "Refund now", a: taka(paid) },
-                { v: "later" as MoneyChoice, t: "Refund later (before kick-off)", a: taka(paid) },
-                { v: "keep" as MoneyChoice, t: "Keep the money", a: "No refund" },
+                { v: "now" as MoneyChoice, t: t("Refund now"), a: taka(paid) },
+                { v: "later" as MoneyChoice, t: t("Refund later (before kick-off)"), a: taka(paid) },
+                { v: "keep" as MoneyChoice, t: t("Keep the money"), a: t("No refund") },
               ]}
               value={money}
               onChange={setMoney}
@@ -422,8 +439,9 @@ function CancelModal({ b, onClose }: { b: Booking; onClose: () => void }) {
         {refundNow && (
           <>
             <div>
-              <p className="mb-2 text-sm font-medium text-neutral-800">Refund by</p>
+              <p className="mb-2 text-sm font-medium text-neutral-800">{t("Refund by")}</p>
               <MethodTiles
+            t={t}
                 methods={["cash", "bkash", "nagad"] as PayMethod[]}
                 value={method}
                 onChange={(m) => {
@@ -435,10 +453,10 @@ function CancelModal({ b, onClose }: { b: Booking; onClose: () => void }) {
             {wallet && (
               <>
                 <dl className="divide-y divide-neutral-200/70 rounded-lg bg-neutral-50 px-4 text-sm">
-                  <CopyRow label="Send Money to" value={b.customer.phone || "—"} copy={b.customer.phone} />
-                  <CopyRow label="Amount" value={taka(paid)} copy={String(paid)} />
+                  <CopyRow label={t("Send Money to")} value={b.customer.phone || "—"} copy={b.customer.phone} />
+                  <CopyRow label={t("Amount")} value={taka(paid)} copy={String(paid)} />
                 </dl>
-                <TrxIdField id="cm-ref" method={method} value={ref} onChange={setRef} inputClassName={inputClass} labelClassName={labelClass} />
+                <TrxIdField t={t} id="cm-ref" method={method} value={ref} onChange={setRef} inputClassName={inputClass} labelClassName={labelClass} />
               </>
             )}
           </>
@@ -446,18 +464,18 @@ function CancelModal({ b, onClose }: { b: Booking; onClose: () => void }) {
 
         <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-4">
           <button onClick={onClose} className={abtn.outline}>
-            Keep booking
+            {t("Keep booking")}
           </button>
           <button
             onClick={() => {
               cancelBooking(b.id, reason.trim() || undefined, paid > 0 && money === "keep");
               if (refundNow) addPayment(b.id, paid, method, "refund", wallet ? ref : "");
-              toast.success(refundNow ? `${b.code} cancelled · ${taka(paid)} refunded` : `${b.code} cancelled`);
+              toast.success(refundNow ? t("{code} cancelled · {amount} refunded", { code: b.code, amount: taka(paid) }) : t("{code} cancelled", { code: b.code }));
               onClose();
             }}
             className={cn(abtn.primary, "bg-rose-600 hover:bg-rose-700")}
           >
-            {refundNow ? `Cancel & refund ${taka(paid)}` : "Cancel booking"}
+            {refundNow ? t("Cancel & refund {amount}", { amount: taka(paid) }) : t("Cancel booking")}
           </button>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { hourLabel } from "@/src/lib/turf-store/format";
 import { groundOf, saveSettings, updateCourt, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Settings, TurfDB } from "@/src/lib/turf-store/types";
+import { useT } from "@/src/lib/turf-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { Field, Group, inputClass, SaveBar, Tabs } from "./ui";
 
@@ -28,15 +29,17 @@ const HOURS = Array.from({ length: 25 }, (_, h) => h);
 
 /** Number input with a unit on the right, as on the hotel settings page. */
 function UnitInput({ value, onChange, min, max, unit }: { value: number; onChange: (n: number) => void; min: number; max: number; unit: string }) {
+  const t = useT();
   return (
     <div className="relative">
       <input type="number" min={min} max={max} value={value} onChange={(e) => onChange(Math.min(max, Math.max(min, Number(e.target.value) || min)))} className={cn(inputClass, "pr-14")} />
-      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-500">{unit}</span>
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-500">{t(unit)}</span>
     </div>
   );
 }
 
 export default function SettingsForm() {
+  const t = useT();
   const db = useTurfDB();
   const ground = groundOf(db);
   const [tab, setTab] = useState<Tab>("hours");
@@ -47,18 +50,18 @@ export default function SettingsForm() {
   const set = <K extends keyof Rules>(k: K, v: Rules[K]) => setDraft((d) => ({ ...d, rules: { ...d.rules, [k]: v } }));
 
   const save = () => {
-    if (r.closeHour <= r.openHour) return toast.error("Closing time must be after opening time");
-    if (ground && (draft.price <= 0 || draft.peakPrice <= 0)) return toast.error("Prices must be above zero");
+    if (r.closeHour <= r.openHour) return toast.error(t("Closing time must be after opening time"));
+    if (ground && (draft.price <= 0 || draft.peakPrice <= 0)) return toast.error(t("Prices must be above zero"));
     saveSettings(r);
     if (ground) updateCourt(ground.id, { price: draft.price, peakPrice: draft.peakPrice });
-    toast.success("Settings saved — the booking site uses them right away");
+    toast.success(t("Settings saved — the booking site uses them right away"));
   };
 
   const hourSelect = (k: "openHour" | "closeHour" | "peakStartHour", min: number, max: number) => (
     <select value={r[k]} onChange={(e) => set(k, Number(e.target.value))} className={inputClass}>
       {HOURS.filter((h) => h >= min && h <= max).map((h) => (
         <option key={h} value={h}>
-          {h === 24 ? "Midnight" : hourLabel(h)}
+          {h === 24 ? t("Midnight") : hourLabel(h)}
         </option>
       ))}
     </select>
