@@ -14,7 +14,7 @@ export const defaultSettings: Settings = {
   advancePercent: 30,
   holdMinutes: 10,
   maxDuration: 3,
-  bookingWindowDays: 14,
+  bookingWindowDays: 60,
   cancelCutoffHours: 12,
 };
 

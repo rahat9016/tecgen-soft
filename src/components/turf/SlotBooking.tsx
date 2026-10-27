@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import {
@@ -8,16 +9,14 @@ import {
   ArrowRight,
   CalendarDays,
   Check,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock,
-  CreditCard,
+  Copy,
   Hourglass,
   LayoutGrid,
   Lock,
   Rows3,
-  ShieldCheck,
   Users,
 } from "lucide-react";
 import {
@@ -27,9 +26,7 @@ import {
   hourLabel,
   hourShort,
   payLabels,
-  rangeLabel,
   slotTime,
-  sportLabels,
   taka,
   todayYmd,
 } from "@/src/lib/turf-store/format";
@@ -50,7 +47,8 @@ import {
 } from "@/src/lib/turf-store/store";
 import type { Court, PayMethod } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
-import { inputClass, labelClass, Loader, SportIcon, tbtn } from "./ui";
+import DateCalendar from "./DateCalendar";
+import { inputClass, labelClass, Loader, SportIcon } from "./ui";
 
 const PHONE_KEY = "turfhub:phone";
 
@@ -177,14 +175,15 @@ export default function SlotBooking() {
 
   return (
     <div className="bg-[#f7f6f1]">
-      <div className="mx-auto max-w-7xl px-4 pb-16 pt-10 md:px-8">
-        <h1 className="text-4xl font-semibold tracking-tight text-neutral-900 md:text-6xl">{paying ? "Complete your booking" : "Book the ground"}</h1>
-        <p className="mt-3 text-lg text-neutral-500">
-          {paying ? `Your slot is held while you pay the ${advancePercent}% advance.` : "Pick your day. Choose your time. Get playing."}
-        </p>
+      <div className="mx-auto max-w-7xl px-4 pb-16 pt-6 md:px-8 md:pt-10">
+        {/* The payment step opens straight on the form; its heading stays for screen readers. */}
+        <h1 className={cn("text-fluid-6xl font-semibold tracking-tight text-neutral-900", paying && "sr-only")}>
+          {paying ? "Complete your booking" : "Book the ground"}
+        </h1>
+        {!paying && <p className="mt-3 text-base text-neutral-500 md:text-lg">Pick your day. Choose your time. Get playing.</p>}
 
         {paying && selection && price ? (
-          <div className="mt-8 max-w-4xl">
+          <div>
             <PaymentStep
               court={court}
               selection={selection}
@@ -206,9 +205,9 @@ export default function SlotBooking() {
           </div>
         ) : (
           <>
-            <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_440px] lg:items-start">
+            <div className="mt-6 grid gap-6 md:mt-8 lg:grid-cols-[1fr_440px] lg:items-start">
               {/* Steps */}
-              <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-black/[0.04] md:p-6">
+              <div className="rounded-lg bg-white p-4 shadow-sm ring-1 ring-black/[0.04] sm:p-5 md:p-6">
                 {multiCourt && (
                   <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-6">
                     <select
@@ -250,14 +249,28 @@ export default function SlotBooking() {
                 <Step n={1} state="done">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <StepTitle n={1}>Choose a day</StepTitle>
-                    <div className="flex items-center gap-2 text-sm text-neutral-600">
-                      <span>{new Date(`${weekDays[0]}T00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</span>
-                      <CalendarDays className="size-4 text-neutral-500" />
+                    <div className="flex items-center gap-2 text-sm text-neutral-600 max-sm:w-full">
+                      <DateCalendar
+                        value={day}
+                        first={days[0]}
+                        last={days[days.length - 1]}
+                        isFull={(d) => freeSlots(db, court, d, now) === 0}
+                        onChange={(d) => {
+                          setDate(d);
+                          setStart(null);
+                          setWeekPick(null);
+                        }}
+                      >
+                        <button aria-label="Open calendar" className="-ml-2 flex h-8 items-center gap-2 rounded-lg px-2 transition hover:bg-neutral-100 hover:text-emerald-800">
+                          {new Date(`${weekDays[0]}T00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+                          <CalendarDays className="size-4" />
+                        </button>
+                      </DateCalendar>
                       <button
                         onClick={() => setWeekPick(week - 1)}
                         disabled={week === 0}
                         aria-label="Previous week"
-                        className="flex size-8 items-center justify-center rounded-lg hover:bg-neutral-100 disabled:opacity-30"
+                        className="flex size-8 items-center max-sm:ml-auto justify-center rounded-lg hover:bg-neutral-100 disabled:opacity-30"
                       >
                         <ChevronLeft className="size-4" />
                       </button>
@@ -271,7 +284,7 @@ export default function SlotBooking() {
                       </button>
                     </div>
                   </div>
-                  <div className="mt-4 grid grid-cols-7 gap-2">
+                  <div className="mt-4 grid grid-cols-7 gap-1.5 sm:gap-2">
                     {weekDays.map((d) => {
                       const dt = new Date(`${d}T00:00`);
                       const active = d === day;
@@ -285,7 +298,7 @@ export default function SlotBooking() {
                           }}
                           aria-pressed={active}
                           className={cn(
-                            "relative flex flex-col items-center rounded-lg border py-3 transition",
+                            "relative flex flex-col items-center rounded-lg border py-2.5 transition sm:py-3",
                             active ? "border-emerald-900 bg-emerald-900 text-white" : "border-neutral-200 bg-white text-neutral-900 hover:border-emerald-700",
                             full && !active && "text-neutral-300"
                           )}
@@ -304,7 +317,7 @@ export default function SlotBooking() {
                 {/* 02 Length */}
                 <Step n={2} state="done">
                   <StepTitle n={2}>How long?</StepTitle>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-4 flex gap-2 sm:flex-wrap">
                     {Array.from({ length: maxDuration }, (_, i) => i + 1).map((d) => {
                       const bad = start !== null && !!findConflict(db, { courtId: court.id, date: day, startHour: start, duration: d }, { clientId, now });
                       return (
@@ -314,7 +327,7 @@ export default function SlotBooking() {
                           onClick={() => setDuration(d)}
                           aria-pressed={d === duration}
                           className={cn(
-                            "h-11 rounded-lg border px-6 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-30",
+                            "h-11 flex-1 rounded-lg border px-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-30 sm:flex-none sm:px-6",
                             d === duration ? "border-emerald-900 bg-emerald-900 text-white" : "border-neutral-200 text-neutral-800 hover:border-emerald-700"
                           )}
                         >
@@ -329,7 +342,7 @@ export default function SlotBooking() {
                 <Step n={3} state={start !== null ? "done" : "active"} last>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <StepTitle n={3}>Pick your kick-off</StepTitle>
-                    <div className="flex items-center gap-4 text-xs text-neutral-600">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-neutral-600">
                       <span className="flex items-center gap-1.5">
                         <span className="size-3.5 rounded-full border border-neutral-300" /> Available
                       </span>
@@ -337,7 +350,7 @@ export default function SlotBooking() {
                         <span className="size-3.5 rounded-full bg-lime-400" /> Selected
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <span className="size-3.5 rounded-full bg-neutral-200" /> Already booked
+                        <span className="size-3.5 rounded-full bg-neutral-200" /> Booked
                       </span>
                     </div>
                   </div>
@@ -388,7 +401,7 @@ export default function SlotBooking() {
                                     onClick={() => pickCell(court, h)}
                                     aria-pressed={selected}
                                     className={cn(
-                                      "rounded-lg border px-2 py-3 text-center transition disabled:cursor-not-allowed",
+                                      "rounded-lg border px-1.5 py-3 text-center transition disabled:cursor-not-allowed sm:px-2",
                                       selected
                                         ? "border-lime-400 bg-lime-400 text-emerald-950"
                                         : clickable
@@ -396,7 +409,7 @@ export default function SlotBooking() {
                                           : "border-transparent bg-neutral-100 text-neutral-400"
                                     )}
                                   >
-                                    <span className={cn("block text-sm font-semibold tabular-nums", !clickable && !selected && "line-through decoration-neutral-300")}>{clock(h)}</span>
+                                    <span className={cn("block whitespace-nowrap text-sm font-semibold tabular-nums", !clickable && !selected && "line-through decoration-neutral-300")}>{clock(h)}</span>
                                     <span className={cn("mt-0.5 block text-xs leading-tight", selected ? "text-emerald-950/80" : clickable ? "text-emerald-700" : "text-neutral-400")}>
                                       {selected
                                         ? "Selected"
@@ -406,7 +419,7 @@ export default function SlotBooking() {
                                             ? "Closed"
                                             : info.kind === "held"
                                               ? "Being paid"
-                                              : "Already booked"}
+                                              : "Booked"}
                                     </span>
                                   </button>
                                 );
@@ -419,41 +432,7 @@ export default function SlotBooking() {
                 </Step>
               </div>
 
-              {/* Your match */}
-              <aside className="relative rounded-lg bg-emerald-950 p-6 text-white lg:sticky lg:top-28 md:p-8">
-                <svg
-                  aria-hidden
-                  viewBox="0 0 150 110"
-                  className="absolute right-6 top-6 h-24 text-white/15 md:right-8 md:top-8"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <rect x="1" y="1" width="148" height="108" />
-                  <path d="M75 1v108M1 30h22v50H1M149 30h-22v50h22" />
-                  <circle cx="75" cy="55" r="16" />
-                </svg>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/60">Your match</p>
-                <p className="mt-4 max-w-[14rem] text-3xl font-semibold leading-tight md:text-4xl">
-                  {new Date(`${day}T00:00`).toLocaleDateString("en-GB", { weekday: "long" })},
-                  <br />
-                  {dateLabel(day, { day: "numeric", month: "long" })}
-                </p>
-                <p className="mt-6 flex items-center gap-4 text-2xl font-semibold md:text-3xl">
-                  <Clock className="size-7 shrink-0 text-white/80" />
-                  {start === null ? <span className="text-white/40">Pick a time</span> : clockRange(start, start + duration)}
-                </p>
-                <p className="mt-3 flex items-center gap-4 text-white/85">
-                  <Users className="size-7 shrink-0 text-white/60" />
-                  {duration} hour{duration > 1 ? "s" : ""} · Entire ground
-                </p>
-
-                {/* Perforation */}
-                <div className="relative -mx-6 my-7 border-t-2 border-dashed border-white/20 md:-mx-8">
-                  <span className="absolute -left-3 -top-3 size-6 rounded-full bg-[#f7f6f1]" />
-                  <span className="absolute -right-3 -top-3 size-6 rounded-full bg-[#f7f6f1]" />
-                </div>
-
+              <Ticket day={day} start={start} duration={duration}>
                 <dl className="text-sm">
                   <div className="flex justify-between gap-3 py-1.5">
                     <dt className="text-white/80">
@@ -500,7 +479,7 @@ export default function SlotBooking() {
                 <p className="mt-4 flex items-center justify-center gap-2 text-xs text-white/70">
                   <Lock className="size-3.5" /> Slot held for {holdMinutes} minutes once you continue.
                 </p>
-              </aside>
+              </Ticket>
             </div>
           </>
         )}
@@ -536,15 +515,21 @@ const clockRange = (a: number, b: number) => {
   return x.slice(-2) === y.slice(-2) ? `${x.slice(0, -3)} – ${y}` : `${x} – ${y}`;
 };
 
-function StepTitle({ children }: { n?: number; children: React.ReactNode }) {
-  return <h2 className="text-xl font-semibold leading-10 text-neutral-900">{children}</h2>;
+function StepTitle({ n, numbered, children }: { n: number; numbered?: boolean; children: React.ReactNode }) {
+  return (
+    <h2 className="flex items-center gap-2.5 text-xl font-semibold leading-10 text-neutral-900">
+      {/* Phones drop the stepper rail, so the step number rides with the title; `numbered` keeps it on every size. */}
+      <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-900 text-xs text-white", !numbered && "sm:hidden")}>{n}</span>
+      {children}
+    </h2>
+  );
 }
 
 /** One step of the vertical stepper: numbered circle, connector line down to the next step, content on the right. */
 function Step({ n, state, last, children }: { n: number; state: "done" | "active"; last?: boolean; children: React.ReactNode }) {
   return (
-    <section className="grid grid-cols-[2.5rem_1fr] gap-x-4">
-      <div className="relative flex justify-center">
+    <section className="grid gap-x-4 sm:grid-cols-[2.5rem_1fr]">
+      <div className="relative flex justify-center max-sm:hidden">
         <span
           className={cn(
             "relative z-10 flex size-10 items-center justify-center rounded-full text-sm font-semibold transition",
@@ -555,7 +540,7 @@ function Step({ n, state, last, children }: { n: number; state: "done" | "active
         </span>
         {!last && <span className={cn("absolute bottom-0 top-10 w-0.5", state === "done" ? "bg-emerald-900" : "bg-neutral-200")} />}
       </div>
-      <div className={cn("min-w-0", !last && "pb-10")}>{children}</div>
+      <div className={cn("min-w-0", !last && "mb-6 border-b border-neutral-100 pb-6 sm:mb-0 sm:border-0 sm:pb-10")}>{children}</div>
     </section>
   );
 }
@@ -631,6 +616,57 @@ function Matrix({
 
 const BD_PHONE = /^01[3-9]\d{8}$/;
 
+/** Logos on the "Pay with" tiles (files in /public/payments); sized so all three fit a 320px phone. */
+const payLogos = {
+  bkash: [{ src: "/payments/bkash.webp", w: 208, h: 96, cls: "h-7 sm:h-8" }],
+  nagad: [{ src: "/payments/nagad.webp", w: 274, h: 96, cls: "h-7 sm:h-8" }],
+  card: [
+    { src: "/payments/visa.svg", w: 1000, h: 325, cls: "h-3 sm:h-3.5" },
+    { src: "/payments/mastercard.svg", w: 1000, h: 618, cls: "h-4 sm:h-5" },
+  ],
+};
+
+/** Dark match ticket shared by both steps: day, time and length above the perforation, the step's totals and button below. */
+function Ticket({ day, start, duration, children }: { day: string; start: number | null; duration: number; children: React.ReactNode }) {
+  return (
+    <aside className="relative rounded-lg bg-emerald-950 p-5 text-white lg:sticky lg:top-28 md:p-8">
+      <svg
+        aria-hidden
+        viewBox="0 0 150 110"
+        className="absolute right-5 top-5 h-16 text-white/15 md:right-8 md:top-8 md:h-24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <rect x="1" y="1" width="148" height="108" />
+        <path d="M75 1v108M1 30h22v50H1M149 30h-22v50h22" />
+        <circle cx="75" cy="55" r="16" />
+      </svg>
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/60">Your match</p>
+      <p className="mt-4 max-w-[14rem] text-fluid-4xl font-semibold leading-tight">
+        {new Date(`${day}T00:00`).toLocaleDateString("en-GB", { weekday: "long" })},
+        <br />
+        {dateLabel(day, { day: "numeric", month: "long" })}
+      </p>
+      <p className="mt-6 flex items-center gap-4 text-fluid-3xl font-semibold">
+        <Clock className="size-7 shrink-0 text-white/80" />
+        {start === null ? <span className="text-white/40">Pick a time</span> : clockRange(start, start + duration)}
+      </p>
+      <p className="mt-3 flex items-center gap-4 text-white/85">
+        <Users className="size-7 shrink-0 text-white/60" />
+        {duration} hour{duration > 1 ? "s" : ""} · Entire ground
+      </p>
+
+      {/* Perforation */}
+      <div className="relative -mx-5 my-7 border-t-2 border-dashed border-white/20 md:-mx-8">
+        <span className="absolute -left-3 -top-3 size-6 rounded-full bg-[#f7f6f1]" />
+        <span className="absolute -right-3 -top-3 size-6 rounded-full bg-[#f7f6f1]" />
+      </div>
+      {children}
+    </aside>
+  );
+}
+
 function PaymentStep({
   court,
   selection,
@@ -651,12 +687,13 @@ function PaymentStep({
   onDone: (code: string, phone: string) => void;
 }) {
   const db = useTurfDB();
+  const { advancePercent, holdMinutes, phone: venuePhone } = db.settings;
   const [form, setForm] = useState(() => {
     let phone = "";
     try {
       phone = localStorage.getItem(PHONE_KEY) ?? "";
     } catch {}
-    return { name: "", phone, email: "", team: "", note: "" };
+    return { name: "", phone };
   });
   const [method, setMethod] = useState<Exclude<PayMethod, "cash">>("bkash");
   const [full, setFull] = useState(false);
@@ -667,13 +704,14 @@ function PaymentStep({
 
   const amount = full ? price.total : price.advance;
   const left = expiresAt - now;
+  const heldPct = Math.min(100, Math.max(0, (left / (holdMinutes * 60_000)) * 100));
+  const urgent = left < 120_000;
   const cardDigits = card.number.replace(/\D/g, "");
 
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
     if (form.name.trim().length < 2) e.name = "Enter your name";
     if (!BD_PHONE.test(form.phone.trim())) e.phone = "Enter a valid 11-digit mobile number";
-    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) e.email = "Enter a valid email";
     if (method === "card") {
       if (cardDigits.length !== 16) e.card = "Card number must be 16 digits";
       else if (!/^\d{2}\/\d{2}$/.test(card.exp)) e.card = "Expiry as MM/YY";
@@ -690,11 +728,10 @@ function PaymentStep({
     const r = createOnlineBooking(
       {
         ...selection,
-        customer: { name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim() || undefined, team: form.team.trim() || undefined },
+        customer: { name: form.name.trim(), phone: form.phone.trim() },
         method,
         amount,
         ref: method === "card" ? `CARD •••• ${cardDigits.slice(-4)}` : ref.trim().toUpperCase(),
-        note: form.note.trim() || undefined,
       },
       clientId
     );
@@ -707,37 +744,56 @@ function PaymentStep({
     onDone(r.value.code, r.value.customer.phone);
   };
 
-  const err = (k: string) => touched && errors[k] && <p className="mt-1 text-xs text-rose-600">{errors[k]}</p>;
+  const err = (k: string) => touched && errors[k] && <p className="mt-1.5 text-xs text-rose-600">{errors[k]}</p>;
+  // 16px text on phones so iOS doesn't zoom into the field.
+  const input = cn(inputClass, "h-12 rounded-lg text-base sm:text-sm");
 
   return (
-    <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[1fr_360px]" noValidate>
-      <div className="space-y-6">
-        <div
-          className={cn("flex items-center gap-3 rounded-2xl px-4 py-3 text-sm", left < 120_000 ? "bg-rose-50 text-rose-700" : "bg-lime-50 text-emerald-900")}
-        >
-          <Hourglass className="size-5 shrink-0" />
-          <p>
-            Slot locked for you — complete payment within <b className="tabular-nums">{formatDuration(left)}</b>.
-          </p>
+    <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[1fr_440px] lg:items-start" noValidate>
+      <button
+        type="button"
+        onClick={onBack}
+        className="-mb-2 flex w-fit items-center gap-1.5 text-sm font-medium text-neutral-600 transition hover:text-emerald-800 lg:col-span-2"
+      >
+        <ArrowLeft className="size-4" /> Change slot
+      </button>
+      <div className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-black/[0.04]">
+        {/* Hold countdown: the bar drains as the hold runs out. */}
+        <div className="border-b border-neutral-100 px-4 py-3.5 sm:px-5 md:px-6">
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <span className="flex items-center gap-2 text-neutral-600">
+              <Hourglass className="size-4" /> Slot held for
+            </span>
+            <span className={cn("font-semibold tabular-nums", urgent ? "text-rose-600" : "text-neutral-900")}>{formatDuration(left)}</span>
+          </div>
+          <div className="mt-2.5 h-1 rounded-full bg-neutral-100">
+            <div
+              className={cn("h-full rounded-full transition-[width] duration-1000 ease-linear", urgent ? "bg-rose-500" : "bg-emerald-700")}
+              style={{ width: `${heldPct}%` }}
+            />
+          </div>
         </div>
 
-        <section className="rounded-3xl border border-neutral-200 bg-white p-5">
-          <h2 className="font-semibold text-neutral-900">Your details</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="p-4 sm:p-5 md:p-6">
+          <StepTitle n={1} numbered>
+            Your details
+          </StepTitle>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="pf-name" className={labelClass}>
-                Full name *
+                Name
               </label>
-              <input id="pf-name" className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="name" />
+              <input id="pf-name" className={input} placeholder="Your full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="name" />
               {err("name")}
             </div>
             <div>
               <label htmlFor="pf-phone" className={labelClass}>
-                Mobile number *
+                Mobile number
               </label>
               <input
                 id="pf-phone"
-                className={inputClass}
+                type="tel"
+                className={input}
                 inputMode="numeric"
                 placeholder="01XXXXXXXXX"
                 value={form.phone}
@@ -746,188 +802,215 @@ function PaymentStep({
               />
               {err("phone")}
             </div>
-            <div>
-              <label htmlFor="pf-email" className={labelClass}>
-                Email (optional)
-              </label>
-              <input
-                id="pf-email"
-                className={inputClass}
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                autoComplete="email"
-              />
-              {err("email")}
-            </div>
-            <div>
-              <label htmlFor="pf-team" className={labelClass}>
-                Team name (optional)
-              </label>
-              <input id="pf-team" className={inputClass} value={form.team} onChange={(e) => setForm({ ...form, team: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <label htmlFor="pf-note" className={labelClass}>
-                Note for the venue (optional)
-              </label>
-              <input
-                id="pf-note"
-                className={inputClass}
-                placeholder="e.g. need 14 bibs"
-                value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-neutral-200 bg-white p-5">
-          <h2 className="font-semibold text-neutral-900">Payment</h2>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            {[
-              { v: false, t: `Advance ${db.settings.advancePercent}%`, a: price.advance },
-              { v: true, t: "Pay in full", a: price.total },
-            ].map((o) => (
-              <button
-                type="button"
-                key={String(o.v)}
-                onClick={() => setFull(o.v)}
-                className={cn(
-                  "rounded-2xl p-3 text-left ring-1 transition",
-                  full === o.v ? "bg-emerald-50 ring-2 ring-emerald-600" : "ring-neutral-200 hover:ring-emerald-400"
-                )}
-              >
-                <span className="block text-xs text-neutral-500">{o.t}</span>
-                <span className="text-lg font-semibold text-neutral-900">{taka(o.a)}</span>
-              </button>
-            ))}
           </div>
 
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {(["bkash", "nagad", "card"] as const).map((m) => (
-              <button
-                type="button"
-                key={m}
-                onClick={() => setMethod(m)}
-                className={cn(
-                  "flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold ring-1 transition",
-                  method === m
-                    ? m === "bkash"
-                      ? "bg-pink-600 text-white ring-pink-600"
-                      : m === "nagad"
-                        ? "bg-orange-500 text-white ring-orange-500"
-                        : "bg-neutral-900 text-white ring-neutral-900"
-                    : "bg-white text-neutral-700 ring-neutral-200 hover:ring-neutral-400"
-                )}
-              >
-                {m === "card" && <CreditCard className="size-4" />} {payLabels[m]}
-              </button>
-            ))}
-          </div>
+          <div className="mt-8 border-t border-neutral-100 pt-6">
+            <StepTitle n={2} numbered>
+              Payment
+            </StepTitle>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {[
+                { v: false, t: `${advancePercent}% advance`, a: price.advance },
+                { v: true, t: "Full amount", a: price.total },
+              ].map((o) => {
+                const on = full === o.v;
+                return (
+                  <button
+                    type="button"
+                    key={String(o.v)}
+                    onClick={() => setFull(o.v)}
+                    aria-pressed={on}
+                    className={cn(
+                      "flex h-14 items-center gap-3 rounded-lg border px-4 text-left transition",
+                      on ? "border-emerald-900 ring-1 ring-emerald-900" : "border-neutral-200 hover:border-emerald-700"
+                    )}
+                  >
+                    <span className={cn("flex size-4 shrink-0 items-center justify-center rounded-full border", on ? "border-emerald-900" : "border-neutral-300")}>
+                      {on && <span className="size-2 rounded-full bg-emerald-900" />}
+                    </span>
+                    <span className="flex-1 text-sm font-medium text-neutral-800">{o.t}</span>
+                    <span className="font-semibold tabular-nums text-neutral-900">{taka(o.a)}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-          {method === "card" ? (
-            <div className="mt-4 grid grid-cols-[1fr_90px_80px] gap-2">
-              <input
-                aria-label="Card number"
-                className={inputClass}
-                inputMode="numeric"
-                placeholder="Card number"
-                value={card.number}
-                onChange={(e) =>
-                  setCard({
-                    ...card,
-                    number: e.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 16)
-                      .replace(/(\d{4})(?=\d)/g, "$1 "),
-                  })
-                }
-              />
-              <input
-                aria-label="Expiry"
-                className={inputClass}
-                placeholder="MM/YY"
-                value={card.exp}
-                onChange={(e) => {
-                  const v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                  setCard({ ...card, exp: v.length > 2 ? `${v.slice(0, 2)}/${v.slice(2)}` : v });
-                }}
-              />
-              <input
-                aria-label="CVC"
-                className={inputClass}
-                inputMode="numeric"
-                placeholder="CVC"
-                value={card.cvc}
-                onChange={(e) => setCard({ ...card, cvc: e.target.value.replace(/\D/g, "").slice(0, 4) })}
-              />
-              <div className="col-span-3">{err("card")}</div>
+            <p className="mb-2 mt-5 text-sm font-medium text-neutral-800">Pay with</p>
+            <div className="flex gap-2">
+              {(["bkash", "nagad", "card"] as const).map((m) => {
+                const on = method === m;
+                return (
+                  <button
+                    type="button"
+                    key={m}
+                    onClick={() => setMethod(m)}
+                    aria-pressed={on}
+                    aria-label={payLabels[m]}
+                    className={cn(
+                      "relative flex h-14 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border bg-white px-1.5 transition sm:gap-1.5 sm:px-3",
+                      on ? "border-emerald-900 ring-1 ring-emerald-900" : "border-neutral-200 hover:border-emerald-700"
+                    )}
+                  >
+                    {payLogos[m].map((l) => (
+                      <Image
+                        key={l.src}
+                        src={l.src}
+                        alt=""
+                        width={l.w}
+                        height={l.h}
+                        unoptimized={l.src.endsWith(".svg")}
+                        className={cn("w-auto min-w-0 max-w-full object-contain", l.cls)}
+                      />
+                    ))}
+                    {on && (
+                      <span className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full bg-emerald-900 text-white">
+                        <Check className="size-3" strokeWidth={3} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          ) : (
-            <div className="mt-4 rounded-2xl bg-neutral-50 p-4 text-sm text-neutral-700">
-              <ol className="list-decimal space-y-1 pl-5">
-                <li>
-                  Open {payLabels[method]} and <b>Send Money</b> {taka(amount)} to <b>{db.settings.phone}</b>
-                </li>
-                <li>
-                  Use reference <b>{court.name.split(" ").pop()}</b>
-                </li>
-                <li>Enter the transaction ID you receive by SMS below</li>
-              </ol>
-              <input
-                aria-label="Transaction ID"
-                className={cn(inputClass, "mt-3 uppercase")}
-                placeholder="Transaction ID e.g. 9AX4KQ7Z1"
-                value={ref}
-                onChange={(e) => setRef(e.target.value)}
-              />
-              {err("ref")}
-            </div>
-          )}
-        </section>
+
+            {method === "card" ? (
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label htmlFor="pf-card" className={labelClass}>
+                    Card number
+                  </label>
+                  <input
+                    id="pf-card"
+                    className={input}
+                    inputMode="numeric"
+                    autoComplete="cc-number"
+                    placeholder="0000 0000 0000 0000"
+                    value={card.number}
+                    onChange={(e) =>
+                      setCard({
+                        ...card,
+                        number: e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 16)
+                          .replace(/(\d{4})(?=\d)/g, "$1 "),
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label htmlFor="pf-exp" className={labelClass}>
+                    Expiry
+                  </label>
+                  <input
+                    id="pf-exp"
+                    className={input}
+                    inputMode="numeric"
+                    autoComplete="cc-exp"
+                    placeholder="MM/YY"
+                    value={card.exp}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                      setCard({ ...card, exp: v.length > 2 ? `${v.slice(0, 2)}/${v.slice(2)}` : v });
+                    }}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="pf-cvc" className={labelClass}>
+                    CVC
+                  </label>
+                  <input
+                    id="pf-cvc"
+                    className={input}
+                    inputMode="numeric"
+                    autoComplete="cc-csc"
+                    placeholder="123"
+                    value={card.cvc}
+                    onChange={(e) => setCard({ ...card, cvc: e.target.value.replace(/\D/g, "").slice(0, 4) })}
+                  />
+                </div>
+                <div className="col-span-2 -mt-1.5 empty:hidden">{err("card")}</div>
+              </div>
+            ) : (
+              <>
+                <dl className="mt-4 divide-y divide-neutral-200/70 rounded-lg bg-neutral-50 px-4 text-sm">
+                  {/* Wallet apps take the local 11-digit number. */}
+                  <CopyRow label="Send Money to" value={venuePhone.replace(/^\+880\s?/, "0")} copy={venuePhone.replace(/\D/g, "").replace(/^880/, "0")} />
+                  <CopyRow label="Amount" value={taka(amount)} copy={String(amount)} />
+                </dl>
+                <div className="mt-4">
+                  <label htmlFor="pf-ref" className={labelClass}>
+                    {payLabels[method]} transaction ID
+                  </label>
+                  <input
+                    id="pf-ref"
+                    className={cn(input, "uppercase placeholder:normal-case")}
+                    placeholder="e.g. 9AX4KQ7Z1"
+                    value={ref}
+                    onChange={(e) => setRef(e.target.value)}
+                  />
+                  {err("ref")}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
-      <aside className="space-y-3 lg:sticky lg:top-24 lg:self-start">
-        <div className="rounded-3xl border border-neutral-200 bg-white p-5">
-          <div className="flex gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={court.image} alt="" className="size-16 rounded-xl object-cover" />
-            <div>
-              <p className="text-xs text-neutral-500">{sportLabels[court.sport]}</p>
-              <p className="font-semibold text-neutral-900">{court.name}</p>
-              <p className="text-xs text-neutral-500">{court.size}</p>
-            </div>
+      <Ticket day={selection.date} start={selection.startHour} duration={selection.duration}>
+        <dl className="text-sm">
+          <div className="flex justify-between gap-3 py-1.5">
+            <dt className="text-white/80">{court.name}</dt>
+            <dd className="tabular-nums">{taka(price.total)}</dd>
           </div>
-          <dl className="mt-4 space-y-2 border-t border-neutral-100 pt-4 text-sm">
-            {[
-              ["Date", dateLabel(selection.date, { weekday: "short", day: "numeric", month: "short", year: "numeric" })],
-              ["Time", rangeLabel(selection.startHour, selection.duration)],
-              ["Court fee", taka(price.total)],
-              ["Pay now", taka(amount)],
-              ["Pay at venue", taka(price.total - amount)],
-            ].map(([k, v]) => (
-              <div key={k} className="flex justify-between">
-                <dt className="text-neutral-500">{k}</dt>
-                <dd className={cn("font-medium text-neutral-900", k === "Pay now" && "text-emerald-700")}>{v}</dd>
-              </div>
-            ))}
-          </dl>
-          <button type="submit" disabled={busy} className={cn(tbtn.lime, "mt-5 w-full")}>
-            <CheckCircle2 className="size-4" /> Pay {taka(amount)} & book
-          </button>
+          <div className="mt-3 flex items-baseline justify-between gap-3 border-y border-white/10 py-4">
+            <dt className="text-lg">Pay now</dt>
+            <dd className="text-2xl font-semibold tabular-nums">{taka(amount)}</dd>
+          </div>
+          <div className="flex justify-between gap-3 py-3.5">
+            <dt className="text-white/80">Pay at ground</dt>
+            <dd className="text-lg font-semibold tabular-nums">{taka(price.total - amount)}</dd>
+          </div>
+        </dl>
+        <button
+          type="submit"
+          disabled={busy}
+          className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-lime-400 text-base font-semibold text-emerald-950 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Pay {taka(amount)} &amp; book <ArrowRight className="size-5" />
+        </button>
+      </Ticket>
+    </form>
+  );
+}
+
+/** A value to type into the wallet app, with a copy button where the browser allows it. */
+function CopyRow({ label, value, copy = value }: { label: string; value: string; copy?: string }) {
+  const [copied, setCopied] = useState(false);
+  // Clipboard is only exposed on secure origins (not on a phone hitting the dev server by LAN IP).
+  const canCopy = typeof navigator !== "undefined" && !!navigator.clipboard;
+  return (
+    <div className="flex items-center justify-between gap-3 py-3">
+      <dt className="whitespace-nowrap text-neutral-500">{label}</dt>
+      <dd className="flex items-center gap-1 whitespace-nowrap font-semibold tabular-nums text-neutral-900">
+        {value}
+        {canCopy && (
           <button
             type="button"
-            onClick={onBack}
-            className="mt-2 flex w-full items-center justify-center gap-1.5 py-2 text-sm text-neutral-500 hover:text-neutral-800"
+            aria-label={`Copy ${label.toLowerCase()}`}
+            onClick={() =>
+              navigator.clipboard
+                .writeText(copy)
+                .then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                })
+                .catch(() => {})
+            }
+            className="flex size-8 items-center justify-center rounded-md text-neutral-500 transition hover:bg-white hover:text-emerald-800"
           >
-            <ArrowLeft className="size-4" /> Change slot
+            {copied ? <Check className="size-4 text-emerald-700" /> : <Copy className="size-4" />}
           </button>
-        </div>
-        <p className="flex gap-2 px-2 text-xs text-neutral-500">
-          <ShieldCheck className="size-4 shrink-0 text-emerald-700" />
-          Our team verifies your advance and confirms the booking. Free cancellation up to {db.settings.cancelCutoffHours} hours before kick-off.
-        </p>
-      </aside>
-    </form>
+        )}
+      </dd>
+    </div>
   );
 }

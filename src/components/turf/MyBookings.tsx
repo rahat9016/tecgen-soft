@@ -125,7 +125,7 @@ export default function MyBookings() {
       <div className={cn("relative isolate flex overflow-hidden bg-emerald-950 pt-32", query ? "pb-14" : "min-h-svh items-center pb-16")}>
         <PitchBackdrop />
         <div className="mx-auto w-full max-w-2xl px-4 text-center">
-          <h1 className="text-4xl font-semibold tracking-tight text-white md:text-6xl">Find your booking</h1>
+          <h1 className="text-fluid-6xl font-semibold tracking-tight text-white">Find your booking</h1>
           <p className="mx-auto mt-4 max-w-md text-base leading-relaxed text-white/65">
             Your mobile number shows every booking you&apos;ve made. A booking code shows just that one.
           </p>

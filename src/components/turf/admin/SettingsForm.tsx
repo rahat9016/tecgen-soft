@@ -96,7 +96,7 @@ export default function SettingsForm() {
           </div>
           <div>
             <label className={labelClass}>Book up to (days ahead)</label>
-            <input {...num("bookingWindowDays", 1, 60)} />
+            <input {...num("bookingWindowDays", 1, 180)} />
           </div>
           <div>
             <label className={labelClass}>Online cancel cut-off (hours)</label>

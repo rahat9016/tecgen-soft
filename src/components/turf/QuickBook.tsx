@@ -6,12 +6,16 @@ import { motion, useReducedMotion } from "framer-motion";
 import { CalendarDays, CheckCircle2, XCircle } from "lucide-react";
 import { useElementSize } from "@/src/hooks/useElementSize";
 import { addDays, dateLabel, hourLabel, rangeLabel, slotTime, taka, todayYmd } from "@/src/lib/turf-store/format";
-import { conflictMessage, findConflict, hoursOf, quote, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
+import { conflictMessage, findConflict, freeSlots, hoursOf, quote, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Court } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
+import DateCalendar from "./DateCalendar";
 
-const field =
-  "relative flex h-12 w-full items-center rounded-xl bg-neutral-100 pl-10 pr-3 text-sm text-neutral-700 outline-none focus:ring-2 focus:ring-emerald-500";
+/** Days shown as chips before the calendar takes over. */
+const QUICK_DAYS = 4;
+const chip = "flex h-14 min-w-0 flex-col items-center justify-center rounded-xl transition";
+const chipOn = "bg-emerald-800 text-white";
+const chipOff = "bg-neutral-100 text-neutral-800 hover:bg-emerald-50";
 
 /** Hero booking card: shows which start times are free as the visitor picks, then hands off to the slot page. */
 export default function QuickBook() {
@@ -34,6 +38,7 @@ export default function QuickBook() {
   const day = date || (hydrated ? todayYmd() : "");
   const days = hydrated ? Array.from({ length: settings.bookingWindowDays }, (_, i) => addDays(todayYmd(), i)) : [];
   // Hours already started are noise late in the day; taken ones stay visible so a busy day reads as busy.
+  const later = days.indexOf(day) >= QUICK_DAYS;
   const hours = hoursOf(settings).filter((h) => !hydrated || !day || slotTime(day, h) > now);
 
   const freeAt = new Map<number, Court | undefined>(
@@ -71,10 +76,6 @@ export default function QuickBook() {
 
   return (
     <div className="w-full min-w-0 rounded-3xl bg-white/10 p-4 ring-1 ring-white/20 backdrop-blur-md">
-      <div className="px-2 pb-4 pt-1">
-        <p className="text-xl font-semibold leading-snug text-white">Check a free slot in 2 steps</p>
-        <p className="mt-1 text-sm text-white/75">Pick a day and a start time — we show what&apos;s free right now.</p>
-      </div>
       <motion.div
         initial={false}
         animate={{ height: bodyHeight || "auto" }}
@@ -82,39 +83,64 @@ export default function QuickBook() {
         className="overflow-hidden rounded-2xl bg-white"
       >
         <div ref={bodyRef} className="space-y-5 p-5">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="qb-date" className="mb-2 flex items-center text-sm font-medium text-neutral-800">
+          <div role="group" aria-labelledby="qb-date">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p id="qb-date" className="flex items-center text-sm font-medium text-neutral-800">
                 <Step n={1} /> Date
-              </label>
-              <div className="relative">
-                <CalendarDays className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-neutral-500" />
-                <select id="qb-date" value={day} onChange={(e) => setDate(e.target.value)} className={field}>
-                  {days.map((d, i) => (
-                    <option key={d} value={d}>
-                      {i === 0 ? "Today" : i === 1 ? "Tomorrow" : dateLabel(d)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              </p>
+              {day && <span className="text-sm text-neutral-500">{dateLabel(day)}</span>}
             </div>
-            <div>
-              <p className="mb-2 flex h-5 items-center text-sm font-medium text-neutral-800">Duration</p>
-              <div className="flex h-12 gap-1 rounded-xl bg-neutral-100 p-1">
-                {Array.from({ length: settings.maxDuration }, (_, i) => i + 1).map((d) => (
+            {/* The next few days one tap away; anything later through the calendar. */}
+            <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+              {days.slice(0, QUICK_DAYS).map((d, i) => {
+                const on = d === day;
+                return (
                   <button
                     key={d}
-                    onClick={() => setDuration(d)}
-                    aria-pressed={d === duration}
-                    className={cn(
-                      "flex-1 rounded-lg text-sm font-medium transition",
-                      d === duration ? "bg-emerald-800 text-white" : "text-neutral-600 hover:bg-white"
-                    )}
+                    onClick={() => setDate(d)}
+                    aria-pressed={on}
+                    aria-label={dateLabel(d, { weekday: "long", day: "numeric", month: "long" })}
+                    className={cn(chip, on ? chipOn : chipOff)}
                   >
-                    {d} hr
+                    <span className={cn("text-[11px] font-medium", on ? "text-white/75" : "text-neutral-500")}>
+                      {i === 0 ? "Today" : dateLabel(d, { weekday: "short" })}
+                    </span>
+                    <span className="text-lg font-semibold leading-tight tabular-nums">{dateLabel(d, { day: "numeric" })}</span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
+              {days.length > QUICK_DAYS && (
+                <DateCalendar
+                  value={day}
+                  first={days[0]}
+                  last={days[days.length - 1]}
+                  isFull={(d) => candidates.every((c) => freeSlots(db, c, d, now) === 0)}
+                  onChange={setDate}
+                >
+                  <button aria-label="Pick a later date" aria-pressed={later} className={cn(chip, "gap-1", later ? chipOn : chipOff)}>
+                    <CalendarDays className="size-4" />
+                    <span className="text-[11px] font-medium">{later ? dateLabel(day, { day: "numeric", month: "short" }) : "More"}</span>
+                  </button>
+                </DateCalendar>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-neutral-800">Duration</p>
+            <div className="flex h-10 gap-1 rounded-xl bg-neutral-100 p-1">
+              {Array.from({ length: settings.maxDuration }, (_, i) => i + 1).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setDuration(d)}
+                  aria-pressed={d === duration}
+                  className={cn(
+                    "min-w-14 rounded-lg px-3 text-sm font-medium transition",
+                    d === duration ? "bg-emerald-800 text-white" : "text-neutral-600 hover:bg-white"
+                  )}
+                >
+                  {d} hr
+                </button>
+              ))}
             </div>
           </div>
           <div role="group" aria-labelledby="qb-time">
@@ -208,7 +234,6 @@ export default function QuickBook() {
       <button onClick={go} className="mt-4 h-13 w-full rounded-2xl bg-white text-base font-semibold text-emerald-950 transition hover:bg-lime-300">
         {check?.ok ? `Book ${rangeLabel(hour, duration)}` : "Check live slots"}
       </button>
-      <p className="mt-3 text-center text-sm text-white/75">Next: enter your name &amp; phone, then pay {settings.advancePercent}% advance to lock it.</p>
     </div>
   );
 }

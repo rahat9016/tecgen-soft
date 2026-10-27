@@ -43,19 +43,19 @@ export function Hero() {
       <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/90 via-emerald-950/55 to-emerald-950/20" />
       <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/70 via-transparent to-emerald-950/60" />
 
-      {/* Fills the viewport: content centred, facts row pinned to the bottom. */}
-      <div className="relative mx-auto grid w-full max-w-7xl flex-1 gap-10 px-4 pb-10 pt-28 md:px-8 lg:grid-cols-[1fr_440px] lg:grid-rows-[1fr_auto] lg:items-center lg:pb-12 lg:pt-28">
-        <div className="flex flex-col justify-center">
-          <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
+      {/* Fills the viewport: content centred, facts row pinned to the bottom. On mobile only the slot picker shows. */}
+      <div className="relative mx-auto grid w-full max-w-7xl flex-1 gap-10 px-4 pb-10 pt-28 max-md:content-start md:px-8 lg:grid-cols-[1fr_440px] lg:grid-rows-[1fr_auto] lg:items-center lg:pb-12 lg:pt-28">
+        <div className="flex flex-col justify-center max-md:contents">
+          <h1 className="max-md:sr-only text-4xl font-semibold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
             Book Our Football Turf
             <br />
             in Under a Minute.
           </h1>
-          <p className="mt-5 max-w-md text-sm leading-relaxed text-white/80 md:text-base">
+          <p className="mt-5 max-w-md text-sm leading-relaxed text-white/80 max-md:hidden md:text-base">
             Pick a date and time, see instantly if the ground is free, and lock it with a {settings.advancePercent}% advance. No phone calls, no double bookings
             — just show up and play.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-wrap gap-3 max-md:hidden">
             <Link href="/turf/book" className={tbtn.lime}>
               See live slots <ArrowRight className="size-4" />
             </Link>
@@ -69,7 +69,7 @@ export function Hero() {
         </div>
         <QuickBook />
 
-        <ul className="grid gap-3 border-t border-white/15 pt-6 sm:grid-cols-2 lg:col-span-2 lg:grid-cols-4">
+        <ul className="grid gap-3 border-t border-white/15 pt-6 max-md:hidden sm:grid-cols-2 lg:col-span-2 lg:grid-cols-4">
           {facts.map((f) => (
             <li key={f.v} className="flex items-start gap-3">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-lime-400 ring-1 ring-white/15">
@@ -111,7 +111,7 @@ export function Ground() {
 
   return (
     <section id="ground" className="scroll-mt-24 bg-neutral-100/70">
-      <div className="mx-auto max-w-7xl px-4 py-20 md:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-12 md:px-8 md:py-20">
         <div className="grid gap-10 lg:grid-cols-[1.25fr_1fr]">
           <figure>
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-emerald-950">
@@ -201,10 +201,10 @@ export function About() {
   ];
 
   return (
-    <section id="about" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-24 md:px-8">
+    <section id="about" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12 md:px-8 md:py-24">
       <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
         <div>
-          <h2 className="text-4xl font-semibold leading-[1.1] tracking-tight text-neutral-900 md:text-5xl">
+          <h2 className="text-fluid-5xl font-semibold tracking-tight text-neutral-900">
             Built for the people
             <br />
             who actually play.
@@ -214,7 +214,7 @@ export function About() {
             ground is ready — lines marked, lights on, bibs waiting.
           </p>
 
-          <ul className="mt-10 border-t border-neutral-200">
+          <ul className="mt-8 border-t border-neutral-200 md:mt-10">
             {players.map((p, i) => (
               <li key={p.who} className="grid grid-cols-[2.5rem_1fr] gap-x-2 border-b border-neutral-200 py-5">
                 <span className="pt-0.5 text-sm tabular-nums text-neutral-400">0{i + 1}</span>
@@ -245,10 +245,10 @@ export function About() {
         </div>
       </div>
 
-      <dl className="mt-16 grid grid-cols-2 border-t border-neutral-900 lg:grid-cols-4">
+      <dl className="mt-10 grid grid-cols-2 border-t border-neutral-900 md:mt-16 lg:grid-cols-4">
         {facts.map((f, i) => (
           <div key={f.t} className={`py-6 pr-4 ${i > 0 ? "lg:border-l lg:border-neutral-200 lg:pl-6" : ""} ${i % 2 === 1 ? "border-l border-neutral-200 pl-4 lg:pl-6" : ""}`}>
-            <dd className="text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">{f.v}</dd>
+            <dd className="text-fluid-4xl font-semibold tracking-tight text-neutral-900">{f.v}</dd>
             <dt className="mt-2 text-sm font-medium text-neutral-900">{f.t}</dt>
             <p className="mt-0.5 text-sm text-neutral-500">{f.d}</p>
           </div>
@@ -295,9 +295,9 @@ export function Services() {
 
   return (
     <section id="services" className="scroll-mt-24 bg-emerald-950">
-      <div className="mx-auto max-w-7xl px-4 py-24 md:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-12 md:px-8 md:py-24">
         <div className="grid gap-6 lg:grid-cols-2 lg:items-end">
-          <h2 className="text-4xl font-semibold leading-[1.1] tracking-tight text-white md:text-5xl">
+          <h2 className="text-fluid-5xl font-semibold tracking-tight text-white">
             More than an hour
             <br />
             on the pitch.
@@ -307,7 +307,7 @@ export function Services() {
           </p>
         </div>
 
-        <ul className="mt-14 border-t border-white/15">
+        <ul className="mt-8 border-t border-white/15 md:mt-14">
           {services.map((x, i) => {
             const external = x.href.startsWith("tel:");
             const Row = external ? "a" : Link;
@@ -320,7 +320,7 @@ export function Services() {
                   {/* Lime sweep on hover */}
                   <span className="absolute inset-0 -z-10 origin-left scale-x-0 bg-lime-400 transition-transform duration-500 ease-out group-hover:scale-x-100 motion-reduce:transition-none" />
                   <span className="text-sm tabular-nums text-white/40 transition-colors duration-300 group-hover:text-emerald-950/60">0{i + 1}</span>
-                  <span className="text-2xl font-semibold text-white transition-colors duration-300 group-hover:text-emerald-950 md:text-3xl">{x.title}</span>
+                  <span className="text-fluid-3xl font-semibold text-white transition-colors duration-300 group-hover:text-emerald-950">{x.title}</span>
                   <span className="col-start-2 row-start-2 text-sm leading-relaxed text-white/60 transition-colors duration-300 group-hover:text-emerald-950/80 md:col-start-auto md:row-start-auto">
                     {x.text}
                   </span>
@@ -370,16 +370,16 @@ export function HowItWorks() {
     },
   ];
   return (
-    <section id="how-it-works" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-20 md:px-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="max-w-xl">
-          <h2 className="text-3xl font-semibold leading-tight text-neutral-900 md:text-4xl">How to book your turf</h2>
-        </div>
-        <Link href="/turf/book" className={tbtn.green}>
-          Start booking <ArrowRight className="size-4" />
-        </Link>
-      </div>
-      <ol className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <section
+      id="how-it-works"
+      className="mx-auto grid max-w-7xl scroll-mt-24 gap-x-4 gap-y-8 px-4 py-12 sm:grid-cols-[1fr_auto] sm:items-end md:gap-y-10 md:px-8 md:py-20"
+    >
+      <h2 className="max-w-xl text-fluid-4xl font-semibold text-neutral-900">How to book your turf</h2>
+      {/* Phones: full-width button after the steps, once they've been read. */}
+      <Link href="/turf/book" className={`${tbtn.green} max-sm:order-last max-sm:h-12 max-sm:w-full`}>
+        Start booking <ArrowRight className="size-4" />
+      </Link>
+      <ol className="grid gap-5 sm:col-span-2 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((s, i) => (
           <li
             key={s.title}
@@ -405,13 +405,13 @@ export function HowItWorks() {
 export function PrimeTimeCta() {
   const { settings } = useTurfDB();
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-20 md:px-8">
-      <div className="relative overflow-hidden rounded-3xl bg-emerald-900 px-6 py-16 md:px-14 md:py-24">
+    <section className="mx-auto max-w-7xl px-4 pb-12 md:px-8 md:pb-20">
+      <div className="relative overflow-hidden rounded-3xl bg-emerald-900 px-6 py-10 md:px-14 md:py-24">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/turf/night.webp" alt="" className="absolute inset-0 size-full object-cover opacity-25" />
         <div className="relative flex flex-wrap items-center justify-between gap-6">
           <div>
-            <h3 className="text-3xl font-semibold text-white md:text-5xl">Tonight&apos;s prime slots go fast.</h3>
+            <h3 className="text-fluid-5xl font-semibold text-white">Tonight&apos;s prime slots go fast.</h3>
             <p className="mt-3 text-sm text-white/70 md:text-base">
               Peak hours start at {hourLabel(settings.peakStartHour)}. Check what&apos;s left before your squad does.
             </p>
