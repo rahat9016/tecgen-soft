@@ -12,18 +12,14 @@ import {
 } from "lucide-react";
 import { GiSoccerBall } from "react-icons/gi";
 import { formatDuration, hourLabel, taka } from "@/src/lib/turf-store/format";
-import { courtLive, endMs, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
+import { courtLive, endMs, groundOf, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import QuickBook from "./QuickBook";
 import { LiveDot, tbtn } from "./ui";
 
-/** The venue's one ground (the first active court). */
-function useGround() {
-  const db = useTurfDB();
-  return db.courts.find((c) => c.active);
-}
+const useGround = () => groundOf(useTurfDB());
 
 export function Hero() {
-  const { settings } = useTurfDB();
+  const { settings, content } = useTurfDB();
   const ground = useGround();
   const facts = [
     {
@@ -39,22 +35,17 @@ export function Hero() {
   return (
     <section className="relative flex min-h-svh flex-col overflow-hidden bg-emerald-950">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/turf/hero.webp" alt="" className="absolute inset-0 size-full object-cover object-[70%_center]" />
+      <img src={content.heroImage} alt="" className="absolute inset-0 size-full object-cover object-[70%_center]" />
       <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/90 via-emerald-950/55 to-emerald-950/20" />
       <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/70 via-transparent to-emerald-950/60" />
 
       {/* Fills the viewport: content centred, facts row pinned to the bottom. On mobile only the slot picker shows. */}
       <div className="relative mx-auto grid w-full max-w-7xl flex-1 gap-10 px-4 pb-10 pt-28 max-md:content-start md:px-8 lg:grid-cols-[1fr_440px] lg:grid-rows-[1fr_auto] lg:items-center lg:pb-12 lg:pt-28">
         <div className="flex flex-col justify-center max-md:contents">
-          <h1 className="max-md:sr-only text-4xl font-semibold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Book Our Football Turf
-            <br />
-            in Under a Minute.
+          <h1 className="max-md:sr-only whitespace-pre-line text-4xl font-semibold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
+            {content.heroTitle}
           </h1>
-          <p className="mt-5 max-w-md text-sm leading-relaxed text-white/80 max-md:hidden md:text-base">
-            Pick a date and time, see instantly if the ground is free, and lock it with a {settings.advancePercent}% advance. No phone calls, no double bookings
-            — just show up and play.
-          </p>
+          <p className="mt-5 max-w-md text-sm leading-relaxed text-white/80 max-md:hidden md:text-base">{content.heroText}</p>
           <div className="mt-8 flex flex-wrap gap-3 max-md:hidden">
             <Link href="/turf/book" className={tbtn.lime}>
               See live slots <ArrowRight className="size-4" />
@@ -185,6 +176,34 @@ function PitchPlan({ dims }: { dims?: string }) {
   );
 }
 
+export function Gallery() {
+  const { gallery } = useTurfDB();
+  const photos = gallery.filter((g) => g.visible);
+  if (!photos.length) return null;
+
+  return (
+    <section id="gallery" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12 md:px-8 md:py-20">
+      <h2 className="text-fluid-4xl font-semibold text-neutral-900">Life on the pitch</h2>
+      <ul className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+        {photos.map((g) => (
+          <li key={g.id} className="group relative aspect-[4/3] overflow-hidden rounded-2xl bg-neutral-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={g.src}
+              alt={g.title}
+              loading="lazy"
+              className="size-full object-cover transition duration-500 group-hover:scale-105 motion-reduce:transition-none"
+            />
+            {g.title && (
+              <p className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-8 text-xs font-medium text-white md:text-sm">{g.title}</p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 const players = [
   { who: "Weekend squads", what: "Same group, same slot every week — book your regular time well ahead and pay the advance in seconds." },
   { who: "Office teams", what: "After-work matches and corporate leagues. Need the whole evening? We block the ground for you." },
@@ -192,7 +211,7 @@ const players = [
 ];
 
 export function About() {
-  const { settings } = useTurfDB();
+  const { settings, content } = useTurfDB();
   const facts = [
     { v: `${settings.closeHour - settings.openHour} hrs`, t: "Open every day", d: `${hourLabel(settings.openHour)} to ${hourLabel(settings.closeHour)}` },
     { v: hourLabel(settings.closeHour), t: "Floodlights until", d: "Full LED lighting for night games" },
@@ -204,15 +223,8 @@ export function About() {
     <section id="about" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12 md:px-8 md:py-24">
       <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
         <div>
-          <h2 className="text-fluid-5xl font-semibold tracking-tight text-neutral-900">
-            Built for the people
-            <br />
-            who actually play.
-          </h2>
-          <p className="mt-5 max-w-md text-base leading-relaxed text-neutral-600">
-            One well-kept pitch in Bashundhara, run by people who play on it. Book online in a minute, turn up, and the
-            ground is ready — lines marked, lights on, bibs waiting.
-          </p>
+          <h2 className="whitespace-pre-line text-fluid-5xl font-semibold tracking-tight text-neutral-900">{content.aboutTitle}</h2>
+          <p className="mt-5 max-w-md text-base leading-relaxed text-neutral-600">{content.aboutText}</p>
 
           <ul className="mt-8 border-t border-neutral-200 md:mt-10">
             {players.map((p, i) => (
@@ -259,39 +271,16 @@ export function About() {
 }
 
 export function Services() {
-  const { settings } = useTurfDB();
+  const { settings, content } = useTurfDB();
   const ground = useGround();
   const tel = `tel:${settings.phone.replace(/[^+\d]/g, "")}`;
-  const services = [
-    {
-      title: "Hourly hire",
-      text: "Your squad, the whole pitch, by the hour. Pick a free time and lock it with a small advance.",
-      detail: ground ? `From ${taka(ground.price)}/hr` : "Book online",
-      href: "/turf/book",
-      cta: "Book",
-    },
-    {
-      title: "Coaching",
-      text: "Sessions for kids and adults — fitness, passing, finishing and goalkeeping.",
-      detail: "Coach on request",
-      href: tel,
-      cta: "Call to arrange",
-    },
-    {
-      title: "Private events",
-      text: "Office matches and birthday games. We block the ground and have it ready when you arrive.",
-      detail: "Evening or full day",
-      href: tel,
-      cta: "Call to arrange",
-    },
-    {
-      title: "Tournaments",
-      text: "7-a-side cups with fixtures drawn up and the ground held for every round.",
-      detail: "Ask about dates",
-      href: tel,
-      cta: "Call to arrange",
-    },
-  ];
+  const services = content.services.map((x) => ({
+    ...x,
+    detail: x.detail || (x.online ? (ground ? `From ${taka(ground.price)}/hr` : "Book online") : ""),
+    href: x.online ? "/turf/book" : tel,
+    cta: x.online ? "Book" : "Call to arrange",
+  }));
+  if (!services.length) return null;
 
   return (
     <section id="services" className="scroll-mt-24 bg-emerald-950">
@@ -312,7 +301,7 @@ export function Services() {
             const external = x.href.startsWith("tel:");
             const Row = external ? "a" : Link;
             return (
-              <li key={x.title} className="border-b border-white/15">
+              <li key={i} className="border-b border-white/15">
                 <Row
                   href={x.href}
                   className="group relative isolate grid grid-cols-[2.5rem_1fr_auto] items-center gap-x-4 gap-y-2 px-2 py-7 md:grid-cols-[3.5rem_1fr_1.4fr_10rem_3rem] md:px-4 lg:grid-cols-[3.5rem_1fr_1.4fr_10rem_11rem]"

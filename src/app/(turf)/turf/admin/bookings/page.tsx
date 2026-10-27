@@ -1,5 +1,5 @@
-import BookingsTable from "@/src/components/turf/admin/BookingsTable";
+import BookingsList from "@/src/components/turf/admin/BookingsList";
 
 export default function TurfBookingsPage() {
-  return <BookingsTable />;
+  return <BookingsList />;
 }

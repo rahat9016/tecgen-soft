@@ -1,4 +1,4 @@
-import type { BookingStatus, PayMethod, Sport } from "./types";
+import type { PayMethod, Phase, Sport } from "./types";
 
 export const taka = (n: number) => `${n < 0 ? "-" : ""}৳${Math.abs(n).toLocaleString("en-IN")}`;
 
@@ -69,32 +69,20 @@ export const sportLabels: Record<Sport, string> = {
   football: "Football",
 };
 
-export const statusLabels: Record<BookingStatus, string> = {
+export const statusLabels: Record<Phase, string> = {
   pending: "Awaiting verification",
-  confirmed: "Confirmed",
-  "checked-in": "Playing",
-  completed: "Completed",
+  booked: "Booked",
+  playing: "Playing now",
+  played: "Played",
   cancelled: "Cancelled",
-  "no-show": "No-show",
 };
 
-export const statusStyles: Record<BookingStatus, string> = {
-  pending: "bg-amber-50 text-amber-700 ring-amber-200",
-  confirmed: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  "checked-in": "bg-lime-100 text-lime-800 ring-lime-300",
-  completed: "bg-neutral-100 text-neutral-600 ring-neutral-200",
+export const statusStyles: Record<Phase, string> = {
+  pending: "bg-sky-50 text-sky-700 ring-sky-200",
+  booked: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  playing: "bg-lime-100 text-lime-800 ring-lime-300",
+  played: "bg-neutral-100 text-neutral-600 ring-neutral-200",
   cancelled: "bg-rose-50 text-rose-600 ring-rose-200",
-  "no-show": "bg-neutral-800 text-white ring-neutral-800",
-};
-
-/** Fill colours for booking blocks on the schedule board. */
-export const statusBlock: Record<BookingStatus, string> = {
-  pending: "border-amber-300 bg-amber-50 text-amber-900",
-  confirmed: "border-emerald-300 bg-emerald-50 text-emerald-900",
-  "checked-in": "border-lime-400 bg-lime-200 text-lime-950",
-  completed: "border-neutral-200 bg-neutral-100 text-neutral-600",
-  cancelled: "border-rose-200 bg-rose-50 text-rose-700",
-  "no-show": "border-neutral-700 bg-neutral-700 text-white",
 };
 
 export const payLabels: Record<PayMethod, string> = {
@@ -103,3 +91,13 @@ export const payLabels: Record<PayMethod, string> = {
   card: "Card",
   cash: "Cash",
 };
+
+export const sourceLabels = { online: "Online", "walk-in": "Walk-in", phone: "Phone" } as const;
+
+export function downloadCsv(filename: string, rows: (string | number)[][]) {
+  const csv = rows.map((r) => r.map((c) => (/[",\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : String(c))).join(",")).join("\r\n");
+  const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+  const a = Object.assign(document.createElement("a"), { href: url, download: filename });
+  a.click();
+  URL.revokeObjectURL(url);
+}

@@ -1,4 +1,4 @@
-import { About, Ground, Hero, HowItWorks, PrimeTimeCta, Services } from "@/src/components/turf/home";
+import { About, Gallery, Ground, Hero, HowItWorks, PrimeTimeCta, Services } from "@/src/components/turf/home";
 
 export default function TurfHomePage() {
   return (
@@ -6,6 +6,7 @@ export default function TurfHomePage() {
       <Hero />
       <HowItWorks />
       <Ground />
+      <Gallery />
       <Services />
       <About />
       <PrimeTimeCta />

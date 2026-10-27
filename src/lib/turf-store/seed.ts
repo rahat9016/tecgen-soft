@@ -1,8 +1,27 @@
 import { addDays, slotTime, todayYmd } from "./format";
-import type { Booking, BookingStatus, Court, PayMethod, Payment, Settings, TurfDB } from "./types";
+import type { Booking, BookingStatus, Court, GalleryImage, PayMethod, Payment, Settings, SiteContent, TurfDB } from "./types";
 
 // Bumped when the seed changes so stored demo data is replaced.
-export const DB_VERSION = 3;
+export const DB_VERSION = 5;
+
+/** Photos in /public/turf the admin can pick for the hero and the ground. */
+export const turfImages = ["hero", "field", "boots", "kickoff", "player", "night-match", "kids", "stadium", "night"].map((n) => `/turf/${n}.webp`);
+
+export const defaultContent: SiteContent = {
+  heroTitle: "Book Our Football Turf\nin Under a Minute.",
+  heroText:
+    "Pick a date and time, see instantly if the ground is free, and lock it with a small advance. No phone calls, no double bookings — just show up and play.",
+  heroImage: "/turf/hero.webp",
+  aboutTitle: "Built for the people\nwho actually play.",
+  aboutText:
+    "One well-kept pitch in Bashundhara, run by people who play on it. Book online in a minute, turn up, and the ground is ready — lines marked, lights on, bibs waiting.",
+  services: [
+    { title: "Hourly hire", text: "Your squad, the whole pitch, by the hour. Pick a free time and lock it with a small advance.", detail: "", online: true },
+    { title: "Coaching", text: "Sessions for kids and adults — fitness, passing, finishing and goalkeeping.", detail: "Coach on request", online: false },
+    { title: "Private events", text: "Office matches and birthday games. We block the ground and have it ready when you arrive.", detail: "Evening or full day", online: false },
+    { title: "Tournaments", text: "7-a-side cups with fixtures drawn up and the ground held for every round.", detail: "Ask about dates", online: false },
+  ],
+};
 
 export const defaultSettings: Settings = {
   venueName: "TurfHub Bashundhara",
@@ -18,7 +37,16 @@ export const defaultSettings: Settings = {
   cancelCutoffHours: 12,
 };
 
-/** The venue has a single ground; admins can still add more from the Courts page. */
+export const seedGallery: GalleryImage[] = [
+  ["field", "The pitch at golden hour"],
+  ["night-match", "Floodlit night match"],
+  ["kickoff", "Kick-off"],
+  ["kids", "Saturday kids' coaching"],
+  ["stadium", "Tournament day"],
+  ["boots", "Shock-pad grass up close"],
+].map(([n, title], i) => ({ id: `gl${i + 1}`, src: `/turf/${n}.webp`, title, visible: true }));
+
+/** The venue has a single ground. */
 export const seedCourts: Court[] = [
   {
     id: "ct1",
@@ -43,6 +71,8 @@ export const staticState: TurfDB = {
   version: DB_VERSION,
   seeded: false,
   settings: defaultSettings,
+  content: defaultContent,
+  gallery: seedGallery,
   courts: seedCourts,
   bookings: [],
   blocks: [],
@@ -65,7 +95,7 @@ const LAST = ["Uddin", "Ahmed", "Hasan", "Jahan", "Hossain", "Islam", "Rahman", 
 const TEAMS = ["Bashundhara Blazers", "Office XI", "Gulshan Strikers", "NSU Alumni", "Friday FC", "Code Warriors", "", "", "", ""];
 
 /**
- * Demo history around today: completed past games, matches being played right now and upcoming
+ * Demo history around today: games already played, matches being played right now and upcoming
  * bookings — so the live board has something to show on first visit.
  */
 export function createSeed(): TurfDB {
@@ -90,7 +120,6 @@ export function createSeed(): TurfDB {
         }
         const duration = Math.min(rand() < 0.3 ? 2 : 1, s.closeHour - h);
         const start = slotTime(date, h);
-        const end = slotTime(date, h + duration);
         const total = (peak ? court.peakPrice : court.price) * duration;
         const advanceDue = Math.ceil((total * s.advancePercent) / 100 / 10) * 10;
         const source: Booking["source"] = rand() < 0.75 ? "online" : rand() < 0.5 ? "walk-in" : "phone";
@@ -98,10 +127,7 @@ export function createSeed(): TurfDB {
         const created = new Date(start - (1 + Math.floor(rand() * 72)) * 3600_000).toISOString();
 
         let status: BookingStatus;
-        if (end <= now) {
-          const r = rand();
-          status = r < 0.88 ? "completed" : r < 0.94 ? "cancelled" : "no-show";
-        } else if (start <= now) status = "checked-in";
+        if (start <= now) status = rand() < 0.94 ? "confirmed" : "cancelled";
         else status = d <= 1 && source === "online" && rand() < 0.3 ? "pending" : "confirmed";
 
         const payments: Payment[] = [];
@@ -109,7 +135,8 @@ export function createSeed(): TurfDB {
           payments.push({ id: `p${seq}${payments.length}`, amount, kind, method: m, at, ref: m === "cash" ? undefined : `TX${Math.floor(rand() * 1e8)}` });
         if (source === "online") pay(advanceDue, "advance", method, created);
         else if (status !== "cancelled") pay(advanceDue, "advance", "cash", created);
-        if (status === "completed" || status === "checked-in") pay(total - advanceDue, "balance", rand() < 0.7 ? "cash" : "bkash", new Date(start).toISOString());
+        // Games already played or under way have had their balance collected at the ground.
+        if (status === "confirmed" && start <= now) pay(total - advanceDue, "balance", rand() < 0.7 ? "cash" : "bkash", new Date(start).toISOString());
 
         const name = `${pick(FIRST)} ${pick(LAST)}`;
         bookings.push({
@@ -134,21 +161,5 @@ export function createSeed(): TurfDB {
     }
   }
 
-  const blocks = [
-    { id: "bl1", courtId: "ct1", date: addDays(today, 2), startHour: 6, duration: 3, reason: "Turf re-brushing" },
-    { id: "bl2", courtId: "ct1", date: addDays(today, 4), startHour: 15, duration: 5, reason: "Corporate tournament" },
-  ];
-  // Drop seeded bookings under a block so the demo has no impossible overlaps.
-  const free = bookings.filter(
-    (b) =>
-      !blocks.some(
-        (bl) =>
-          bl.courtId === b.courtId &&
-          bl.date === b.date &&
-          b.startHour < bl.startHour + bl.duration &&
-          bl.startHour < b.startHour + b.duration
-      )
-  );
-
-  return { ...staticState, seeded: true, bookings: free, blocks, seq: { booking: seq, court: seedCourts.length } };
+  return { ...staticState, seeded: true, bookings, seq: { booking: seq, court: seedCourts.length } };
 }

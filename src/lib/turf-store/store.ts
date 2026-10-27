@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { addDays, slotTime, todayYmd } from "./format";
 import { createSeed, DB_VERSION, staticState } from "./seed";
-import type { Block, Booking, BookingStatus, Court, Hold, PayMethod, Payment, Settings, TurfDB } from "./types";
+import type { Block, Booking, BookingStatus, Court, GalleryImage, Hold, PayMethod, Payment, Phase, Settings, SiteContent, TurfDB } from "./types";
 
 /**
  * Demo backend for TurfHub: one JSON document in localStorage shared by the booking site and the
@@ -142,6 +142,12 @@ export const occupies = (b: Booking) => b.status !== "cancelled";
 export const startMs = (b: Pick<Booking, "date" | "startHour">) => slotTime(b.date, b.startHour);
 export const endMs = (b: Pick<Booking, "date" | "startHour" | "duration">) => slotTime(b.date, b.startHour + b.duration);
 
+export function phaseOf(b: Booking, now: number): Phase {
+  if (b.status !== "confirmed") return b.status;
+  if (endMs(b) <= now) return "played";
+  return startMs(b) <= now ? "playing" : "booked";
+}
+
 const overlaps = (aStart: number, aDur: number, bStart: number, bDur: number) => aStart < bStart + bDur && bStart < aStart + aDur;
 
 export type SlotRequest = { courtId: string; date: string; startHour: number; duration: number };
@@ -242,11 +248,14 @@ export function nextFreeDay(db: TurfDB, court: Court, now: number) {
   return null;
 }
 
+/** The venue's one ground: the first active court. */
+export const groundOf = (db: TurfDB) => db.courts.find((c) => c.active);
+
 /** The booking being played on a court right now, if any, and the next one today. */
 export function courtLive(db: TurfDB, courtId: string, now: number) {
   const today = todayYmd();
   const list = db.bookings
-    .filter((b) => b.courtId === courtId && b.date === today && occupies(b) && b.status !== "no-show")
+    .filter((b) => b.courtId === courtId && b.date === today && occupies(b))
     .sort((a, b) => a.startHour - b.startHour);
   const current = list.find((b) => startMs(b) <= now && endMs(b) > now);
   const next = list.find((b) => startMs(b) > now);
@@ -343,8 +352,8 @@ export function cancelByCustomer(code: string, phone: string): Result<Booking> {
   update((s) => {
     const b = s.bookings.find((x) => x.code === code && x.customer.phone === phone);
     if (!b) return s;
-    if (b.status !== "pending" && b.status !== "confirmed") {
-      result = { ok: false, error: "This booking can no longer be cancelled." };
+    if (b.status === "cancelled") {
+      result = { ok: false, error: "This booking is already cancelled." };
       return s;
     }
     if (startMs(b) - Date.now() < s.settings.cancelCutoffHours * 3600_000) {
@@ -392,7 +401,6 @@ export function createAdminBooking(input: AdminBookingInput): Result<Booking> {
     }
     const seq = s.seq.booking + 1;
     const at = nowIso();
-    const playing = slotTime(input.date, input.startHour) <= Date.now();
     const booking: Booking = {
       id: uid("bk"),
       code: `TH-${seq}`,
@@ -404,7 +412,7 @@ export function createAdminBooking(input: AdminBookingInput): Result<Booking> {
       total: input.total,
       advanceDue: Math.ceil((input.total * s.settings.advancePercent) / 100 / 10) * 10,
       payments: input.paid > 0 ? [{ id: uid("p"), amount: input.paid, method: input.method, kind: "advance", at }] : [],
-      status: playing ? "checked-in" : "confirmed",
+      status: "confirmed",
       source: input.source,
       note: input.note,
       createdAt: at,
@@ -433,36 +441,41 @@ export function rescheduleBooking(id: string, req: SlotRequest): Result<Booking>
   return result;
 }
 
-export function addBlock(block: Omit<Block, "id">): Result<Block> {
-  let result: Result<Block> = { ok: false, error: "Could not block." };
+// The patches below merge into the latest copy, so the Content and Settings pages never overwrite
+// each other's fields with what they loaded earlier.
+
+export function updateCourt(id: string, patch: Partial<Court>) {
+  update((s) => ({ ...s, courts: s.courts.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
+}
+
+export function saveSettings(patch: Partial<Settings>) {
+  update((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
+}
+
+export function saveContent(content: SiteContent) {
+  update((s) => ({ ...s, content }));
+}
+
+export function addGalleryImage(img: Omit<GalleryImage, "id">) {
+  update((s) => ({ ...s, gallery: [...s.gallery, { ...img, id: uid("gl") }] }));
+}
+
+export function updateGalleryImage(id: string, patch: Partial<GalleryImage>) {
+  update((s) => ({ ...s, gallery: s.gallery.map((g) => (g.id === id ? { ...g, ...patch } : g)) }));
+}
+
+export function removeGalleryImage(id: string) {
+  update((s) => ({ ...s, gallery: s.gallery.filter((g) => g.id !== id) }));
+}
+
+/** Swap a photo with its neighbour; `dir` −1 moves it earlier, 1 later. */
+export function moveGalleryImage(id: string, dir: -1 | 1) {
   update((s) => {
-    const conflict = findConflict(s, block, { allowPast: true });
-    if (conflict && conflict.kind !== "hold") {
-      result = { ok: false, error: conflict.kind === "booking" ? `Overlaps booking ${conflict.booking.code}.` : conflictMessage(conflict) };
-      return s;
-    }
-    const value = { ...block, id: uid("bl") };
-    result = { ok: true, value };
-    return { ...s, blocks: [...s.blocks, value] };
+    const i = s.gallery.findIndex((g) => g.id === id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= s.gallery.length) return s;
+    const gallery = [...s.gallery];
+    [gallery[i], gallery[j]] = [gallery[j], gallery[i]];
+    return { ...s, gallery };
   });
-  return result;
-}
-
-export function removeBlock(id: string) {
-  update((s) => ({ ...s, blocks: s.blocks.filter((b) => b.id !== id) }));
-}
-
-export function saveCourt(court: Court) {
-  update((s) => {
-    const exists = s.courts.some((c) => c.id === court.id);
-    return exists
-      ? { ...s, courts: s.courts.map((c) => (c.id === court.id ? court : c)) }
-      : { ...s, courts: [...s.courts, court], seq: { ...s.seq, court: s.seq.court + 1 } };
-  });
-}
-
-export const newCourtId = (db: TurfDB) => `ct${db.seq.court + 1}${Math.random().toString(36).slice(2, 5)}`;
-
-export function saveSettings(settings: Settings) {
-  update((s) => ({ ...s, settings }));
 }

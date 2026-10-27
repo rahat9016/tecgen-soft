@@ -1,5 +1,5 @@
-import Dashboard from "@/src/components/turf/admin/Dashboard";
+import { redirect } from "next/navigation";
 
-export default function TurfDashboardPage() {
-  return <Dashboard />;
+export default function TurfAdminPage() {
+  redirect("/turf/admin/bookings");
 }

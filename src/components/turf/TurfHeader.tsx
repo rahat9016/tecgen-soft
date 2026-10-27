@@ -12,6 +12,7 @@ const links = [
   { href: "/turf", label: "Home" },
   { href: "/turf#how-it-works", label: "How it works" },
   { href: "/turf#ground", label: "The Ground" },
+  { href: "/turf#gallery", label: "Gallery" },
   { href: "/turf/my-bookings", label: "My Bookings" },
 ];
 

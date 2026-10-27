@@ -9,7 +9,7 @@ import { dateLabel, formatDuration, hourLabel, payLabels, rangeLabel, relativeDa
 import { dueOf, endMs, paidOf, startMs, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Booking } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
-import { BookingStatusBadge as StatusBadge, Loader, tbtn } from "./ui";
+import { BookingStatusBadge, Loader, tbtn } from "./ui";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -26,11 +26,6 @@ function Reveal({ delay = 0, className, children }: { delay?: number; className?
       {children}
     </motion.div>
   );
-}
-
-/** Status badge without the amber "pending" tone. */
-function BookingStatusBadge({ status }: { status: Booking["status"] }) {
-  return <StatusBadge status={status} className={status === "pending" ? "bg-orange-50 text-orange-700 ring-orange-200" : undefined} />;
 }
 
 const PHONE_KEY = "turfhub:phone";
@@ -294,7 +289,7 @@ function Ticket({ b, now }: { b: Booking; now: number }) {
         {/* Status and countdown only matter until the game is over. */}
         {!ended && (
           <div className="mb-5 flex flex-wrap items-center gap-3">
-            {b.status !== "pending" && <BookingStatusBadge status={b.status} />}
+            {b.status !== "pending" && <BookingStatusBadge booking={b} />}
             {b.status !== "cancelled" && (
               <span className="text-sm font-medium text-emerald-700">{live ? "Playing now" : `Kick-off in ${formatDuration(until)}`}</span>
             )}
@@ -372,7 +367,7 @@ function Row({ b, index }: { b: Booking; index: number }) {
         <p className="text-sm text-neutral-500">{rangeLabel(b.startHour, b.duration)}</p>
       </div>
       <div className="order-last col-span-2 flex flex-wrap items-center gap-3 md:order-none md:col-span-1">
-        {b.status !== "pending" && <BookingStatusBadge status={b.status} />}
+        {b.status !== "pending" && <BookingStatusBadge booking={b} />}
         <span className="font-mono text-xs text-neutral-500">{b.code}</span>
       </div>
       <p className="text-sm text-neutral-500 max-md:hidden">{b.status === "cancelled" ? "—" : due > 0 ? `${taka(due)} due at venue` : "Fully paid"}</p>

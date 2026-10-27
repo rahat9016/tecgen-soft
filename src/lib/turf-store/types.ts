@@ -40,7 +40,15 @@ export type Settings = {
   cancelCutoffHours: number;
 };
 
-export type BookingStatus = "pending" | "confirmed" | "checked-in" | "completed" | "cancelled" | "no-show";
+/**
+ * Book, pay the booking money, play — there is no check-in step. "pending" is an online booking whose
+ * advance staff haven't verified yet; whether a confirmed game is still to come, under way or played
+ * follows from the clock (see `phaseOf`).
+ */
+export type BookingStatus = "pending" | "confirmed" | "cancelled";
+
+/** What a booking shows as: its status, with confirmed games split by time. */
+export type Phase = "pending" | "booked" | "playing" | "played" | "cancelled";
 
 export type PayMethod = "bkash" | "nagad" | "card" | "cash";
 
@@ -95,10 +103,40 @@ export type Hold = {
   expiresAt: number;
 };
 
+export type Service = {
+  title: string;
+  text: string;
+  /** Short line beside the title; empty on an online service shows the hourly price. */
+  detail: string;
+  /** Booked through the site; otherwise the row calls the venue. */
+  online: boolean;
+};
+
+/** Home page copy the admin can edit. */
+export type SiteContent = {
+  heroTitle: string;
+  heroText: string;
+  heroImage: string;
+  aboutTitle: string;
+  aboutText: string;
+  services: Service[];
+};
+
+/** Photo in the site's gallery section, shown in list order. */
+export type GalleryImage = {
+  id: string;
+  /** Public path, https link, or a downscaled upload as a data URL. */
+  src: string;
+  title: string;
+  visible: boolean;
+};
+
 export type TurfDB = {
   version: number;
   seeded: boolean;
   settings: Settings;
+  content: SiteContent;
+  gallery: GalleryImage[];
   courts: Court[];
   bookings: Booking[];
   blocks: Block[];

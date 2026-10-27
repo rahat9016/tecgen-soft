@@ -3,7 +3,8 @@
 import { Loader2, Trophy } from "lucide-react";
 import { GiSoccerBall } from "react-icons/gi";
 import { statusLabels, statusStyles } from "@/src/lib/turf-store/format";
-import type { BookingStatus, Sport } from "@/src/lib/turf-store/types";
+import { phaseOf, useNow } from "@/src/lib/turf-store/store";
+import type { Booking, Sport } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
 
 export const tbtn = {
@@ -58,17 +59,18 @@ export function LiveBadge({ now, dark }: { now: number; dark?: boolean }) {
   );
 }
 
-export function BookingStatusBadge({ status, className }: { status: BookingStatus; className?: string }) {
+export function BookingStatusBadge({ booking, className }: { booking: Booking; className?: string }) {
+  const phase = phaseOf(booking, useNow(30_000));
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset",
-        statusStyles[status],
+        statusStyles[phase],
         className
       )}
     >
-      {status === "checked-in" && <LiveDot className="size-1.5" />}
-      {statusLabels[status]}
+      {phase === "playing" && <LiveDot className="size-1.5" />}
+      {statusLabels[phase]}
     </span>
   );
 }
