@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -12,9 +11,8 @@ import {
   Wallet,
 } from "lucide-react";
 import { GiSoccerBall } from "react-icons/gi";
-import { addDays, formatDuration, hourLabel, hourShort, relativeDay, slotTime, taka, todayYmd } from "@/src/lib/turf-store/format";
-import { courtLive, endMs, hoursOf, slotInfo, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
-import type { Court } from "@/src/lib/turf-store/types";
+import { formatDuration, hourLabel, taka } from "@/src/lib/turf-store/format";
+import { courtLive, endMs, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import QuickBook from "./QuickBook";
 import { LiveDot, tbtn } from "./ui";
 
@@ -89,13 +87,12 @@ export function Hero() {
   );
 }
 
-/** The one ground: headline + price, photo with live status, pitch drawing + spec sheet, and today's hour-by-hour board. */
+/** The one ground: photo with live status, pitch drawing + spec sheet. */
 export function Ground() {
   const db = useTurfDB();
   const ground = useGround();
   const hydrated = useHydrated();
   const now = useNow(1000);
-  const [dayOffset, setDayOffset] = useState(0);
   if (!ground) return null;
 
   const { settings } = db;
@@ -115,24 +112,7 @@ export function Ground() {
   return (
     <section id="ground" className="scroll-mt-24 bg-neutral-100/70">
       <div className="mx-auto max-w-7xl px-4 py-20 md:px-8">
-        <header className="flex flex-wrap items-end justify-between gap-6 border-b border-neutral-300 pb-8">
-          <div>
-            <h2 className="text-4xl font-semibold tracking-tight text-neutral-900 md:text-6xl">{ground.name}</h2>
-          </div>
-          <div className="sm:text-right">
-            <p className="text-4xl font-semibold tracking-tight text-neutral-900">
-              {taka(ground.price)}
-              <span className="ml-1 text-base font-normal text-neutral-500">per hour</span>
-            </p>
-            {ground.peakPrice !== ground.price && (
-              <p className="mt-1 text-sm text-neutral-500">
-                <span className="font-medium text-orange-600">{taka(ground.peakPrice)}</span> from {hourLabel(settings.peakStartHour)} (peak)
-              </p>
-            )}
-          </div>
-        </header>
-
-        <div className="mt-10 grid gap-10 lg:grid-cols-[1.25fr_1fr]">
+        <div className="grid gap-10 lg:grid-cols-[1.25fr_1fr]">
           <figure>
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-emerald-950">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -167,8 +147,6 @@ export function Ground() {
             </dl>
           </div>
         </div>
-
-        <DayBoard court={ground} dayOffset={dayOffset} onDay={setDayOffset} now={now} hydrated={hydrated} />
       </div>
     </section>
   );
@@ -203,104 +181,6 @@ function PitchPlan({ dims }: { dims?: string }) {
           </text>
         )}
       </svg>
-    </div>
-  );
-}
-
-/** Hour-by-hour board for today or tomorrow: booked, closed and free hours, with a "now" marker. */
-function DayBoard({ court, dayOffset, onDay, now, hydrated }: { court: Court; dayOffset: number; onDay: (n: number) => void; now: number; hydrated: boolean }) {
-  const db = useTurfDB();
-  const { settings } = db;
-  const hours = hoursOf(settings);
-  const day = hydrated ? addDays(todayYmd(), dayOffset) : "";
-  const span = settings.closeHour - settings.openHour;
-  const nowPos = hydrated && dayOffset === 0 ? (now - slotTime(day, settings.openHour)) / (span * 3600_000) : -1;
-  const peakPos = (settings.peakStartHour - settings.openHour) / span;
-  const free = hydrated ? hours.filter((h) => slotInfo(db, court, day, h, now, "").kind === "free").length : 0;
-
-  return (
-    <div className="mt-14">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h3 className="text-xl font-semibold text-neutral-900">On the pitch</h3>
-          <div className="mt-2 flex gap-5 text-sm">
-            {["Today", "Tomorrow"].map((l, i) => (
-              <button
-                key={l}
-                onClick={() => onDay(i)}
-                aria-pressed={dayOffset === i}
-                className={dayOffset === i ? "border-b-2 border-emerald-800 pb-1 font-semibold text-neutral-900" : "border-b-2 border-transparent pb-1 text-neutral-500 hover:text-neutral-900"}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-500">
-          <span className="flex items-center gap-1.5">
-            <span className="size-3 rounded-sm bg-white ring-1 ring-neutral-300" /> Free
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-3 rounded-sm bg-emerald-800" /> Booked
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-3 rounded-sm bg-[repeating-linear-gradient(45deg,#d4d4d4_0_2px,transparent_2px_5px)] ring-1 ring-neutral-300" /> Closed
-          </span>
-          <span className="font-medium text-neutral-800">{hydrated ? `${free} free hour${free === 1 ? "" : "s"}` : ""}</span>
-        </div>
-      </div>
-
-      <div className="mt-5 overflow-x-auto pb-2 [scrollbar-width:thin]">
-        <div className="relative min-w-[680px] pt-6">
-          {/* Peak band label above the bar */}
-          <div className="absolute top-0 h-4 border-l border-orange-400 pl-1.5 text-[11px] font-medium text-orange-600" style={{ left: `${peakPos * 100}%`, right: 0 }}>
-            Peak · {taka(court.peakPrice)}/hr
-          </div>
-          <div className="flex h-14 gap-px overflow-hidden rounded-xl ring-1 ring-neutral-300">
-            {hours.map((h) => {
-              const info = hydrated ? slotInfo(db, court, day, h, now, "") : { kind: "past" as const };
-              const base = "flex-1 transition";
-              if (info.kind === "free")
-                return (
-                  <Link
-                    key={h}
-                    href={`/turf/book?court=${court.id}&date=${day}&start=${h}`}
-                    aria-label={`Book ${relativeDay(day)} at ${hourLabel(h)}`}
-                    title={`${hourLabel(h)} · ${taka(info.price)}`}
-                    className={`${base} bg-white hover:bg-lime-300`}
-                  />
-                );
-              const tone =
-                info.kind === "booked" || info.kind === "held"
-                  ? "bg-emerald-800"
-                  : info.kind === "blocked"
-                    ? "bg-[repeating-linear-gradient(45deg,#d4d4d4_0_2px,#f5f5f5_2px_6px)]"
-                    : "bg-neutral-200";
-              const label = info.kind === "booked" ? "Booked" : info.kind === "held" ? "On hold" : info.kind === "blocked" ? "Closed" : "Past";
-              return <span key={h} title={`${hourLabel(h)} · ${label}`} className={`${base} ${tone}`} />;
-            })}
-          </div>
-          {nowPos > 0 && nowPos < 1 && (
-            <div className="pointer-events-none absolute bottom-6 top-5 w-0.5 bg-orange-500" style={{ left: `${nowPos * 100}%` }}>
-              <span className="absolute -top-1 left-1/2 size-2 -translate-x-1/2 rounded-full bg-orange-500" />
-            </div>
-          )}
-          <div className="mt-2 flex text-[11px] text-neutral-500">
-            {hours.map((h) => (
-              <span key={h} className="flex-1 text-center tabular-nums">
-                {hourShort(h)}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-        <p className="text-neutral-500">Tap a free hour to book it. Prices shown on hover.</p>
-        <Link href={`/turf/book?court=${court.id}`} className="inline-flex items-center gap-1.5 font-semibold text-emerald-800 hover:underline">
-          Open full schedule <ArrowRight className="size-4" />
-        </Link>
-      </div>
     </div>
   );
 }
