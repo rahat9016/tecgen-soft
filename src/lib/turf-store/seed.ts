@@ -2,7 +2,7 @@ import { addDays, slotTime, todayYmd } from "./format";
 import type { Booking, BookingStatus, Court, GalleryImage, PayMethod, Payment, Settings, SiteContent, TurfDB } from "./types";
 
 // Bumped when the seed changes so stored demo data is replaced.
-export const DB_VERSION = 5;
+export const DB_VERSION = 10;
 
 /** Photos in /public/turf the admin can pick for the hero and the ground. */
 export const turfImages = ["hero", "field", "boots", "kickoff", "player", "night-match", "kids", "stadium", "night"].map((n) => `/turf/${n}.webp`);
@@ -124,11 +124,12 @@ export function createSeed(): TurfDB {
         const advanceDue = Math.ceil((total * s.advancePercent) / 100 / 10) * 10;
         const source: Booking["source"] = rand() < 0.75 ? "online" : rand() < 0.5 ? "walk-in" : "phone";
         const method: PayMethod = source === "online" ? pick(["bkash", "bkash", "nagad", "card"] as PayMethod[]) : "cash";
-        const created = new Date(start - (1 + Math.floor(rand() * 72)) * 3600_000).toISOString();
+        // Booked 1–72 hours before kick-off; games further out were booked some time in the last two days.
+        const lead = (1 + Math.floor(rand() * 72)) * 3600_000;
+        const created = new Date(start - lead < now ? start - lead : now - (1 + Math.floor(rand() * 47)) * 3600_000).toISOString();
 
-        let status: BookingStatus;
-        if (start <= now) status = rand() < 0.94 ? "confirmed" : "cancelled";
-        else status = d <= 1 && source === "online" && rand() < 0.3 ? "pending" : "confirmed";
+        // A few bookings are called off; everything else stands.
+        const status: BookingStatus = rand() >= 0.94 ? "cancelled" : "confirmed";
 
         const payments: Payment[] = [];
         const pay = (amount: number, kind: Payment["kind"], m: PayMethod, at: string) =>
@@ -137,6 +138,14 @@ export function createSeed(): TurfDB {
         else if (status !== "cancelled") pay(advanceDue, "advance", "cash", created);
         // Games already played or under way have had their balance collected at the ground.
         if (status === "confirmed" && start <= now) pay(total - advanceDue, "balance", rand() < 0.7 ? "cash" : "bkash", new Date(start).toISOString());
+        // Cancelled online bookings: about half refunded already, some kept (late cancellations); upcoming ones
+        // left over are still waiting for their refund.
+        let refundWaived: true | undefined;
+        if (status === "cancelled" && payments.length) {
+          const r = rand();
+          if (r < 0.5) pay(advanceDue, "refund", method, new Date(Math.min(now, start)).toISOString());
+          else if (r < 0.75) refundWaived = true;
+        }
 
         const name = `${pick(FIRST)} ${pick(LAST)}`;
         bookings.push({
@@ -153,6 +162,7 @@ export function createSeed(): TurfDB {
           status,
           source,
           cancelReason: status === "cancelled" ? pick(["Rain", "Team short of players", "Rescheduled"]) : undefined,
+          refundWaived,
           createdAt: created,
           updatedAt: created,
         });

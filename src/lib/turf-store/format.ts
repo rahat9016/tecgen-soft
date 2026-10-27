@@ -70,7 +70,6 @@ export const sportLabels: Record<Sport, string> = {
 };
 
 export const statusLabels: Record<Phase, string> = {
-  pending: "To verify",
   booked: "Booked",
   playing: "Playing now",
   played: "Played",
@@ -78,7 +77,6 @@ export const statusLabels: Record<Phase, string> = {
 };
 
 export const statusStyles: Record<Phase, string> = {
-  pending: "bg-sky-50 text-sky-700 ring-sky-200",
   booked: "bg-emerald-50 text-emerald-700 ring-emerald-200",
   playing: "bg-lime-100 text-lime-800 ring-lime-300",
   played: "bg-neutral-100 text-neutral-600 ring-neutral-200",

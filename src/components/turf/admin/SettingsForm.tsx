@@ -117,13 +117,13 @@ export default function SettingsForm() {
                   </Field>
                 </div>
               </Group>
-              <Group title="Advance & cancellation">
+              <Group title="Advance & refunds">
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                   <Field label="Advance">
                     <UnitInput value={r.advancePercent} min={0} max={100} unit="%" onChange={(v) => set("advancePercent", v)} />
                   </Field>
-                  <Field label="Cancel online until">
-                    <UnitInput value={r.cancelCutoffHours} min={0} max={72} unit="hours" onChange={(v) => set("cancelCutoffHours", v)} />
+                  <Field label="Full refund if cancelled" hint="Before kick-off; later cancellations keep the money by default">
+                    <UnitInput value={r.cancelCutoffHours} min={0} max={72} unit="hrs before" onChange={(v) => set("cancelCutoffHours", v)} />
                   </Field>
                 </div>
               </Group>

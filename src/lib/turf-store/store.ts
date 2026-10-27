@@ -136,6 +136,29 @@ export function quote(court: Court, startHour: number, duration: number, setting
 export const paidOf = (b: Booking) => b.payments.reduce((s, p) => s + (p.kind === "refund" ? -p.amount : p.amount), 0);
 export const dueOf = (b: Booking) => (b.status === "cancelled" ? 0 : Math.max(0, b.total - paidOf(b)));
 
+/**
+ * Money owed back to the customer: what a cancelled booking still holds (unless the venue kept it), or an
+ * overpayment. Refunds are only given before kick-off — once the game's start time passes, nothing is owed.
+ */
+export const creditOf = (b: Booking, now: number) => {
+  if (startMs(b) <= now) return 0;
+  return b.status === "cancelled" ? (b.refundWaived ? 0 : Math.max(0, paidOf(b))) : Math.max(0, paidOf(b) - b.total);
+};
+export const refundedOf = (b: Booking) => b.payments.reduce((s, p) => s + (p.kind === "refund" ? p.amount : 0), 0);
+
+/** Refund state of a cancelled booking, for the customer and the desk. */
+export function refundState(b: Booking, now: number): { kind: "owed" | "refunded" | "kept" | "none"; amount: number } {
+  const owed = creditOf(b, now);
+  if (owed > 0) return { kind: "owed", amount: owed };
+  const back = refundedOf(b);
+  if (back > 0) return { kind: "refunded", amount: back };
+  // Kept on purpose, or the refund window closed at kick-off.
+  return paidOf(b) > 0 ? { kind: "kept", amount: paidOf(b) } : { kind: "none", amount: 0 };
+}
+
+/** Whether cancelling now is inside the free-cancellation window from Settings (full refund by default). */
+export const freeToCancel = (b: Booking, settings: Settings, now: number) => startMs(b) - now >= settings.cancelCutoffHours * 3600_000;
+
 /** Cancelled bookings free their slot; everything else keeps it. */
 export const occupies = (b: Booking) => b.status !== "cancelled";
 
@@ -143,7 +166,7 @@ export const startMs = (b: Pick<Booking, "date" | "startHour">) => slotTime(b.da
 export const endMs = (b: Pick<Booking, "date" | "startHour" | "duration">) => slotTime(b.date, b.startHour + b.duration);
 
 export function phaseOf(b: Booking, now: number): Phase {
-  if (b.status !== "confirmed") return b.status;
+  if (b.status === "cancelled") return "cancelled";
   if (endMs(b) <= now) return "played";
   return startMs(b) <= now ? "playing" : "booked";
 }
@@ -330,7 +353,7 @@ export function createOnlineBooking(input: OnlineBookingInput, clientId: string)
       total,
       advanceDue: advance,
       payments: [{ id: uid("p"), amount: Math.min(input.amount, total), method: input.method, kind: "advance", ref: input.ref, at }],
-      status: "pending",
+      status: "confirmed",
       source: "online",
       note: input.note,
       createdAt: at,
@@ -375,6 +398,11 @@ function patchBooking(id: string, fn: (b: Booking) => Booking) {
 
 export function setBookingStatus(id: string, status: BookingStatus, cancelReason?: string) {
   patchBooking(id, (b) => ({ ...b, status, cancelReason: status === "cancelled" ? cancelReason || b.cancelReason : b.cancelReason }));
+}
+
+/** Cancel a booking; `keepMoney` means the venue keeps what was paid (no refund owed). */
+export function cancelBooking(id: string, reason: string | undefined, keepMoney: boolean) {
+  patchBooking(id, (b) => ({ ...b, status: "cancelled", cancelReason: reason, refundWaived: keepMoney || undefined }));
 }
 
 export function addPayment(id: string, amount: number, method: PayMethod, kind: Payment["kind"], ref?: string) {

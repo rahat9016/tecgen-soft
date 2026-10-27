@@ -6,23 +6,23 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { ClipboardList, ExternalLink, Image as ImageIcon, LayoutTemplate, Menu, PanelLeftClose, PanelLeftOpen, RotateCcw, Settings, Wallet, X } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/src/components/ui/dropdown-menu";
-import { rangeLabel, relativeDay } from "@/src/lib/turf-store/format";
-import { resetDemoData, useHydrated, useTurfDB } from "@/src/lib/turf-store/store";
+import { rangeLabel, relativeDay, todayYmd } from "@/src/lib/turf-store/format";
+import { creditOf, endMs, resetDemoData, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import { cn } from "@/src/lib/utils";
 import { Loader, TurfLogo } from "../ui";
 import { ADMIN } from "./ui";
 
 const COMPACT_KEY = "turf-admin-sidebar-compact";
 
-type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }>; badge?: "pending" };
+type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }>; badge?: "today" | "refunds" };
 
 // Same layout as the hotel admin: front-desk work first, then what the public site shows.
 const groups: { title: string; items: NavItem[] }[] = [
   {
     title: "Front desk",
     items: [
-      { href: `${ADMIN}/bookings`, label: "Bookings", icon: ClipboardList, badge: "pending" },
-      { href: `${ADMIN}/payments`, label: "Payments", icon: Wallet },
+      { href: `${ADMIN}/bookings`, label: "Bookings", icon: ClipboardList, badge: "today" },
+      { href: `${ADMIN}/payments`, label: "Payments", icon: Wallet, badge: "refunds" },
     ],
   },
   {
@@ -72,6 +72,7 @@ function useNewBookingAlerts() {
 export default function TurfAdminShell({ children }: { children: React.ReactNode }) {
   const db = useTurfDB();
   const hydrated = useHydrated();
+  const now = useNow(60_000);
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   // Desktop only: an 80px icon rail instead of the full menu, remembered in this browser.
@@ -93,7 +94,10 @@ export default function TurfAdminShell({ children }: { children: React.ReactNode
   useNewBookingAlerts();
 
   const badges = {
-    pending: hydrated ? db.bookings.filter((b) => b.status === "pending").length : 0,
+    // Games still to play today, so the desk sees at a glance how busy the day is.
+    today: hydrated ? db.bookings.filter((b) => b.status === "confirmed" && b.date === todayYmd() && endMs(b) > now).length : 0,
+    // Refunds still owed — they have to go out before kick-off.
+    refunds: hydrated ? db.bookings.filter((b) => creditOf(b, now) > 0).length : 0,
   };
 
   const reset = () => {
@@ -116,7 +120,7 @@ export default function TurfAdminShell({ children }: { children: React.ReactNode
               {g.items.map((item) => {
                 const active = isActive(item.href, pathname);
                 const count = item.badge ? badges[item.badge] : 0;
-                const badgeTone = active ? "bg-emerald-700 text-white" : "bg-emerald-500 text-white";
+                const badgeTone = item.badge === "refunds" ? "bg-violet-500 text-white" : active ? "bg-emerald-700 text-white" : "bg-emerald-500 text-white";
                 return (
                   <li key={item.href}>
                     <Link

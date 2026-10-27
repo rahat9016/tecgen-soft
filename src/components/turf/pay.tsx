@@ -41,9 +41,20 @@ const picked = "border-emerald-900 ring-1 ring-emerald-900";
 const unpicked = "border-neutral-200 hover:border-emerald-700";
 
 /** Radio cards for how much is paid now, e.g. "30% advance ৳1,980" / "Full amount ৳6,600". */
-export function AmountChoice<T extends string | boolean>({ options, value, onChange }: { options: { v: T; t: string; a: string }[]; value: T; onChange: (v: T) => void }) {
+export function AmountChoice<T extends string | boolean>({
+  options,
+  value,
+  onChange,
+  className,
+}: {
+  options: { v: T; t: string; a: string }[];
+  value: T;
+  onChange: (v: T) => void;
+  /** Grid columns; two side by side from tablet width unless overridden. */
+  className?: string;
+}) {
   return (
-    <div className="grid gap-2 sm:grid-cols-2">
+    <div className={cn("grid gap-2 sm:grid-cols-2", className)}>
       {options.map((o) => {
         const on = value === o.v;
         return (

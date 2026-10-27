@@ -355,7 +355,7 @@ export function HowItWorks() {
     {
       icon: ShieldCheck,
       title: "Get confirmed & play",
-      text: "We verify the payment and your booking turns Confirmed. Find it any time under My Bookings with your phone number.",
+      text: "Your booking is confirmed the moment you pay. Find it any time under My Bookings with your phone number.",
     },
   ];
   return (

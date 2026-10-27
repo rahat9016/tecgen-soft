@@ -118,10 +118,10 @@ const moneyTones = {
 };
 
 /** Money tile: ৳ icon on an animated backdrop (hover), the amount and one line of context. */
-export function MoneyCard({ label, value, hint, icon, tone, index = 0 }: { label: string; value: number; hint?: string; icon: MoneyIcon; tone: keyof typeof moneyTones; index?: number }) {
+export function MoneyCard({ label, value, hint, icon, tone, index = 0, className }: { label: string; value: number; hint?: string; icon: MoneyIcon; tone: keyof typeof moneyTones; index?: number; className?: string }) {
   const t = moneyTones[tone];
   return (
-    <section className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white p-3 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-md sm:p-4">
+    <section className={cn("group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white p-3 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-md sm:p-4", className)}>
       <span aria-hidden className={cn("absolute inset-x-0 top-0 h-0.5 opacity-70", t.bar)} />
       <div className="flex items-start justify-between gap-2">
         <p className="min-w-0 pt-0.5 text-[13px] font-medium text-neutral-600 sm:pt-1">{label}</p>
@@ -141,7 +141,6 @@ export function MoneyCard({ label, value, hint, icon, tone, index = 0 }: { label
 }
 
 const statusDots: Record<Phase, string> = {
-  pending: "bg-sky-500",
   booked: "bg-emerald-500",
   playing: "bg-lime-500 animate-pulse",
   played: "bg-neutral-400",
@@ -206,7 +205,7 @@ export function Tabs<T extends string>({ value, onChange, tabs }: { value: T; on
 }
 
 /** Row of rounded view pills; `group` changes insert a thin divider, and only views with a count show one. */
-export function ViewPills<T extends string>({ value, onChange, views, label }: { value: T; onChange: (v: T) => void; views: { value: T; label: string; count?: number; group: number; alert?: boolean }[]; label: string }) {
+export function ViewPills<T extends string>({ value, onChange, views, label }: { value: T; onChange: (v: T) => void; views: { value: T; label: string; count?: number; group: number }[]; label: string }) {
   return (
     <div role="group" aria-label={label} className="flex items-center gap-1.5 overflow-x-auto border-b border-neutral-100 p-3 [scrollbar-width:none] sm:flex-wrap sm:px-4">
       {views.map((v, i) => {
@@ -229,7 +228,7 @@ export function ViewPills<T extends string>({ value, onChange, views, label }: {
                 <span
                   className={cn(
                     "min-w-6 rounded-full px-1.5 text-center text-[13px] font-semibold tabular-nums leading-5",
-                    selected ? "bg-white/20 text-white" : v.alert && v.count > 0 ? "bg-sky-100 text-sky-800" : "bg-neutral-100 text-neutral-700"
+                    selected ? "bg-white/20 text-white" : "bg-neutral-100 text-neutral-700"
                   )}
                 >
                   {v.count}

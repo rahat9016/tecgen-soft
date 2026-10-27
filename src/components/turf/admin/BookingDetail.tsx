@@ -6,8 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import {
   ArrowLeft,
-  Ban,
-  BadgeCheck,
   CalendarClock,
   CalendarDays,
   CalendarX,
@@ -20,25 +18,29 @@ import {
   ReceiptText,
   Tag,
   User,
+  Undo2,
   Users,
   Wallet,
 } from "lucide-react";
 import { dateLabel, rangeLabel, sourceLabels, taka } from "@/src/lib/turf-store/format";
 import {
   addPayment,
+  cancelBooking,
+  creditOf,
   dueOf,
+  freeToCancel,
   findConflict,
   paidOf,
   phaseOf,
+  refundState,
   rescheduleBooking,
-  setBookingStatus,
   trxUsed,
   useNow,
   useTurfDB,
 } from "@/src/lib/turf-store/store";
 import type { Booking, PayMethod } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
-import { MethodTiles, TRX_ID, TrxIdField, WalletDetails } from "../pay";
+import { AmountChoice, CopyRow, MethodTiles, TRX_ID, TrxIdField, WalletDetails } from "../pay";
 import SlotPicker from "./SlotPicker";
 import { abtn, ADMIN, cardClass, Empty, Field, InfoRow, inputClass, labelClass, Modal, Panel, StatusBadge } from "./ui";
 
@@ -46,7 +48,10 @@ export default function BookingDetail({ id }: { id: string }) {
   const db = useTurfDB();
   const now = useNow(30_000);
   const params = useSearchParams();
-  const [modal, setModal] = useState<"pay" | "move" | "cancel" | null>(params.get("do") === "pay" ? "pay" : null);
+  const [modal, setModal] = useState<"pay" | "refund" | "move" | "cancel" | null>(() => {
+    const d = params.get("do");
+    return d === "pay" || d === "refund" ? d : null;
+  });
   const b = db.bookings.find((x) => x.id === id);
 
   if (!b)
@@ -64,6 +69,14 @@ export default function BookingDetail({ id }: { id: string }) {
   const due = dueOf(b);
   const phase = phaseOf(b, now);
   const closed = b.status === "cancelled";
+  const credit = creditOf(b, now);
+  const refund = refundState(b, now);
+  const refundRow = {
+    owed: { label: "To refund", tone: "border-violet-100 bg-violet-50 text-violet-800" },
+    refunded: { label: "Refunded", tone: "border-emerald-100 bg-emerald-50 text-emerald-800" },
+    kept: { label: "Kept · no refund", tone: "border-neutral-100 bg-neutral-50 text-neutral-700" },
+    none: { label: "Nothing paid", tone: "border-neutral-100 bg-neutral-50 text-neutral-700" },
+  }[refund.kind];
 
   return (
     <div>
@@ -85,29 +98,29 @@ export default function BookingDetail({ id }: { id: string }) {
                 <dt className="text-neutral-600">Paid</dt>
                 <dd className="tabular-nums text-emerald-700">{taka(paid)}</dd>
               </div>
-              <div className={cn("flex items-center justify-between border-t px-3 py-3 font-semibold", due > 0 && !closed ? "border-rose-100 bg-rose-50 text-rose-800" : "border-emerald-100 bg-emerald-50 text-emerald-800")}>
-                <dt>{closed ? "Nothing to collect" : due > 0 ? "Due" : "Fully paid"}</dt>
-                <dd className="text-lg tabular-nums">{taka(closed ? 0 : due)}</dd>
-              </div>
+              {closed ? (
+                <div className={cn("flex items-center justify-between border-t px-3 py-3 font-semibold", refundRow.tone)}>
+                  <dt>{refundRow.label}</dt>
+                  <dd className="text-lg tabular-nums">{taka(refund.amount)}</dd>
+                </div>
+              ) : (
+                <>
+                  <div className={cn("flex items-center justify-between border-t px-3 py-3 font-semibold", due > 0 ? "border-rose-100 bg-rose-50 text-rose-800" : "border-emerald-100 bg-emerald-50 text-emerald-800")}>
+                    <dt>{due > 0 ? "Due" : "Fully paid"}</dt>
+                    <dd className="text-lg tabular-nums">{taka(due)}</dd>
+                  </div>
+                  {/* Paid more than the price (e.g. a shorter game after rescheduling). */}
+                  {credit > 0 && (
+                    <div className="flex items-center justify-between border-t border-violet-100 bg-violet-50 px-3 py-3 font-semibold text-violet-800">
+                      <dt>To refund</dt>
+                      <dd className="text-lg tabular-nums">{taka(credit)}</dd>
+                    </div>
+                  )}
+                </>
+              )}
             </dl>
-            {phase === "pending" && (
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => {
-                    setBookingStatus(b.id, "confirmed");
-                    toast.success(`${b.code} confirmed`);
-                  }}
-                  className={abtn.primary}
-                >
-                  <BadgeCheck className="size-4" /> Confirm
-                </button>
-                <button onClick={() => setModal("cancel")} className={abtn.danger}>
-                  <Ban className="size-4" /> Reject
-                </button>
-              </div>
-            )}
-            {/* Verify the online advance first; the rest is taken at the ground. */}
-            {!closed && phase !== "pending" && due > 0 && (
+            {/* The rest of the money is taken at the ground. */}
+            {!closed && due > 0 && (
               <button onClick={() => setModal("pay")} className={cn(abtn.primary, "w-full")}>
                 <Wallet className="size-4" /> Collect {taka(due)}
               </button>
@@ -117,9 +130,9 @@ export default function BookingDetail({ id }: { id: string }) {
                 <CalendarX className="size-4" /> Cancel booking
               </button>
             )}
-            {closed && paid > 0 && (
-              <button onClick={() => setModal("pay")} className={cn(abtn.outline, "w-full")}>
-                <Wallet className="size-4" /> Refund {taka(paid)}
+            {credit > 0 && (
+              <button onClick={() => setModal("refund")} className={cn(abtn.primary, "w-full bg-violet-700 hover:bg-violet-800")}>
+                <Undo2 className="size-4" /> Refund {taka(credit)}
               </button>
             )}
             <BackButton />
@@ -131,7 +144,7 @@ export default function BookingDetail({ id }: { id: string }) {
             title="Slot"
             icon={CalendarDays}
             action={
-              (phase === "pending" || phase === "booked") && (
+              phase === "booked" && (
                 <button onClick={() => setModal("move")} className={abtn.small}>
                   <CalendarClock className="size-3.5" /> Reschedule
                 </button>
@@ -194,7 +207,7 @@ export default function BookingDetail({ id }: { id: string }) {
         </div>
       </div>
 
-      {modal === "pay" && <PaymentModal b={b} onClose={() => setModal(null)} />}
+      {(modal === "pay" || modal === "refund") && <PaymentModal b={b} refund={modal === "refund"} onClose={() => setModal(null)} />}
       {modal === "move" && <RescheduleModal b={b} onClose={() => setModal(null)} />}
       {modal === "cancel" && <CancelModal b={b} onClose={() => setModal(null)} />}
     </div>
@@ -211,24 +224,25 @@ function BackButton() {
   );
 }
 
-function PaymentModal({ b, onClose }: { b: Booking; onClose: () => void }) {
+/** Collect the balance, or (with `refund`) send money back — same layout as the booking site's payment step. */
+function PaymentModal({ b, refund, onClose }: { b: Booking; refund?: boolean; onClose: () => void }) {
   const db = useTurfDB();
   const router = useRouter();
+  const now = useNow(30_000);
   const due = dueOf(b);
-  const paid = paidOf(b);
-  const [kind, setKind] = useState<"balance" | "refund">(due > 0 ? "balance" : "refund");
-  const [amount, setAmount] = useState(String(due || ""));
+  const credit = creditOf(b, now);
+  const limit = refund ? credit : Infinity;
+  const [amount, setAmount] = useState(String((refund ? credit : due) || ""));
   const [method, setMethod] = useState<PayMethod>("cash");
   const [ref, setRef] = useState("");
   const [touched, setTouched] = useState(false);
   const n = Number(amount) || 0;
-  const collect = kind === "balance";
   const wallet = method === "bkash" || method === "nagad";
-  // Money coming in by wallet must carry the customer's transaction ID; a refund is the venue's own transfer.
+  // Money coming in by wallet must carry the customer's transaction ID; a refund's ID is optional (it's the venue's own transfer).
   const refError =
-    !collect || !wallet ? undefined : !ref ? "Enter the transaction ID from the SMS" : !TRX_ID.test(ref) ? "A transaction ID is 8–10 letters and numbers" : trxUsed(db, method, ref) ? "This transaction ID has already been used" : undefined;
+    refund || !wallet ? undefined : !ref ? "Enter the transaction ID from the SMS" : !TRX_ID.test(ref) ? "A transaction ID is 8–10 letters and numbers" : trxUsed(db, method, ref) ? "This transaction ID has already been used" : undefined;
   const close = () => {
-    // Drop ?do=pay so a refresh doesn't reopen the form; keep ?from for the Back button.
+    // Drop ?do=… so a refresh doesn't reopen the form; keep ?from for the Back button.
     const q = new URLSearchParams(window.location.search);
     q.delete("do");
     router.replace(`${ADMIN}/bookings/${b.id}${q.size ? `?${q}` : ""}`, { scroll: false });
@@ -236,50 +250,28 @@ function PaymentModal({ b, onClose }: { b: Booking; onClose: () => void }) {
   };
 
   return (
-    <Modal open onClose={close} title={collect ? "Collect payment" : "Refund"}>
+    <Modal open onClose={close} title={refund ? "Refund" : "Collect payment"}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           setTouched(true);
           if (n <= 0) return toast.error("Enter an amount");
-          if (!collect && n > paid) return toast.error("Refund is more than what was paid");
+          if (n > limit) return toast.error(`At most ${taka(limit)} can be refunded`);
           if (refError) return;
-          addPayment(b.id, n, method, kind, wallet ? ref : "");
-          toast.success(collect ? `${taka(n)} received` : `${taka(n)} refunded`);
+          addPayment(b.id, n, method, refund ? "refund" : "balance", wallet ? ref : "");
+          toast.success(refund ? `${taka(n)} refunded to ${b.customer.name}` : `${taka(n)} received`);
           close();
         }}
         className="space-y-4"
       >
-        <div className="flex h-10 gap-1 rounded-xl bg-neutral-100 p-1">
-          {(
-            [
-              ["balance", "Collect"],
-              ["refund", "Refund"],
-            ] as const
-          ).map(([v, l]) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => {
-                setKind(v);
-                setAmount(String(v === "balance" ? due || "" : ""));
-              }}
-              aria-pressed={kind === v}
-              className={cn("flex-1 rounded-lg text-sm font-medium transition", kind === v ? "bg-emerald-800 text-white" : "text-neutral-600 hover:bg-white")}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
-
-        <Field label="Amount (৳)" hint={collect ? `Due ${taka(due)}` : `Paid ${taka(paid)}`}>
+        <Field label="Amount (৳)" hint={refund ? `Owed back ${taka(credit)}` : `Due ${taka(due)}`}>
           <input autoFocus inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} className={cn(inputClass, "h-12 text-base font-semibold tabular-nums")} />
         </Field>
 
         <div>
-          <p className="mb-2 text-sm font-medium text-neutral-800">{collect ? "Pay with" : "Refund by"}</p>
+          <p className="mb-2 text-sm font-medium text-neutral-800">{refund ? "Refund by" : "Pay with"}</p>
           <MethodTiles
-            methods={["cash", "bkash", "nagad", "card"] as PayMethod[]}
+            methods={(refund ? ["cash", "bkash", "nagad"] : ["cash", "bkash", "nagad", "card"]) as PayMethod[]}
             value={method}
             onChange={(m) => {
               setMethod(m);
@@ -288,7 +280,15 @@ function PaymentModal({ b, onClose }: { b: Booking; onClose: () => void }) {
           />
         </div>
 
-        {wallet && collect && <WalletDetails venuePhone={db.settings.phone} amount={n} amountLabel={taka(n)} />}
+        {wallet &&
+          (refund ? (
+            <dl className="divide-y divide-neutral-200/70 rounded-lg bg-neutral-50 px-4 text-sm">
+              <CopyRow label="Send Money to" value={b.customer.phone || "—"} copy={b.customer.phone} />
+              <CopyRow label="Amount" value={taka(n)} copy={String(n)} />
+            </dl>
+          ) : (
+            <WalletDetails venuePhone={db.settings.phone} amount={n} amountLabel={taka(n)} />
+          ))}
         {wallet && (
           <TrxIdField
             id="pm-ref"
@@ -305,7 +305,9 @@ function PaymentModal({ b, onClose }: { b: Booking; onClose: () => void }) {
           <button type="button" onClick={close} className={abtn.outline}>
             Cancel
           </button>
-          <button className={collect ? abtn.primary : cn(abtn.primary, "bg-violet-700 hover:bg-violet-800")}>{collect ? `Collect ${n ? taka(n) : ""}` : `Refund ${n ? taka(n) : ""}`}</button>
+          <button className={refund ? cn(abtn.primary, "bg-violet-700 hover:bg-violet-800") : abtn.primary}>
+            {refund ? "Refund" : "Collect"} {n ? taka(n) : ""}
+          </button>
         </div>
       </form>
     </Modal>
@@ -374,30 +376,88 @@ function RescheduleModal({ b, onClose }: { b: Booking; onClose: () => void }) {
   );
 }
 
+type MoneyChoice = "now" | "later" | "keep";
+
+/** Cancel with a reason, and decide on the money already paid: refund it now, owe it, or keep it. */
 function CancelModal({ b, onClose }: { b: Booking; onClose: () => void }) {
-  const reject = b.status === "pending";
-  const [reason, setReason] = useState(reject ? "Payment could not be verified" : "");
+  const db = useTurfDB();
+  const now = useNow(60_000);
   const paid = paidOf(b);
+  const hours = db.settings.cancelCutoffHours;
+  const free = freeToCancel(b, db.settings, now);
+  const [reason, setReason] = useState("");
+  // Inside the free-cancellation window (Settings) the customer gets the money back; later than that the venue keeps it by default.
+  const [money, setMoney] = useState<MoneyChoice>(free ? "now" : "keep");
+  const [method, setMethod] = useState<PayMethod>("cash");
+  const [ref, setRef] = useState("");
+  const wallet = method === "bkash" || method === "nagad";
+  const refundNow = paid > 0 && money === "now";
+
   return (
-    <Modal open onClose={onClose} title={reject ? `Reject ${b.code}` : `Cancel ${b.code}`}>
-      <div className="space-y-3">
+    <Modal open onClose={onClose} title={`Cancel ${b.code}`}>
+      <div className="space-y-4">
         <Field label="Reason" hint="Shown to the customer under My Bookings">
           <input autoFocus value={reason} onChange={(e) => setReason(e.target.value)} className={inputClass} placeholder="e.g. Rain, ground closed" />
         </Field>
-        {paid > 0 && <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-800">{taka(paid)} was paid. Record a refund under Payments if you return it.</p>}
-        <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-3">
+
+        {paid > 0 && (
+          <div>
+            <div className="mb-2 flex items-baseline justify-between gap-2">
+              <p className="text-sm font-medium text-neutral-800">{taka(paid)} paid</p>
+              <p className={cn("text-xs font-medium", free ? "text-emerald-700" : "text-rose-700")}>{free ? `Free cancellation (over ${hours} hrs before)` : `Late cancellation (under ${hours} hrs before)`}</p>
+            </div>
+            <AmountChoice
+              className="sm:grid-cols-1"
+              options={[
+                { v: "now" as MoneyChoice, t: "Refund now", a: taka(paid) },
+                { v: "later" as MoneyChoice, t: "Refund later (before kick-off)", a: taka(paid) },
+                { v: "keep" as MoneyChoice, t: "Keep the money", a: "No refund" },
+              ]}
+              value={money}
+              onChange={setMoney}
+            />
+          </div>
+        )}
+
+        {refundNow && (
+          <>
+            <div>
+              <p className="mb-2 text-sm font-medium text-neutral-800">Refund by</p>
+              <MethodTiles
+                methods={["cash", "bkash", "nagad"] as PayMethod[]}
+                value={method}
+                onChange={(m) => {
+                  setMethod(m);
+                  setRef("");
+                }}
+              />
+            </div>
+            {wallet && (
+              <>
+                <dl className="divide-y divide-neutral-200/70 rounded-lg bg-neutral-50 px-4 text-sm">
+                  <CopyRow label="Send Money to" value={b.customer.phone || "—"} copy={b.customer.phone} />
+                  <CopyRow label="Amount" value={taka(paid)} copy={String(paid)} />
+                </dl>
+                <TrxIdField id="cm-ref" method={method} value={ref} onChange={setRef} inputClassName={inputClass} labelClassName={labelClass} />
+              </>
+            )}
+          </>
+        )}
+
+        <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-4">
           <button onClick={onClose} className={abtn.outline}>
             Keep booking
           </button>
           <button
             onClick={() => {
-              setBookingStatus(b.id, "cancelled", reason.trim() || "Cancelled by venue");
-              toast.success(`${b.code} ${reject ? "rejected" : "cancelled"}`);
+              cancelBooking(b.id, reason.trim() || undefined, paid > 0 && money === "keep");
+              if (refundNow) addPayment(b.id, paid, method, "refund", wallet ? ref : "");
+              toast.success(refundNow ? `${b.code} cancelled · ${taka(paid)} refunded` : `${b.code} cancelled`);
               onClose();
             }}
             className={cn(abtn.primary, "bg-rose-600 hover:bg-rose-700")}
           >
-            {reject ? "Reject booking" : "Cancel booking"}
+            {refundNow ? `Cancel & refund ${taka(paid)}` : "Cancel booking"}
           </button>
         </div>
       </div>

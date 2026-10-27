@@ -3,15 +3,14 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
-import { BadgeCheck, ChevronRight, ReceiptText, Wallet } from "lucide-react";
+import { ChevronRight, ReceiptText, Undo2, Wallet } from "lucide-react";
 import { addDays, dateLabel, formatDateTime, payLabels, rangeLabel, slotTime, taka, todayYmd } from "@/src/lib/turf-store/format";
-import { dueOf, paidOf, setBookingStatus, startMs, useTurfDB } from "@/src/lib/turf-store/store";
+import { creditOf, dueOf, paidOf, startMs, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Booking, PayMethod, Payment } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
 import { abtn, ADMIN, Empty, MoneyCard, Pager, SearchInput, StatusBadge, tableCardClass, Tabs, ToolbarSelect, usePagination } from "./ui";
 
-type Tab = "transactions" | "due" | "verify";
+type Tab = "transactions" | "due" | "refunds";
 type Period = "today" | "7" | "30" | "all";
 type Kind = "all" | Payment["kind"];
 
@@ -33,33 +32,21 @@ const wideTable = "hidden overflow-x-auto md:block";
 // `from` lets the booking page send staff back here rather than to the bookings list.
 const href = (b: Booking) => `${ADMIN}/bookings/${b.id}?from=payments`;
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+/** "2 Nov" and "4:00 pm" on two lines, like the slot column on Bookings. */
+const day = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+const time = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true });
+const rowClass = "cursor-pointer transition hover:bg-neutral-50";
 
 function KindTag({ kind }: { kind: Payment["kind"] }) {
-  return <span className={cn("rounded px-2 py-0.5 text-xs font-semibold", kindBadge[kind])}>{kindLabels[kind]}</span>;
+  return <span className={cn("inline-block rounded px-1.5 py-0.5 text-[11px] font-semibold", kindBadge[kind])}>{kindLabels[kind]}</span>;
 }
 
 function Amount({ p, className }: { p: Payment; className?: string }) {
   return (
-    <span className={cn("font-semibold tabular-nums", p.kind === "refund" ? "text-violet-700" : "text-neutral-900", className)}>
+    <span className={cn("font-medium tabular-nums", p.kind === "refund" ? "text-violet-700" : "text-neutral-900", className)}>
       {p.kind === "refund" ? "−" : ""}
       {taka(p.amount)}
     </span>
-  );
-}
-
-function ConfirmButton({ b }: { b: Booking }) {
-  return (
-    <button
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setBookingStatus(b.id, "confirmed");
-        toast.success(`${b.code} confirmed`);
-      }}
-      className={cn(abtn.small, "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700 hover:text-white")}
-    >
-      <BadgeCheck className="size-3.5" /> Confirm
-    </button>
   );
 }
 
@@ -75,7 +62,9 @@ export default function Payments() {
 
   const all = useMemo(() => db.bookings.flatMap((b) => b.payments.map((p) => ({ p, b }))).sort((x, y) => y.p.at.localeCompare(x.p.at)), [db.bookings]);
   const owing = useMemo(() => db.bookings.filter((b) => dueOf(b) > 0).sort((a, b) => startMs(a) - startMs(b)), [db.bookings]);
-  const pending = useMemo(() => db.bookings.filter((b) => b.status === "pending").sort((a, b) => startMs(a) - startMs(b)), [db.bookings]);
+  const now = useNow(60_000);
+  // Refunds are given until kick-off, so the soonest games come first.
+  const owedBack = useMemo(() => db.bookings.filter((b) => creditOf(b, now) > 0).sort((a, b) => startMs(a) - startMs(b)), [db.bookings, now]);
 
   const since = (days: number) => slotTime(addDays(today, 1 - days), 0);
   const todays = all.filter((x) => +new Date(x.p.at) >= since(1));
@@ -91,10 +80,10 @@ export default function Payments() {
       match(x.b, x.p.ref)
   );
   const dues = owing.filter((b) => match(b));
-  const verify = pending.filter((b) => match(b, b.payments[0]?.ref));
+  const refunds = owedBack.filter((b) => match(b));
   const txPage = usePagination(txns, 20);
   const duePage = usePagination(dues, 20);
-  const verifyPage = usePagination(verify, 20);
+  const refundPage = usePagination(refunds, 20);
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -102,7 +91,7 @@ export default function Payments() {
         <MoneyCard label="Today" value={net(todays.map((x) => x.p))} hint={plural(todays.length, "payment")} icon="wallet" tone="green" index={0} />
         <MoneyCard label="This month" value={net(month.map((x) => x.p))} hint={plural(month.length, "payment")} icon="calendar" tone="sky" index={1} />
         <MoneyCard label="To collect" value={owing.reduce((s, b) => s + dueOf(b), 0)} hint={plural(owing.length, "booking")} icon="bill" tone="rose" index={2} />
-        <MoneyCard label="To verify" value={pending.reduce((s, b) => s + paidOf(b), 0)} hint={plural(pending.length, "booking")} icon="vault" tone="violet" index={3} />
+        <MoneyCard label="To refund" value={owedBack.reduce((s, b) => s + creditOf(b, now), 0)} hint={plural(owedBack.length, "booking")} icon="refund" tone="violet" index={3} />
       </div>
 
       <div className={tableCardClass}>
@@ -112,7 +101,7 @@ export default function Payments() {
           tabs={[
             { value: "transactions", label: "Transactions", count: txns.length },
             { value: "due", label: "Due", count: dues.length },
-            { value: "verify", label: "To verify", count: verify.length },
+            { value: "refunds", label: "Refunds", count: refunds.length, dot: refunds.length ? "bg-violet-500" : undefined },
           ]}
         />
         <div className="flex flex-col gap-2 border-b border-neutral-100 p-3 sm:p-4 lg:flex-row lg:items-center">
@@ -178,7 +167,15 @@ export default function Payments() {
                 ))}
               </ul>
               <div className={wideTable}>
-                <table className="w-full min-w-[680px] text-sm">
+                <table className="w-full min-w-[680px] table-fixed text-sm">
+                  <colgroup>
+                    <col className="w-[16%]" />
+                    <col className="w-[26%]" />
+                    <col className="w-[13%]" />
+                    <col className="w-[13%]" />
+                    <col className="hidden w-[18%] lg:table-column" />
+                    <col className="w-[14%]" />
+                  </colgroup>
                   <thead className={thead}>
                     <tr>
                       <th className={th}>Date</th>
@@ -191,17 +188,20 @@ export default function Payments() {
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
                     {txPage.rows.map(({ p, b }) => (
-                      <tr key={p.id} onClick={() => router.push(href(b))} className="cursor-pointer transition hover:bg-emerald-50/40">
-                        <td className={cn(td, "whitespace-nowrap text-neutral-700")}>{formatDateTime(p.at)}</td>
+                      <tr key={p.id} onClick={() => router.push(href(b))} className={rowClass}>
+                        <td className={cn(td, "whitespace-nowrap")}>
+                          <p className="text-neutral-900">{day(p.at)}</p>
+                          <p className="text-xs text-neutral-500">{time(p.at)}</p>
+                        </td>
                         <td className={td}>
-                          <p className="font-medium text-neutral-900">{b.customer.name}</p>
+                          <p className="truncate font-medium text-neutral-900">{b.customer.name}</p>
                           <p className="font-mono text-xs text-neutral-500">{b.code}</p>
                         </td>
                         <td className={td}>
                           <KindTag kind={p.kind} />
                         </td>
-                        <td className={td}>{payLabels[p.method]}</td>
-                        <td className={cn(td, "hidden font-mono text-xs text-neutral-600 lg:table-cell")}>{p.ref ?? "—"}</td>
+                        <td className={cn(td, "text-neutral-700")}>{payLabels[p.method]}</td>
+                        <td className={cn(td, "hidden truncate font-mono text-xs text-neutral-500 lg:table-cell")}>{p.ref ?? "—"}</td>
                         <td className={cn(td, "text-right")}>
                           <Amount p={p} />
                         </td>
@@ -238,7 +238,15 @@ export default function Payments() {
                 ))}
               </ul>
               <div className={wideTable}>
-                <table className="w-full min-w-[680px] text-sm">
+                <table className="w-full min-w-[680px] table-fixed text-sm">
+                  <colgroup>
+                    <col className="w-[28%]" />
+                    <col className="w-[20%]" />
+                    <col className="hidden w-[14%] lg:table-column" />
+                    <col className="w-[13%]" />
+                    <col className="w-[13%]" />
+                    <col className="w-[12%]" />
+                  </colgroup>
                   <thead className={thead}>
                     <tr>
                       <th className={th}>Booking</th>
@@ -253,9 +261,9 @@ export default function Payments() {
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
                     {duePage.rows.map((b) => (
-                      <tr key={b.id} onClick={() => router.push(href(b))} className="cursor-pointer transition hover:bg-emerald-50/40">
+                      <tr key={b.id} onClick={() => router.push(href(b))} className={rowClass}>
                         <td className={td}>
-                          <p className="font-medium text-neutral-900">{b.customer.name}</p>
+                          <p className="truncate font-medium text-neutral-900">{b.customer.name}</p>
                           <p className="font-mono text-xs text-neutral-500">{b.code}</p>
                         </td>
                         <td className={td}>
@@ -266,7 +274,7 @@ export default function Payments() {
                           <StatusBadge booking={b} />
                         </td>
                         <td className={cn(td, "text-right tabular-nums")}>{taka(b.total)}</td>
-                        <td className={cn(td, "text-right font-semibold tabular-nums text-rose-700")}>{taka(dueOf(b))}</td>
+                        <td className={cn(td, "text-right font-medium tabular-nums text-rose-700")}>{taka(dueOf(b))}</td>
                         <td className={cn(td, "text-right")}>
                           <Link href={`${href(b)}&do=pay`} onClick={(e) => e.stopPropagation()} className={abtn.small}>
                             <Wallet className="size-3.5" /> Collect
@@ -281,72 +289,76 @@ export default function Payments() {
             </>
           ))}
 
-        {tab === "verify" &&
-          (verify.length === 0 ? (
-            <Empty icon={BadgeCheck} title="All verified" />
+        {tab === "refunds" &&
+          (refunds.length === 0 ? (
+            <Empty icon={Undo2} title="No refunds owed" />
           ) : (
             <>
               <ul className={phoneList}>
-                {verifyPage.rows.map((b) => {
-                  const adv = b.payments.find((p) => p.kind === "advance");
-                  return (
-                    <li key={b.id} className={phoneRow}>
-                      <Link href={href(b)} className="min-w-0 flex-1">
-                        <p className="truncate font-semibold text-neutral-900">{b.customer.name}</p>
-                        <p className="mt-1 truncate text-[13px] text-neutral-600">
-                          {adv ? payLabels[adv.method] : "—"}
-                          {adv?.ref && <span className="font-mono"> · {adv.ref}</span>}
-                        </p>
+                {refundPage.rows.map((b) => (
+                  <li key={b.id} className={phoneRow}>
+                    <Link href={href(b)} className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-neutral-900">{b.customer.name}</p>
+                      <p className="mt-1 truncate text-[13px] text-neutral-600">
+                        {dateLabel(b.date)} · {rangeLabel(b.startHour, b.duration)}
+                      </p>
+                    </Link>
+                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <span className="font-semibold tabular-nums text-violet-700">{taka(creditOf(b, now))}</span>
+                      <Link href={`${href(b)}&do=refund`} className={abtn.small}>
+                        <Undo2 className="size-3.5" /> Refund
                       </Link>
-                      <div className="flex shrink-0 flex-col items-end gap-1.5">
-                        <span className="font-semibold tabular-nums">{taka(adv?.amount ?? 0)}</span>
-                        <ConfirmButton b={b} />
-                      </div>
-                    </li>
-                  );
-                })}
+                    </div>
+                  </li>
+                ))}
               </ul>
               <div className={wideTable}>
-                <table className="w-full min-w-[680px] text-sm">
+                <table className="w-full min-w-[680px] table-fixed text-sm">
+                  <colgroup>
+                    <col className="w-[26%]" />
+                    <col className="w-[20%]" />
+                    <col className="hidden w-[18%] lg:table-column" />
+                    <col className="w-[12%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[12%]" />
+                  </colgroup>
                   <thead className={thead}>
                     <tr>
                       <th className={th}>Booking</th>
                       <th className={th}>Slot</th>
-                      <th className={th}>Paid with</th>
-                      <th className={cn(th, "text-right")}>Advance</th>
+                      <th className={cn(th, "hidden lg:table-cell")}>Reason</th>
+                      <th className={cn(th, "text-right")}>Paid</th>
+                      <th className={cn(th, "text-right")}>To refund</th>
                       <th className={th}>
                         <span className="sr-only">Actions</span>
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
-                    {verifyPage.rows.map((b) => {
-                      const adv = b.payments.find((p) => p.kind === "advance");
-                      return (
-                        <tr key={b.id} onClick={() => router.push(href(b))} className="cursor-pointer transition hover:bg-emerald-50/40">
-                          <td className={td}>
-                            <p className="font-medium text-neutral-900">{b.customer.name}</p>
-                            <p className="font-mono text-xs text-neutral-500">{b.code}</p>
-                          </td>
-                          <td className={td}>
-                            <p className="whitespace-nowrap">{dateLabel(b.date)}</p>
-                            <p className="whitespace-nowrap text-xs text-neutral-500">{rangeLabel(b.startHour, b.duration)}</p>
-                          </td>
-                          <td className={td}>
-                            <p>{adv ? payLabels[adv.method] : "—"}</p>
-                            {adv?.ref && <p className="font-mono text-xs text-neutral-600">{adv.ref}</p>}
-                          </td>
-                          <td className={cn(td, "text-right font-semibold tabular-nums")}>{taka(adv?.amount ?? 0)}</td>
-                          <td className={cn(td, "text-right")}>
-                            <ConfirmButton b={b} />
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {refundPage.rows.map((b) => (
+                      <tr key={b.id} onClick={() => router.push(href(b))} className={rowClass}>
+                        <td className={td}>
+                          <p className="truncate font-medium text-neutral-900">{b.customer.name}</p>
+                          <p className="font-mono text-xs text-neutral-500">{b.code}</p>
+                        </td>
+                        <td className={td}>
+                          <p className="whitespace-nowrap">{dateLabel(b.date)}</p>
+                          <p className="whitespace-nowrap text-xs text-neutral-500">{rangeLabel(b.startHour, b.duration)}</p>
+                        </td>
+                        <td className={cn(td, "hidden truncate text-neutral-600 lg:table-cell")}>{b.status === "cancelled" ? b.cancelReason ?? "Cancelled" : "Overpaid"}</td>
+                        <td className={cn(td, "text-right tabular-nums")}>{taka(paidOf(b))}</td>
+                        <td className={cn(td, "text-right font-medium tabular-nums text-violet-700")}>{taka(creditOf(b, now))}</td>
+                        <td className={cn(td, "text-right")}>
+                          <Link href={`${href(b)}&do=refund`} onClick={(e) => e.stopPropagation()} className={abtn.small}>
+                            <Undo2 className="size-3.5" /> Refund
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
-              <Pager {...verifyPage} noun="bookings" />
+              <Pager {...refundPage} noun="bookings" />
             </>
           ))}
       </div>

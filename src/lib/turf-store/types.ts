@@ -41,14 +41,13 @@ export type Settings = {
 };
 
 /**
- * Book, pay the booking money, play — there is no check-in step. "pending" is an online booking whose
- * advance staff haven't verified yet; whether a confirmed game is still to come, under way or played
- * follows from the clock (see `phaseOf`).
+ * Book, pay the booking money, play — no check-in and no verification step: a booking is confirmed the
+ * moment it's made. Whether it's still to come, under way or played follows from the clock (see `phaseOf`).
  */
-export type BookingStatus = "pending" | "confirmed" | "cancelled";
+export type BookingStatus = "confirmed" | "cancelled";
 
 /** What a booking shows as: its status, with confirmed games split by time. */
-export type Phase = "pending" | "booked" | "playing" | "played" | "cancelled";
+export type Phase = "booked" | "playing" | "played" | "cancelled";
 
 export type PayMethod = "bkash" | "nagad" | "card" | "cash";
 
@@ -78,6 +77,8 @@ export type Booking = {
   source: "online" | "walk-in" | "phone";
   note?: string;
   cancelReason?: string;
+  /** The venue cancelled but kept the money (a late cancellation), so nothing is owed back. */
+  refundWaived?: boolean;
   createdAt: string;
   updatedAt: string;
 };

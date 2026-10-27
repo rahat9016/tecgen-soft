@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { ArrowUpRight, Phone, Search, Ticket as TicketIcon } from "lucide-react";
 import { dateLabel, formatDuration, hourLabel, payLabels, rangeLabel, relativeDay, taka } from "@/src/lib/turf-store/format";
-import { dueOf, endMs, paidOf, startMs, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
+import { dueOf, endMs, paidOf, refundState, startMs, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Booking } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
 import { BookingStatusBadge, Loader, tbtn } from "./ui";
@@ -289,9 +289,11 @@ function Ticket({ b, now }: { b: Booking; now: number }) {
         {/* Status and countdown only matter until the game is over. */}
         {!ended && (
           <div className="mb-5 flex flex-wrap items-center gap-3">
-            {b.status !== "pending" && <BookingStatusBadge booking={b} />}
-            {b.status !== "cancelled" && (
+            <BookingStatusBadge booking={b} />
+            {b.status !== "cancelled" ? (
               <span className="text-sm font-medium text-emerald-700">{live ? "Playing now" : `Kick-off in ${formatDuration(until)}`}</span>
+            ) : (
+              <RefundNote b={b} now={now} />
             )}
           </div>
         )}
@@ -352,7 +354,15 @@ function Ticket({ b, now }: { b: Booking; now: number }) {
   );
 }
 
+/** What happened to the money on a cancelled booking. */
+function RefundNote({ b, now, className }: { b: Booking; now: number; className?: string }) {
+  const r = refundState(b, now);
+  const text = { owed: `Refund of ${taka(r.amount)} on its way`, refunded: `${taka(r.amount)} refunded`, kept: "No refund", none: "Nothing was paid" }[r.kind];
+  return <span className={cn("text-sm font-medium", r.kind === "owed" ? "text-violet-700" : r.kind === "refunded" ? "text-emerald-700" : "text-neutral-500", className)}>{text}</span>;
+}
+
 function Row({ b, index }: { b: Booking; index: number }) {
+  const now = useNow(60_000);
   const due = dueOf(b);
   const reduce = useReducedMotion();
   return (
@@ -367,10 +377,14 @@ function Row({ b, index }: { b: Booking; index: number }) {
         <p className="text-sm text-neutral-500">{rangeLabel(b.startHour, b.duration)}</p>
       </div>
       <div className="order-last col-span-2 flex flex-wrap items-center gap-3 md:order-none md:col-span-1">
-        {b.status !== "pending" && <BookingStatusBadge booking={b} />}
+        <BookingStatusBadge booking={b} />
         <span className="font-mono text-xs text-neutral-500">{b.code}</span>
       </div>
-      <p className="text-sm text-neutral-500 max-md:hidden">{b.status === "cancelled" ? "—" : due > 0 ? `${taka(due)} due at venue` : "Fully paid"}</p>
+      {b.status === "cancelled" ? (
+        <RefundNote b={b} now={now} className="font-normal max-md:hidden" />
+      ) : (
+        <p className="text-sm text-neutral-500 max-md:hidden">{due > 0 ? `${taka(due)} due at venue` : "Fully paid"}</p>
+      )}
       <p className="text-right font-semibold text-neutral-900">{taka(b.total)}</p>
     </motion.li>
   );

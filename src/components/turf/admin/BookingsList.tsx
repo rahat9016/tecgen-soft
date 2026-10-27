@@ -3,20 +3,18 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
-import { BadgeCheck, ChevronRight, ClipboardList, Plus, Wallet } from "lucide-react";
+import { ChevronRight, ClipboardList, Plus, Wallet } from "lucide-react";
 import { dateLabel, rangeLabel, sourceLabels, statusLabels, statusStyles, taka, todayYmd } from "@/src/lib/turf-store/format";
-import { dueOf, paidOf, phaseOf, setBookingStatus, startMs, useNow, useTurfDB } from "@/src/lib/turf-store/store";
+import { dueOf, paidOf, phaseOf, startMs, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Booking, Phase } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
 import { abtn, ADMIN, Avatar, Empty, focusRing, PageHeader, Pager, SearchInput, StatusBadge, tableCardClass, ToolbarSelect, usePagination, ViewPills } from "./ui";
 
-type View = "all" | "today" | "pending" | "upcoming" | "past" | "cancelled";
+type View = "all" | "today" | "upcoming" | "past" | "cancelled";
 
 const views: { value: View; label: string; group: number }[] = [
   { value: "all", label: "All", group: 0 },
   { value: "today", label: "Today", group: 0 },
-  { value: "pending", label: "To verify", group: 0 },
   { value: "upcoming", label: "Upcoming", group: 1 },
   { value: "past", label: "Past", group: 1 },
   { value: "cancelled", label: "Cancelled", group: 1 },
@@ -25,7 +23,6 @@ const views: { value: View; label: string; group: number }[] = [
 function inView(b: Booking, v: View, today: string) {
   const live = b.status !== "cancelled";
   if (v === "today") return live && b.date === today;
-  if (v === "pending") return b.status === "pending";
   if (v === "upcoming") return live && b.date > today;
   if (v === "past") return live && b.date < today;
   if (v === "cancelled") return !live;
@@ -47,7 +44,7 @@ export default function BookingsList() {
   }, [db.bookings, q]);
 
   // Games still to come read soonest first; history and "All" show the newest bookings first.
-  const ascending = view === "today" || view === "pending" || view === "upcoming";
+  const ascending = view === "today" || view === "upcoming";
   const list = useMemo(
     () => filtered.filter((b) => inView(b, view, today)).sort((a, b) => (ascending ? startMs(a) - startMs(b) : view === "all" ? b.createdAt.localeCompare(a.createdAt) : startMs(b) - startMs(a))),
     [filtered, view, today, ascending]
@@ -74,7 +71,7 @@ export default function BookingsList() {
               setView(v);
               page.setPage(1);
             }}
-            views={views.map((v) => ({ ...v, count: v.group === 0 ? counts[v.value] : undefined, alert: v.value === "pending" }))}
+            views={views.map((v) => ({ ...v, count: v.group === 0 ? counts[v.value] : undefined }))}
           />
         </div>
 
@@ -222,7 +219,6 @@ function Row({ b, today, phase }: { b: Booking; today: string; phase: Phase }) {
 }
 
 const tileTones: Record<Phase, string> = {
-  pending: "bg-sky-50 text-sky-700",
   booked: "bg-emerald-50 text-emerald-700",
   playing: "bg-lime-100 text-lime-800",
   played: "bg-neutral-100 text-neutral-500",
@@ -267,31 +263,16 @@ function PayLine({ b }: { b: Booking }) {
 
 const actionBase = cn("inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold shadow-sm transition active:scale-[0.98]", focusRing);
 const actionTones = {
-  confirm: cn(actionBase, "bg-emerald-600 text-white hover:bg-emerald-700"),
   collect: cn(actionBase, "border border-neutral-300 bg-white text-neutral-800 shadow-none hover:border-emerald-400 hover:text-emerald-800"),
 };
 
-/** The one thing the desk most likely wants to do next: verify an online advance, or take the rest at the ground. */
+/** The one thing the desk most likely wants to do next: take the rest of the money at the ground. */
 function RowAction({ b, phase }: { b: Booking; phase: Phase }) {
   const router = useRouter();
   const stop = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
   };
-  if (phase === "pending")
-    return (
-      <button
-        type="button"
-        onClick={(e) => {
-          stop(e);
-          setBookingStatus(b.id, "confirmed");
-          toast.success(`${b.code} confirmed`);
-        }}
-        className={actionTones.confirm}
-      >
-        <BadgeCheck className="size-3.5" aria-hidden /> Confirm
-      </button>
-    );
   // The balance is paid at the ground, so collecting is offered once the game has started.
   if ((phase === "playing" || phase === "played") && dueOf(b) > 0)
     return (
