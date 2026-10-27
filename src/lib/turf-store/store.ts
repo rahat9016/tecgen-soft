@@ -387,6 +387,8 @@ export type AdminBookingInput = SlotRequest & {
   total: number;
   paid: number;
   method: PayMethod;
+  /** Wallet transaction ID or card slip reference. */
+  ref?: string;
   note?: string;
 };
 
@@ -397,6 +399,10 @@ export function createAdminBooking(input: AdminBookingInput): Result<Booking> {
     const conflict = findConflict(s, input, { allowPast: true });
     if (conflict) {
       result = { ok: false, error: conflictMessage(conflict) };
+      return s;
+    }
+    if (input.ref && (input.method === "bkash" || input.method === "nagad") && trxUsed(s, input.method, input.ref)) {
+      result = { ok: false, error: "This transaction ID has already been used for a booking." };
       return s;
     }
     const seq = s.seq.booking + 1;
@@ -411,7 +417,7 @@ export function createAdminBooking(input: AdminBookingInput): Result<Booking> {
       customer: input.customer,
       total: input.total,
       advanceDue: Math.ceil((input.total * s.settings.advancePercent) / 100 / 10) * 10,
-      payments: input.paid > 0 ? [{ id: uid("p"), amount: input.paid, method: input.method, kind: "advance", at }] : [],
+      payments: input.paid > 0 ? [{ id: uid("p"), amount: input.paid, method: input.method, kind: "advance", ref: input.ref || undefined, at }] : [],
       status: "confirmed",
       source: input.source,
       note: input.note,

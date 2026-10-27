@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { hourLabel, rangeLabel, taka } from "@/src/lib/turf-store/format";
+import { hourLabel } from "@/src/lib/turf-store/format";
 import { groundOf, saveSettings, updateCourt, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Settings, TurfDB } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
@@ -54,13 +54,6 @@ export default function SettingsForm() {
     toast.success("Settings saved — the booking site uses them right away");
   };
 
-  // Worked example: a two-hour game that starts an hour before peak, so both prices show.
-  const exStart = Math.max(r.openHour, Math.min(r.peakStartHour - 1, r.closeHour - 2));
-  const exHours = [exStart, exStart + 1].filter((h) => h < r.closeHour);
-  const exRows = exHours.map((h) => ({ h, peak: h >= r.peakStartHour, price: h >= r.peakStartHour ? draft.peakPrice : draft.price }));
-  const exTotal = exRows.reduce((s, x) => s + x.price, 0);
-  const exAdvance = Math.ceil((exTotal * r.advancePercent) / 100 / 10) * 10;
-
   const hourSelect = (k: "openHour" | "closeHour" | "peakStartHour", min: number, max: number) => (
     <select value={r[k]} onChange={(e) => set(k, Number(e.target.value))} className={inputClass}>
       {HOURS.filter((h) => h >= min && h <= max).map((h) => (
@@ -72,14 +65,14 @@ export default function SettingsForm() {
   );
 
   return (
-    <div className="mx-auto max-w-[1600px]">
+    <div>
       <section className="rounded-md border border-neutral-200 bg-white">
         <Tabs
           value={tab}
           onChange={setTab}
           tabs={[
             { value: "hours", label: "Hours & prices" },
-            { value: "rules", label: "Booking & payment rules" },
+            { value: "rules", label: "Booking rules" },
           ]}
         />
         <div className="p-3 sm:p-6">
@@ -88,7 +81,7 @@ export default function SettingsForm() {
               <Group title="Opening hours">
                 <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
                   <Field label="Opens at">{hourSelect("openHour", 0, 23)}</Field>
-                  <Field label="Closes at" hint="The last game starts an hour before">
+                  <Field label="Closes at">
                     {hourSelect("closeHour", 1, 24)}
                   </Field>
                   <Field label="Peak price from">{hourSelect("peakStartHour", 0, 24)}</Field>
@@ -97,39 +90,15 @@ export default function SettingsForm() {
               {ground && (
                 <Group title="Price per hour">
                   <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-                    <Field label={`Off-peak (before ${hourLabel(r.peakStartHour)})`}>
+                    <Field label="Off-peak">
                       <UnitInput value={draft.price} min={0} max={100000} unit="৳ / hr" onChange={(price) => setDraft((d) => ({ ...d, price }))} />
                     </Field>
-                    <Field label={`Peak (from ${hourLabel(r.peakStartHour)})`}>
+                    <Field label="Peak">
                       <UnitInput value={draft.peakPrice} min={0} max={100000} unit="৳ / hr" onChange={(peakPrice) => setDraft((d) => ({ ...d, peakPrice }))} />
                     </Field>
                   </div>
                 </Group>
               )}
-              {ground && exRows.length > 0 && (
-                <div className="overflow-hidden rounded-lg border border-neutral-200 text-sm">
-                  <p className="bg-neutral-50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                    Example — {rangeLabel(exStart, exRows.length)}
-                  </p>
-                  {exRows.map((x) => (
-                    <div key={x.h} className="flex justify-between border-t border-neutral-100 px-4 py-2.5">
-                      <span className="text-neutral-700">
-                        {rangeLabel(x.h, 1)} · {x.peak ? "peak" : "off-peak"}
-                      </span>
-                      <span className="tabular-nums">{taka(x.price)}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between border-t border-neutral-100 px-4 py-2.5">
-                    <span className="text-neutral-700">Advance online ({r.advancePercent}%)</span>
-                    <span className="tabular-nums">{taka(exAdvance)}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-emerald-100 bg-emerald-50/60 px-4 py-2.5 font-semibold text-emerald-900">
-                    <span>Total</span>
-                    <span className="tabular-nums">{taka(exTotal)}</span>
-                  </div>
-                </div>
-              )}
-              <p className="text-xs text-neutral-500">Existing bookings keep their price.</p>
             </div>
           )}
 
@@ -137,23 +106,23 @@ export default function SettingsForm() {
             <div className="grid gap-3 sm:gap-4">
               <Group title="Online booking">
                 <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
-                  <Field label="Book up to" hint="How far ahead customers can book">
+                  <Field label="Book up to">
                     <UnitInput value={r.bookingWindowDays} min={1} max={180} unit="days" onChange={(v) => set("bookingWindowDays", v)} />
                   </Field>
                   <Field label="Longest booking">
                     <UnitInput value={r.maxDuration} min={1} max={6} unit="hours" onChange={(v) => set("maxDuration", v)} />
                   </Field>
-                  <Field label="Slot held while paying" hint="Nobody else can take it meanwhile">
+                  <Field label="Hold while paying">
                     <UnitInput value={r.holdMinutes} min={2} max={60} unit="min" onChange={(v) => set("holdMinutes", v)} />
                   </Field>
                 </div>
               </Group>
               <Group title="Advance & cancellation">
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-                  <Field label="Advance paid online" hint="bKash, Nagad or card; the rest is paid at the venue">
+                  <Field label="Advance">
                     <UnitInput value={r.advancePercent} min={0} max={100} unit="%" onChange={(v) => set("advancePercent", v)} />
                   </Field>
-                  <Field label="Online cancellation until" hint="Before kick-off; after that customers must call">
+                  <Field label="Cancel online until">
                     <UnitInput value={r.cancelCutoffHours} min={0} max={72} unit="hours" onChange={(v) => set("cancelCutoffHours", v)} />
                   </Field>
                 </div>

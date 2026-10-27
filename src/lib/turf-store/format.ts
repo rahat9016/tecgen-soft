@@ -70,7 +70,7 @@ export const sportLabels: Record<Sport, string> = {
 };
 
 export const statusLabels: Record<Phase, string> = {
-  pending: "Awaiting verification",
+  pending: "To verify",
   booked: "Booked",
   playing: "Playing now",
   played: "Played",
@@ -93,11 +93,3 @@ export const payLabels: Record<PayMethod, string> = {
 };
 
 export const sourceLabels = { online: "Online", "walk-in": "Walk-in", phone: "Phone" } as const;
-
-export function downloadCsv(filename: string, rows: (string | number)[][]) {
-  const csv = rows.map((r) => r.map((c) => (/[",\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : String(c))).join(",")).join("\r\n");
-  const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
-  const a = Object.assign(document.createElement("a"), { href: url, download: filename });
-  a.click();
-  URL.revokeObjectURL(url);
-}

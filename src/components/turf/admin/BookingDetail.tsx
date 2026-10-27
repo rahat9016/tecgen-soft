@@ -10,46 +10,37 @@ import {
   BadgeCheck,
   CalendarClock,
   CalendarDays,
-  Check,
+  CalendarX,
+  CircleDot,
   Clock,
   Hash,
-  Hourglass,
   Mail,
-  MapPin,
   NotebookPen,
   Phone,
-  Plus,
   ReceiptText,
   Tag,
   User,
   Users,
   Wallet,
 } from "lucide-react";
-import { addDays, dateLabel, formatDateTime, hourLabel, payLabels, rangeLabel, sourceLabels, taka } from "@/src/lib/turf-store/format";
+import { dateLabel, rangeLabel, sourceLabels, taka } from "@/src/lib/turf-store/format";
 import {
   addPayment,
-  conflictMessage,
   dueOf,
   findConflict,
-  hoursOf,
   paidOf,
   phaseOf,
-  priceAt,
   rescheduleBooking,
   setBookingStatus,
+  trxUsed,
   useNow,
   useTurfDB,
 } from "@/src/lib/turf-store/store";
-import type { Booking, PayMethod, Payment, Phase } from "@/src/lib/turf-store/types";
+import type { Booking, PayMethod } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
-import { abtn, ADMIN, cardClass, Empty, Field, InfoRow, inputClass, Modal, Panel, StatusBadge } from "./ui";
-
-const kindBadge: Record<Payment["kind"], string> = {
-  advance: "bg-sky-50 text-sky-700",
-  balance: "bg-emerald-50 text-emerald-700",
-  refund: "bg-violet-50 text-violet-700",
-};
-const kindLabels: Record<Payment["kind"], string> = { advance: "Advance", balance: "Balance", refund: "Refund" };
+import { MethodTiles, TRX_ID, TrxIdField, WalletDetails } from "../pay";
+import SlotPicker from "./SlotPicker";
+import { abtn, ADMIN, cardClass, Empty, Field, InfoRow, inputClass, labelClass, Modal, Panel, StatusBadge } from "./ui";
 
 export default function BookingDetail({ id }: { id: string }) {
   const db = useTurfDB();
@@ -69,68 +60,73 @@ export default function BookingDetail({ id }: { id: string }) {
       </div>
     );
 
-  const court = db.courts.find((c) => c.id === b.courtId);
   const paid = paidOf(b);
   const due = dueOf(b);
   const phase = phaseOf(b, now);
   const closed = b.status === "cancelled";
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
-      <header className={cn(cardClass, "p-4 sm:p-5")}>
-        <div className="flex flex-wrap items-center gap-3">
-          <Link href={`${ADMIN}/bookings`} aria-label="Back to bookings" className={cn(abtn.outline, "size-10 shrink-0 px-0")}>
-            <ArrowLeft className="size-4" />
-          </Link>
-          <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-2">
-              <span className="font-mono font-semibold text-emerald-800">{b.code}</span>
-              <StatusBadge booking={b} />
-            </p>
-            <p className="truncate text-neutral-700">{b.customer.name}</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {b.status === "pending" && (
-              <>
+    <div>
+      <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_340px]">
+        {/* Phones: money and the next action come first; wider screens put them in a side column. */}
+        <aside className="md:sticky md:top-20 md:col-start-2 md:row-start-1">
+          <section className={cn(cardClass, "space-y-3 p-4")}>
+            {closed && (
+              <p className="rounded-md bg-rose-50 px-3 py-2.5 text-sm text-rose-800">
+                Cancelled{b.cancelReason && <> — {b.cancelReason}</>}
+              </p>
+            )}
+            <dl className="overflow-hidden rounded-md border border-neutral-200 text-sm">
+              <div className="flex justify-between px-3 py-2.5">
+                <dt className="text-neutral-600">Total</dt>
+                <dd className="tabular-nums">{taka(b.total)}</dd>
+              </div>
+              <div className="flex justify-between border-t border-neutral-100 px-3 py-2.5">
+                <dt className="text-neutral-600">Paid</dt>
+                <dd className="tabular-nums text-emerald-700">{taka(paid)}</dd>
+              </div>
+              <div className={cn("flex items-center justify-between border-t px-3 py-3 font-semibold", due > 0 && !closed ? "border-rose-100 bg-rose-50 text-rose-800" : "border-emerald-100 bg-emerald-50 text-emerald-800")}>
+                <dt>{closed ? "Nothing to collect" : due > 0 ? "Due" : "Fully paid"}</dt>
+                <dd className="text-lg tabular-nums">{taka(closed ? 0 : due)}</dd>
+              </div>
+            </dl>
+            {phase === "pending" && (
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => {
                     setBookingStatus(b.id, "confirmed");
-                    toast.success(`${b.code} confirmed — the customer sees it live`);
+                    toast.success(`${b.code} confirmed`);
                   }}
-                  className={cn(abtn.primary, "bg-emerald-600 hover:bg-emerald-700")}
+                  className={abtn.primary}
                 >
-                  <BadgeCheck className="size-4" /> Verify & confirm
+                  <BadgeCheck className="size-4" /> Confirm
                 </button>
                 <button onClick={() => setModal("cancel")} className={abtn.danger}>
                   <Ban className="size-4" /> Reject
                 </button>
-              </>
-            )}
-            {phase === "booked" && (
-              <button onClick={() => setModal("cancel")} className={abtn.danger}>
-                <Ban className="size-4" /> Cancel
-              </button>
+              </div>
             )}
             {/* Verify the online advance first; the rest is taken at the ground. */}
             {!closed && phase !== "pending" && due > 0 && (
-              <button onClick={() => setModal("pay")} className={abtn.primary}>
+              <button onClick={() => setModal("pay")} className={cn(abtn.primary, "w-full")}>
                 <Wallet className="size-4" /> Collect {taka(due)}
               </button>
             )}
-          </div>
-        </div>
-        {closed ? (
-          <p className="mt-4 rounded-md bg-rose-50 px-3 py-2.5 text-sm text-rose-800">
-            Cancelled
-            {b.cancelReason && <> — {b.cancelReason}</>} · {formatDateTime(b.updatedAt)}
-          </p>
-        ) : (
-          <Stepper b={b} phase={phase} paid={paid} due={due} />
-        )}
-      </header>
+            {phase === "booked" && (
+              <button onClick={() => setModal("cancel")} className={cn(abtn.danger, "w-full")}>
+                <CalendarX className="size-4" /> Cancel booking
+              </button>
+            )}
+            {closed && paid > 0 && (
+              <button onClick={() => setModal("pay")} className={cn(abtn.outline, "w-full")}>
+                <Wallet className="size-4" /> Refund {taka(paid)}
+              </button>
+            )}
+            <BackButton />
+          </section>
+        </aside>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4 md:col-start-1 md:row-start-1">
           <Panel
             title="Slot"
             icon={CalendarDays}
@@ -144,32 +140,22 @@ export default function BookingDetail({ id }: { id: string }) {
           >
             <dl>
               <InfoRow icon={Hash} label="Booking">
-                <span className="font-mono">{b.code}</span>
+                <span className="font-mono font-semibold text-emerald-800">{b.code}</span>
               </InfoRow>
-              <InfoRow icon={MapPin} label="Ground">
-                <b className="font-semibold">{court?.name}</b> {court && <span className="text-neutral-600">· {court.size}</span>}
+              <InfoRow icon={CircleDot} label="Status">
+                <StatusBadge booking={b} />
               </InfoRow>
               <InfoRow icon={CalendarDays} label="Date">
-                {dateLabel(b.date, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                {dateLabel(b.date, { weekday: "short", day: "numeric", month: "short" })}
               </InfoRow>
               <InfoRow icon={Clock} label="Time">
-                {rangeLabel(b.startHour, b.duration)}
-                <span className="block text-xs text-neutral-500">
-                  {b.duration} hour{b.duration > 1 ? "s" : ""}
-                </span>
+                {rangeLabel(b.startHour, b.duration)} · {b.duration} hr{b.duration > 1 ? "s" : ""}
               </InfoRow>
               <InfoRow icon={Tag} label="Price">
                 {taka(b.total)}
-                {court && (
-                  <span className="block text-xs text-neutral-500">
-                    {Array.from({ length: b.duration }, (_, i) => b.startHour + i)
-                      .map((h) => `${hourLabel(h)} ${taka(priceAt(court, h, db.settings))}`)
-                      .join(" · ")}
-                  </span>
-                )}
               </InfoRow>
               <InfoRow icon={ReceiptText} label="Source">
-                {sourceLabels[b.source]} · booked {formatDateTime(b.createdAt)}
+                {sourceLabels[b.source]}
               </InfoRow>
             </dl>
           </Panel>
@@ -179,102 +165,33 @@ export default function BookingDetail({ id }: { id: string }) {
               <InfoRow icon={User} label="Name">
                 {b.customer.name}
               </InfoRow>
-              <InfoRow icon={Phone} label="Phone">
-                {b.customer.phone ? (
+              {b.customer.phone && (
+                <InfoRow icon={Phone} label="Phone">
                   <a href={`tel:${b.customer.phone}`} className="font-medium text-emerald-700 hover:underline">
                     {b.customer.phone}
                   </a>
-                ) : (
-                  "—"
-                )}
-              </InfoRow>
-              <InfoRow icon={Mail} label="Email">
-                {b.customer.email ? (
-                  <a href={`mailto:${b.customer.email}`} className="font-medium text-emerald-700 hover:underline">
+                </InfoRow>
+              )}
+              {b.customer.email && (
+                <InfoRow icon={Mail} label="Email">
+                  <a href={`mailto:${b.customer.email}`} className="break-all font-medium text-emerald-700 hover:underline">
                     {b.customer.email}
                   </a>
-                ) : (
-                  "—"
-                )}
-              </InfoRow>
-              <InfoRow icon={Users} label="Team">
-                {b.customer.team ?? "—"}
-              </InfoRow>
-              <InfoRow icon={NotebookPen} label="Note">
-                {b.note ?? "—"}
-              </InfoRow>
+                </InfoRow>
+              )}
+              {b.customer.team && (
+                <InfoRow icon={Users} label="Team">
+                  {b.customer.team}
+                </InfoRow>
+              )}
+              {b.note && (
+                <InfoRow icon={NotebookPen} label="Note">
+                  {b.note}
+                </InfoRow>
+              )}
             </dl>
-          </Panel>
-
-          <Panel
-            title="Payments"
-            icon={Wallet}
-            action={
-              <button onClick={() => setModal("pay")} className={abtn.small}>
-                <Plus className="size-3.5" /> Record payment
-              </button>
-            }
-          >
-            {b.payments.length === 0 ? (
-              <p className="py-6 text-center text-sm text-neutral-500">No payments yet.</p>
-            ) : (
-              <ul className="divide-y divide-neutral-100">
-                {b.payments.map((p) => (
-                  <li key={p.id} className="flex items-start gap-3 py-3">
-                    <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-full", kindBadge[p.kind])}>
-                      <Wallet className="size-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="flex items-center gap-2 font-medium text-neutral-900">
-                        {payLabels[p.method]}
-                        <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-semibold", kindBadge[p.kind])}>{kindLabels[p.kind]}</span>
-                      </p>
-                      {p.ref && <p className="font-mono text-xs text-neutral-600">TrxID {p.ref}</p>}
-                      <p className="text-xs text-neutral-500">{formatDateTime(p.at)}</p>
-                    </div>
-                    <p className={cn("font-semibold tabular-nums", p.kind === "refund" ? "text-violet-700" : "text-neutral-900")}>
-                      {p.kind === "refund" ? "−" : ""}
-                      {taka(p.amount)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
           </Panel>
         </div>
-
-        <aside className="space-y-4 lg:sticky lg:top-20">
-          <section className={cn(cardClass, "p-4")}>
-            <dl className="overflow-hidden rounded-md border border-neutral-200 text-sm">
-              <div className="flex justify-between px-3 py-2.5">
-                <dt className="text-neutral-600">Total</dt>
-                <dd className="tabular-nums">{taka(b.total)}</dd>
-              </div>
-              <div className="flex justify-between border-t border-neutral-100 px-3 py-2.5">
-                <dt className="text-neutral-600">Advance required</dt>
-                <dd className="tabular-nums">{taka(b.advanceDue)}</dd>
-              </div>
-              <div className="flex justify-between border-t border-neutral-100 px-3 py-2.5">
-                <dt className="text-neutral-600">Paid (net)</dt>
-                <dd className="tabular-nums text-emerald-700">{taka(paid)}</dd>
-              </div>
-              <div className={cn("flex justify-between border-t px-3 py-3 font-semibold", due > 0 && !closed ? "border-rose-100 bg-rose-50 text-rose-800" : "border-emerald-100 bg-emerald-50 text-emerald-800")}>
-                <dt>{closed ? "Nothing to collect" : due > 0 ? "Balance due" : "Fully paid"}</dt>
-                <dd className="text-lg tabular-nums">{taka(closed ? 0 : due)}</dd>
-              </div>
-            </dl>
-            {!closed && phase !== "pending" && due > 0 && (
-              <button onClick={() => setModal("pay")} className={cn(abtn.primary, "mt-3 w-full")}>
-                <Wallet className="size-4" /> Collect balance
-              </button>
-            )}
-          </section>
-
-          <section className={cn(cardClass, "p-4 sm:p-5")}>
-            <h2 className="font-semibold text-neutral-900">Activity</h2>
-            <Activity b={b} />
-          </section>
-        </aside>
       </div>
 
       {modal === "pay" && <PaymentModal b={b} onClose={() => setModal(null)} />}
@@ -284,69 +201,18 @@ export default function BookingDetail({ id }: { id: string }) {
   );
 }
 
-/** Book → pay the booking money → play, with the next step highlighted. */
-function Stepper({ b, phase, paid, due }: { b: Booking; phase: Phase; paid: number; due: number }) {
-  const advance = b.payments.find((p) => p.kind === "advance");
-  const steps = [
-    { label: "Booked", sub: `${sourceLabels[b.source]} · ${dateLabel(b.createdAt.slice(0, 10), { day: "numeric", month: "short" })}`, done: true },
-    {
-      label: "Booking money",
-      sub: phase === "pending" ? "Awaiting verification" : advance ? `${taka(advance.amount)} · ${payLabels[advance.method]}` : paid > 0 ? `${taka(paid)} paid` : "Pay at the ground",
-      done: phase !== "pending",
-    },
-    {
-      label: phase === "played" ? "Played" : "Play",
-      sub: phase === "playing" ? "Playing now" : phase === "played" ? (due > 0 ? `${taka(due)} still due` : "Fully paid") : `${dateLabel(b.date, { day: "numeric", month: "short" })} · ${hourLabel(b.startHour)}`,
-      done: phase === "played",
-    },
-  ];
-  const current = steps.findIndex((s) => !s.done);
+/** Back to the list the booking was opened from — Payments when it came from there, otherwise Bookings. */
+function BackButton() {
+  const from = useSearchParams().get("from");
   return (
-    <ol className="mt-5 grid gap-3 sm:grid-cols-3 sm:gap-0">
-      {steps.map((s, i) => (
-        <li key={i} className="flex items-center gap-3 sm:pr-3">
-          <span
-            className={cn(
-              "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold",
-              s.done ? "bg-emerald-600 text-white" : i === current ? "bg-emerald-700 text-white ring-4 ring-emerald-100" : "bg-neutral-100 text-neutral-500"
-            )}
-          >
-            {s.done ? <Check className="size-4" /> : i + 1}
-          </span>
-          <span className="min-w-0">
-            <span className={cn("block text-sm font-semibold", i === current ? "text-emerald-800" : "text-neutral-900")}>{s.label}</span>
-            <span className="block truncate text-xs text-neutral-500">{s.sub}</span>
-          </span>
-          {i < steps.length - 1 && <span aria-hidden className={cn("ml-auto hidden h-0.5 min-w-6 flex-1 rounded sm:block", s.done ? "bg-emerald-500" : "bg-neutral-200")} />}
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-/** Built from what the booking records: when it was made, each payment, and a cancellation. */
-function Activity({ b }: { b: Booking }) {
-  const items = [
-    { at: b.createdAt, text: `Booking made (${sourceLabels[b.source].toLowerCase()})` },
-    ...b.payments.map((p) => ({ at: p.at, text: p.kind === "refund" ? `Refunded ${taka(p.amount)} via ${payLabels[p.method]}` : `Received ${taka(p.amount)} via ${payLabels[p.method]}` })),
-    ...(b.status === "cancelled" ? [{ at: b.updatedAt, text: `Cancelled${b.cancelReason ? ` — ${b.cancelReason}` : ""}` }] : []),
-  ].sort((x, y) => y.at.localeCompare(x.at));
-  return (
-    <ul className="mt-3 space-y-3">
-      {items.map((it, i) => (
-        <li key={i} className="flex gap-3">
-          <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", i === 0 ? "bg-emerald-500" : "bg-neutral-300")} />
-          <span>
-            <span className="block text-sm text-neutral-900">{it.text}</span>
-            <span className="block text-xs text-neutral-500">{formatDateTime(it.at)}</span>
-          </span>
-        </li>
-      ))}
-    </ul>
+    <Link href={`${ADMIN}/${from === "payments" ? "payments" : "bookings"}`} className={cn(abtn.outline, "w-full")}>
+      <ArrowLeft className="size-4" /> Back
+    </Link>
   );
 }
 
 function PaymentModal({ b, onClose }: { b: Booking; onClose: () => void }) {
+  const db = useTurfDB();
   const router = useRouter();
   const due = dueOf(b);
   const paid = paidOf(b);
@@ -354,62 +220,92 @@ function PaymentModal({ b, onClose }: { b: Booking; onClose: () => void }) {
   const [amount, setAmount] = useState(String(due || ""));
   const [method, setMethod] = useState<PayMethod>("cash");
   const [ref, setRef] = useState("");
+  const [touched, setTouched] = useState(false);
+  const n = Number(amount) || 0;
+  const collect = kind === "balance";
+  const wallet = method === "bkash" || method === "nagad";
+  // Money coming in by wallet must carry the customer's transaction ID; a refund is the venue's own transfer.
+  const refError =
+    !collect || !wallet ? undefined : !ref ? "Enter the transaction ID from the SMS" : !TRX_ID.test(ref) ? "A transaction ID is 8–10 letters and numbers" : trxUsed(db, method, ref) ? "This transaction ID has already been used" : undefined;
   const close = () => {
-    // Drop ?do=pay so a refresh doesn't reopen the form.
-    router.replace(`${ADMIN}/bookings/${b.id}`, { scroll: false });
+    // Drop ?do=pay so a refresh doesn't reopen the form; keep ?from for the Back button.
+    const q = new URLSearchParams(window.location.search);
+    q.delete("do");
+    router.replace(`${ADMIN}/bookings/${b.id}${q.size ? `?${q}` : ""}`, { scroll: false });
     onClose();
   };
 
   return (
-    <Modal open onClose={close} title="Record payment">
+    <Modal open onClose={close} title={collect ? "Collect payment" : "Refund"}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          const n = Number(amount);
-          if (!n || n <= 0) return toast.error("Enter an amount");
-          if (kind === "refund" && n > paid) return toast.error("Refund is more than what was paid");
-          addPayment(b.id, n, method, kind, ref.trim());
-          toast.success(kind === "refund" ? "Refund recorded" : `${taka(n)} received`);
+          setTouched(true);
+          if (n <= 0) return toast.error("Enter an amount");
+          if (!collect && n > paid) return toast.error("Refund is more than what was paid");
+          if (refError) return;
+          addPayment(b.id, n, method, kind, wallet ? ref : "");
+          toast.success(collect ? `${taka(n)} received` : `${taka(n)} refunded`);
           close();
         }}
-        className="space-y-3"
+        className="space-y-4"
       >
-        <div className="grid grid-cols-2 gap-1 rounded-md bg-neutral-100 p-1 text-sm font-medium">
+        <div className="flex h-10 gap-1 rounded-xl bg-neutral-100 p-1">
           {(
             [
               ["balance", "Collect"],
               ["refund", "Refund"],
             ] as const
           ).map(([v, l]) => (
-            <button key={v} type="button" onClick={() => setKind(v)} className={cn("rounded py-2", kind === v ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500")}>
+            <button
+              key={v}
+              type="button"
+              onClick={() => {
+                setKind(v);
+                setAmount(String(v === "balance" ? due || "" : ""));
+              }}
+              aria-pressed={kind === v}
+              className={cn("flex-1 rounded-lg text-sm font-medium transition", kind === v ? "bg-emerald-800 text-white" : "text-neutral-600 hover:bg-white")}
+            >
               {l}
             </button>
           ))}
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Amount (৳)" hint={kind === "balance" ? `Balance due ${taka(due)}` : `Paid so far ${taka(paid)}`}>
-            <input autoFocus inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} className={inputClass} />
-          </Field>
-          <Field label="Method">
-            <select value={method} onChange={(e) => setMethod(e.target.value as PayMethod)} className={inputClass}>
-              {Object.entries(payLabels).map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </Field>
+
+        <Field label="Amount (৳)" hint={collect ? `Due ${taka(due)}` : `Paid ${taka(paid)}`}>
+          <input autoFocus inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} className={cn(inputClass, "h-12 text-base font-semibold tabular-nums")} />
+        </Field>
+
+        <div>
+          <p className="mb-2 text-sm font-medium text-neutral-800">{collect ? "Pay with" : "Refund by"}</p>
+          <MethodTiles
+            methods={["cash", "bkash", "nagad", "card"] as PayMethod[]}
+            value={method}
+            onChange={(m) => {
+              setMethod(m);
+              setRef("");
+            }}
+          />
         </div>
-        {method !== "cash" && (
-          <Field label="Transaction ID" hint="Optional">
-            <input value={ref} onChange={(e) => setRef(e.target.value)} className={cn(inputClass, "font-mono")} />
-          </Field>
+
+        {wallet && collect && <WalletDetails venuePhone={db.settings.phone} amount={n} amountLabel={taka(n)} />}
+        {wallet && (
+          <TrxIdField
+            id="pm-ref"
+            method={method}
+            value={ref}
+            onChange={setRef}
+            error={touched ? refError : undefined}
+            inputClassName={inputClass}
+            labelClassName={labelClass}
+          />
         )}
-        <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-3">
+
+        <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-4">
           <button type="button" onClick={close} className={abtn.outline}>
             Cancel
           </button>
-          <button className={abtn.primary}>{kind === "refund" ? "Record refund" : "Record payment"}</button>
+          <button className={collect ? abtn.primary : cn(abtn.primary, "bg-violet-700 hover:bg-violet-800")}>{collect ? `Collect ${n ? taka(n) : ""}` : `Refund ${n ? taka(n) : ""}`}</button>
         </div>
       </form>
     </Modal>
@@ -420,52 +316,49 @@ function RescheduleModal({ b, onClose }: { b: Booking; onClose: () => void }) {
   const db = useTurfDB();
   const now = useNow(15_000);
   const [date, setDate] = useState(b.date);
-  const [start, setStart] = useState(b.startHour);
+  const [start, setStart] = useState<number | null>(b.startHour);
   const [duration, setDuration] = useState(b.duration);
-  const req = { courtId: b.courtId, date, startHour: start, duration };
-  const conflict = findConflict(db, req, { ignoreBookingId: b.id, now });
+  const req = start !== null ? { courtId: b.courtId, date, startHour: start, duration } : null;
+  const conflict = req ? findConflict(db, req, { ignoreBookingId: b.id, now }) : null;
   const unchanged = date === b.date && start === b.startHour && duration === b.duration;
+  const slot = (d: string, h: number, n: number) => `${dateLabel(d, { weekday: "short", day: "numeric", month: "short" })} · ${rangeLabel(h, n)}`;
 
   return (
     <Modal open onClose={onClose} title="Reschedule booking">
-      <div className="space-y-3">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Field label="Date">
-            <input type="date" value={date} min={addDays(b.date, -365)} onChange={(e) => e.target.value && setDate(e.target.value)} className={inputClass} />
-          </Field>
-          <Field label="Start">
-            <select value={start} onChange={(e) => setStart(Number(e.target.value))} className={inputClass}>
-              {hoursOf(db.settings).map((h) => (
-                <option key={h} value={h}>
-                  {hourLabel(h)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Hours">
-            <select value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={inputClass}>
-              {Array.from({ length: db.settings.maxDuration }, (_, i) => i + 1).map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </Field>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-2 text-[13px] sm:text-sm">
+          <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
+            <p className="text-xs text-neutral-500">Now</p>
+            <p className="font-medium text-neutral-900">{slot(b.date, b.startHour, b.duration)}</p>
+          </div>
+          <div className={cn("rounded-md border px-3 py-2", !unchanged && req && !conflict ? "border-emerald-300 bg-emerald-50" : "border-neutral-200")}>
+            <p className="text-xs text-neutral-500">New</p>
+            <p className="font-medium text-neutral-900">{start !== null ? slot(date, start, duration) : "Pick a time"}</p>
+          </div>
         </div>
-        {!unchanged && (
-          <p className={cn("flex items-center gap-2 rounded-md px-3 py-2 text-sm", conflict ? "bg-rose-50 text-rose-800" : "bg-emerald-50 text-emerald-800")}>
-            {conflict ? <Hourglass className="size-4" /> : <Check className="size-4" />}
-            {conflict ? (conflict.kind === "booking" ? `Clashes with ${conflict.booking.code} (${conflict.booking.customer.name}).` : conflictMessage(conflict)) : "That slot is free."}
-          </p>
-        )}
-        <p className="text-xs text-neutral-500">The price stays as booked; record any difference under Payments.</p>
-        <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-3">
+
+        <SlotPicker
+          date={date}
+          start={start}
+          duration={duration}
+          onDate={(d) => {
+            setDate(d);
+            setStart(d === b.date ? b.startHour : null);
+          }}
+          onStart={setStart}
+          onDuration={setDuration}
+          conflict={conflict}
+          bookingId={b.id}
+        />
+
+        <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-4">
           <button onClick={onClose} className={abtn.outline}>
             Cancel
           </button>
           <button
-            disabled={unchanged || !!conflict}
+            disabled={!req || unchanged || !!conflict}
             onClick={() => {
+              if (!req) return;
               const r = rescheduleBooking(b.id, req);
               if (!r.ok) return toast.error(r.error);
               toast.success(`${b.code} moved`);

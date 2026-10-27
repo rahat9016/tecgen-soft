@@ -108,7 +108,6 @@ export default function TurfAdminShell({ children }: { children: React.ReactNode
       <Link href={`${ADMIN}/bookings`} onClick={() => setOpen(false)} className={cn("block", rail ? "px-2 pb-1 pt-5 text-center" : "px-5 pb-1 pt-5")}>
         {rail ? <span className="text-xl font-extrabold text-lime-400">T<span className="text-white">H</span></span> : <TurfLogo />}
       </Link>
-      {!rail && <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-200/50">Venue admin</p>}
       <div className={cn("mt-5 flex-1 overflow-y-auto pb-4", rail ? "space-y-2 px-1.5" : "space-y-5 px-3")}>
         {groups.map((g, gi) => (
           <div key={g.title} className={cn(rail && gi > 0 && "border-t border-white/10 pt-2")}>

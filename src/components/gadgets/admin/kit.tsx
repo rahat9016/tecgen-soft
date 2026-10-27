@@ -166,7 +166,9 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close.current();
+    // A popover or menu open inside the dialog handles its own Escape (and marks it handled) — only close
+    // the dialog when nothing else did.
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !e.defaultPrevented && close.current();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);

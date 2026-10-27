@@ -4,17 +4,14 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { BadgeCheck, ChevronRight, ClipboardList, Download, Plus, SlidersHorizontal, Wallet } from "lucide-react";
-import { dateLabel, downloadCsv, payLabels, rangeLabel, sourceLabels, statusLabels, statusStyles, taka, todayYmd } from "@/src/lib/turf-store/format";
+import { BadgeCheck, ChevronRight, ClipboardList, Plus, Wallet } from "lucide-react";
+import { dateLabel, rangeLabel, sourceLabels, statusLabels, statusStyles, taka, todayYmd } from "@/src/lib/turf-store/format";
 import { dueOf, paidOf, phaseOf, setBookingStatus, startMs, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Booking, Phase } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
-import { abtn, ADMIN, Avatar, control, Empty, focusRing, PageHeader, Pager, SearchInput, StatusBadge, tableCardClass, ToolbarSelect, usePagination, ViewPills } from "./ui";
+import { abtn, ADMIN, Avatar, Empty, focusRing, PageHeader, Pager, SearchInput, StatusBadge, tableCardClass, ToolbarSelect, usePagination, ViewPills } from "./ui";
 
 type View = "all" | "today" | "pending" | "upcoming" | "past" | "cancelled";
-type Source = "any" | Booking["source"];
-type Pay = "any" | "due" | "paid";
-type Sort = "newest" | "soonest" | "latest";
 
 const views: { value: View; label: string; group: number }[] = [
   { value: "all", label: "All", group: 0 },
@@ -24,7 +21,6 @@ const views: { value: View; label: string; group: number }[] = [
   { value: "past", label: "Past", group: 1 },
   { value: "cancelled", label: "Cancelled", group: 1 },
 ];
-const sortLabels: Record<Sort, string> = { newest: "Newest first", soonest: "Kick-off: soonest", latest: "Kick-off: latest" };
 
 function inView(b: Booking, v: View, today: string) {
   const live = b.status !== "cancelled";
@@ -42,50 +38,27 @@ export default function BookingsList() {
   const db = useTurfDB();
   const [view, setView] = useState<View>("all");
   const [q, setQ] = useState("");
-  const [source, setSource] = useState<Source>("any");
-  const [pay, setPay] = useState<Pay>("any");
-  const [sort, setSort] = useState<Sort>("newest");
-  const [showFilters, setShowFilters] = useState(false);
   const now = useNow(60_000);
   const today = todayYmd();
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return db.bookings.filter(
-      (b) =>
-        (!term || [b.code, b.customer.name, b.customer.phone, b.customer.team ?? ""].some((v) => v.toLowerCase().includes(term))) &&
-        (source === "any" || b.source === source) &&
-        (pay === "any" || (pay === "due" ? dueOf(b) > 0 : b.status !== "cancelled" && dueOf(b) === 0))
-    );
-  }, [db.bookings, q, source, pay]);
+    return db.bookings.filter((b) => !term || [b.code, b.customer.name, b.customer.phone, b.customer.team ?? ""].some((v) => v.toLowerCase().includes(term)));
+  }, [db.bookings, q]);
 
+  // Games still to come read soonest first; history and "All" show the newest bookings first.
+  const ascending = view === "today" || view === "pending" || view === "upcoming";
   const list = useMemo(
-    () =>
-      filtered
-        .filter((b) => inView(b, view, today))
-        .sort((a, b) => (sort === "newest" ? b.createdAt.localeCompare(a.createdAt) : sort === "soonest" ? startMs(a) - startMs(b) : startMs(b) - startMs(a))),
-    [filtered, view, today, sort]
+    () => filtered.filter((b) => inView(b, view, today)).sort((a, b) => (ascending ? startMs(a) - startMs(b) : view === "all" ? b.createdAt.localeCompare(a.createdAt) : startMs(b) - startMs(a))),
+    [filtered, view, today, ascending]
   );
   const page = usePagination(list, 15);
   const counts = Object.fromEntries(views.map((v) => [v.value, filtered.filter((b) => inView(b, v.value, today)).length])) as Record<View, number>;
-  const pending = db.bookings.filter((b) => b.status === "pending").length;
-  const activeFilters = Number(source !== "any") + Number(pay !== "any");
-  const filtering = !!q.trim() || activeFilters > 0;
-
-  const exportCsv = () => {
-    downloadCsv(`turf-bookings-${today}.csv`, [
-      ["Code", "Customer", "Phone", "Team", "Date", "Time", "Hours", "Source", "Status", "Total", "Paid", "Due"],
-      ...list.map((b) => [b.code, b.customer.name, b.customer.phone, b.customer.team ?? "", b.date, rangeLabel(b.startHour, b.duration), b.duration, sourceLabels[b.source], statusLabels[phaseOf(b, now)], b.total, paidOf(b), dueOf(b)]),
-    ]);
-  };
+  const filtering = !!q.trim();
 
   return (
-    <div className="mx-auto max-w-[1600px]">
-      <PageHeader title="Bookings" subtitle={`${db.bookings.length} bookings · ${pending} waiting for verification`}>
-        <button onClick={exportCsv} className={cn(abtn.outline, "size-10 px-0 sm:w-auto sm:px-4")}>
-          <Download className="size-4" aria-hidden /> <span className="hidden sm:inline">Export CSV</span>
-          <span className="sr-only sm:hidden">Export CSV</span>
-        </button>
+    <div>
+      <PageHeader title="Bookings">
         <Link href={`${ADMIN}/bookings/new`} className={abtn.primary}>
           <Plus className="size-4" aria-hidden /> <span className="sm:hidden">New</span>
           <span className="hidden sm:inline">New booking</span>
@@ -105,54 +78,27 @@ export default function BookingsList() {
           />
         </div>
 
-        <div className="border-b border-neutral-100 p-3 sm:p-4">
-          <div className="flex flex-col gap-2 lg:grid lg:grid-cols-[minmax(16rem,1fr)_repeat(3,auto)]">
-            <div className="flex gap-2">
-              <SearchInput
-                value={q}
-                onChange={(v) => {
-                  setQ(v);
-                  page.setPage(1);
-                }}
-                placeholder="Search customer, phone, team or booking code"
-              />
-              {/* Phones: the filters fold away behind one button. */}
-              <button
-                type="button"
-                onClick={() => setShowFilters((v) => !v)}
-                aria-expanded={showFilters}
-                className={cn(control, "relative flex shrink-0 items-center gap-1.5 px-3 font-medium lg:hidden", (showFilters || activeFilters > 0) && "border-emerald-500 bg-emerald-50 text-emerald-900")}
-              >
-                <SlidersHorizontal className="size-4" aria-hidden />
-                <span className="sr-only sm:not-sr-only">Filters</span>
-                {activeFilters > 0 && <span className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full bg-emerald-700 text-[11px] font-bold text-white">{activeFilters}</span>}
-              </button>
-            </div>
-            <div className={cn("grid grid-cols-2 gap-2 lg:contents", !showFilters && "hidden")}>
-              {/* Phones and tablets: the views live here instead of the pill row. */}
-              <div className="col-span-2 lg:hidden">
-                <ToolbarSelect label="Booking views" value={view} active={view !== "all"} onChange={setView} options={views.map((v) => ({ value: v.value, label: `${v.label} (${counts[v.value]})` }))} />
-              </div>
-              <ToolbarSelect
-                label="Source"
-                value={source}
-                active={source !== "any"}
-                onChange={setSource}
-                options={[{ value: "any", label: "All sources" }, ...(Object.keys(sourceLabels) as Booking["source"][]).map((s) => ({ value: s, label: sourceLabels[s] }))]}
-              />
-              <ToolbarSelect
-                label="Payment"
-                value={pay}
-                active={pay !== "any"}
-                onChange={setPay}
-                options={[
-                  { value: "any", label: "Any payment" },
-                  { value: "due", label: "Balance due" },
-                  { value: "paid", label: "Paid in full" },
-                ]}
-              />
-              <ToolbarSelect label="Sort" value={sort} onChange={setSort} options={(Object.keys(sortLabels) as Sort[]).map((s) => ({ value: s, label: sortLabels[s] }))} />
-            </div>
+        <div className="flex flex-col gap-2 border-b border-neutral-100 p-3 sm:flex-row sm:p-4">
+          <SearchInput
+            value={q}
+            onChange={(v) => {
+              setQ(v);
+              page.setPage(1);
+            }}
+            placeholder="Search name, phone or code"
+          />
+          {/* Phones and tablets: the views live here instead of the pill row. */}
+          <div className="sm:w-56 lg:hidden">
+            <ToolbarSelect
+              label="Booking views"
+              value={view}
+              active={view !== "all"}
+              onChange={(v) => {
+                setView(v);
+                page.setPage(1);
+              }}
+              options={views.map((v) => ({ value: v.value, label: `${v.label} (${counts[v.value]})` }))}
+            />
           </div>
         </div>
 
@@ -160,25 +106,21 @@ export default function BookingsList() {
           <Empty
             icon={ClipboardList}
             title={filtering ? "No bookings match" : view === "all" ? "No bookings yet" : `Nothing in “${views.find((v) => v.value === view)?.label}”`}
-            text={filtering ? "Try another search, or clear the filters." : view === "all" ? "New bookings will show up here." : "Pick another view above."}
+            text={filtering ? "Try another search." : view === "all" ? "New bookings will show up here." : "Pick another view."}
           >
             {filtering && (
               <button
-                onClick={() => {
-                  setQ("");
-                  setSource("any");
-                  setPay("any");
-                }}
+                onClick={() => setQ("")}
                 className={cn(abtn.outline, "mt-2")}
               >
-                Clear filters
+                Clear search
               </button>
             )}
           </Empty>
         ) : (
           <>
-            {/* Phones and small tablets: one card per booking instead of a sideways-scrolling table. */}
-            <ul className="divide-y divide-neutral-100 md:hidden">
+            {/* Phones and tablets: one card per booking instead of a squeezed table. */}
+            <ul className="divide-y divide-neutral-100 lg:hidden">
               {page.rows.map((b) => (
                 <li key={b.id}>
                   <Link href={detail(b)} className={cn("flex items-center gap-3 px-4 py-3 transition active:bg-emerald-50/60", focusRing, "focus-visible:ring-inset")}>
@@ -189,7 +131,9 @@ export default function BookingsList() {
                         <span className={cn("inline-flex max-w-[50%] shrink-0 truncate rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset", statusStyles[phaseOf(b, now)])}>{statusLabels[phaseOf(b, now)]}</span>
                       </div>
                       <div className="mt-1 flex items-center justify-between gap-2 text-[13px]">
-                        <p className="truncate text-neutral-600">{rangeLabel(b.startHour, b.duration)}</p>
+                        <p className="truncate text-neutral-600">
+                          {dateLabel(b.date, { weekday: "short" })} · {rangeLabel(b.startHour, b.duration)}
+                        </p>
                         <PayShort b={b} />
                       </div>
                     </div>
@@ -199,15 +143,23 @@ export default function BookingsList() {
               ))}
             </ul>
 
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[820px] text-sm">
-                <thead className="border-b border-neutral-200 bg-neutral-50/80 text-left text-xs uppercase tracking-wide text-neutral-500">
+            <div className="hidden overflow-x-auto lg:block">
+              {/* Proportional column widths so wide screens share the extra space instead of stretching one column. */}
+              <table className="w-full min-w-[820px] table-fixed text-sm">
+                <colgroup>
+                  <col className="w-[32%]" />
+                  <col className="w-[22%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[16%]" />
+                </colgroup>
+                <thead className="border-b border-neutral-200 bg-neutral-50 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
                   <tr>
-                    <th className="py-3 pl-4 pr-3 font-medium">Customer</th>
-                    <th className="px-3 py-3 font-medium">Slot</th>
-                    <th className="px-3 py-3 font-medium">Status</th>
-                    <th className="px-3 py-3 font-medium">Payment</th>
-                    <th className="py-3 pr-4 text-right font-medium">
+                    <th className="py-2.5 pl-4 pr-3">Customer</th>
+                    <th className="px-3 py-2.5">Slot</th>
+                    <th className="px-3 py-2.5">Status</th>
+                    <th className="px-3 py-2.5 text-right">Payment</th>
+                    <th className="py-2.5 pr-4">
                       <span className="sr-only">Actions</span>
                     </th>
                   </tr>
@@ -230,37 +182,36 @@ export default function BookingsList() {
 function Row({ b, today, phase }: { b: Booking; today: string; phase: Phase }) {
   const router = useRouter();
   return (
-    <tr onClick={() => router.push(detail(b))} className="group cursor-pointer transition hover:bg-emerald-50/40">
-      <td className="py-4 pl-4 pr-3">
+    <tr onClick={() => router.push(detail(b))} className="group cursor-pointer transition hover:bg-neutral-50">
+      <td className="py-3 pl-4 pr-3">
         <div className="flex items-center gap-3">
           <Avatar name={b.customer.name} />
           <div className="min-w-0">
-            <Link href={detail(b)} onClick={(e) => e.stopPropagation()} className={cn("rounded-sm font-semibold text-neutral-900 hover:text-emerald-800 hover:underline", focusRing)}>
+            <Link href={detail(b)} onClick={(e) => e.stopPropagation()} className={cn("block truncate rounded-sm font-medium text-neutral-900 hover:text-emerald-800", focusRing)}>
               {b.customer.name}
             </Link>
-            <p className="text-[13px] text-neutral-600">
-              <span className="font-mono font-semibold text-emerald-800">{b.code}</span> · {sourceLabels[b.source]}
-              {b.customer.team && <> · {b.customer.team}</>}
+            <p className="truncate text-xs text-neutral-500">
+              <span className="font-mono">{b.code}</span> · {sourceLabels[b.source]}
             </p>
           </div>
         </div>
       </td>
-      <td className="px-3 py-4">
-        <p className="flex flex-wrap items-center gap-1.5 whitespace-nowrap text-neutral-900">
-          {dateLabel(b.date, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
-          {b.date === today && b.status !== "cancelled" && <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-inset ring-emerald-200">Today</span>}
+      <td className="px-3 py-3">
+        <p className="flex items-center gap-1.5 whitespace-nowrap text-neutral-900">
+          {dateLabel(b.date)}
+          {b.date === today && b.status !== "cancelled" && <span className="rounded bg-emerald-50 px-1.5 text-[11px] font-medium text-emerald-700">Today</span>}
         </p>
-        <p className="text-[13px] text-neutral-600">
+        <p className="whitespace-nowrap text-xs text-neutral-500">
           {rangeLabel(b.startHour, b.duration)} · {b.duration} hr{b.duration > 1 ? "s" : ""}
         </p>
       </td>
-      <td className="px-3 py-4">
+      <td className="px-3 py-3">
         <StatusBadge booking={b} />
       </td>
-      <td className="px-3 py-4">
+      <td className="px-3 py-3 text-right">
         <PayLine b={b} />
       </td>
-      <td className="py-4 pr-4">
+      <td className="py-3 pr-4">
         <div className="flex items-center justify-end gap-2">
           <RowAction b={b} phase={phase} />
           <ChevronRight className="size-4 text-neutral-400 transition group-hover:translate-x-0.5 group-hover:text-emerald-700" aria-hidden />
@@ -298,7 +249,6 @@ function PayShort({ b }: { b: Booking }) {
 function PayLine({ b }: { b: Booking }) {
   const due = dueOf(b);
   const paid = paidOf(b);
-  const advance = b.payments.find((p) => p.kind === "advance");
   const [text, tone] =
     b.status === "cancelled"
       ? [paid > 0 ? `${taka(paid)} kept` : "No charge", "text-neutral-600"]
@@ -309,16 +259,13 @@ function PayLine({ b }: { b: Booking }) {
           : ["Not paid", "text-rose-700"];
   return (
     <div className="whitespace-nowrap">
-      <p className="font-semibold tabular-nums text-neutral-900">{taka(b.total)}</p>
-      <p className={cn("text-[13px] font-medium tabular-nums", tone)}>
-        {text}
-        {b.status === "pending" && advance && <span className="font-normal text-neutral-500"> · {payLabels[advance.method]} advance</span>}
-      </p>
+      <p className="font-medium tabular-nums text-neutral-900">{taka(b.total)}</p>
+      <p className={cn("text-xs tabular-nums", tone)}>{text}</p>
     </div>
   );
 }
 
-const actionBase = cn("inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold shadow-sm transition active:scale-[0.98]", focusRing);
+const actionBase = cn("inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold shadow-sm transition active:scale-[0.98]", focusRing);
 const actionTones = {
   confirm: cn(actionBase, "bg-emerald-600 text-white hover:bg-emerald-700"),
   collect: cn(actionBase, "border border-neutral-300 bg-white text-neutral-800 shadow-none hover:border-emerald-400 hover:text-emerald-800"),
@@ -342,7 +289,7 @@ function RowAction({ b, phase }: { b: Booking; phase: Phase }) {
         }}
         className={actionTones.confirm}
       >
-        <BadgeCheck className="size-4" aria-hidden /> Confirm
+        <BadgeCheck className="size-3.5" aria-hidden /> Confirm
       </button>
     );
   // The balance is paid at the ground, so collecting is offered once the game has started.
@@ -356,7 +303,7 @@ function RowAction({ b, phase }: { b: Booking; phase: Phase }) {
         }}
         className={actionTones.collect}
       >
-        <Wallet className="size-4" aria-hidden /> Collect
+        <Wallet className="size-3.5" aria-hidden /> Collect
       </button>
     );
   return null;

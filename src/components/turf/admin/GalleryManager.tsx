@@ -77,7 +77,7 @@ function AddModal({ onClose }: { onClose: () => void }) {
   return (
     <Modal open onClose={onClose} title="Add photos">
       <div className="space-y-3">
-        <Field label="Caption" hint="Optional — shown on the photo on the site">
+        <Field label="Caption">
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Friday night league" className={inputClass} />
         </Field>
         <div className="border-t border-neutral-100 pt-3">
@@ -140,7 +140,7 @@ export default function GalleryManager() {
   const iconBtn = "flex size-8 items-center justify-center rounded-full bg-white/90 text-neutral-700 shadow-sm backdrop-blur transition hover:bg-white hover:text-emerald-700 disabled:opacity-40";
 
   return (
-    <div className="mx-auto max-w-[1600px]">
+    <div>
       <div className={cn(cardClass, "mb-3 flex items-center gap-2 sm:mb-4")}>
         <div className="min-w-0 flex-1 [&>div]:border-b-0">
           <ViewPills
@@ -161,7 +161,7 @@ export default function GalleryManager() {
 
       {list.length === 0 ? (
         <div className={cardClass}>
-          <Empty icon={Images} title={gallery.length ? "No photos here" : "No photos yet"} text={gallery.length ? "Pick another filter above." : "The gallery section is hidden on the site until you add a photo."} />
+          <Empty icon={Images} title={gallery.length ? "No photos here" : "No photos yet"} />
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
@@ -220,7 +220,7 @@ export default function GalleryManager() {
                     </span>
                   </div>
                 </div>
-                <p className={cn("mt-1.5 truncate px-0.5 text-[13px] font-semibold sm:text-sm", g.visible ? "text-neutral-900" : "text-neutral-500")}>{g.title || "No caption"}</p>
+                {g.title && <p className={cn("mt-1.5 truncate px-0.5 text-[13px] font-semibold sm:text-sm", g.visible ? "text-neutral-900" : "text-neutral-500")}>{g.title}</p>}
               </article>
             );
           })}

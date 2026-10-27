@@ -99,7 +99,7 @@ export function Panel({ title, icon: Icon, action, children, className }: { titl
 /** Label/value row with an icon, as on the hotel booking page. */
 export function InfoRow({ icon: Icon, label, children }: { icon: React.ComponentType<{ className?: string }>; label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[8rem_1fr] items-start gap-3 border-t border-neutral-100 py-3 text-sm first:border-t-0 sm:grid-cols-[9rem_1fr]">
+    <div className="grid grid-cols-[6.5rem_1fr] items-start gap-3 border-t border-neutral-100 py-3 text-sm first:border-t-0 sm:grid-cols-[9rem_1fr]">
       <dt className="flex items-center gap-2 text-neutral-500">
         <Icon className="size-4 shrink-0 text-neutral-400" />
         {label}
@@ -151,7 +151,7 @@ const statusDots: Record<Phase, string> = {
 export function StatusBadge({ booking, className }: { booking: Booking; className?: string }) {
   const phase = phaseOf(booking, useNow(30_000));
   return (
-    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset", statusStyles[phase], className)}>
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset", statusStyles[phase], className)}>
       <span aria-hidden className={cn("size-1.5 rounded-full", statusDots[phase])} />
       {statusLabels[phase]}
     </span>
@@ -160,7 +160,7 @@ export function StatusBadge({ booking, className }: { booking: Booking; classNam
 
 export function Avatar({ name }: { name: string }) {
   return (
-    <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[13px] font-semibold text-emerald-800">
+    <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-semibold text-emerald-800">
       {initials(name)}
     </span>
   );
@@ -180,7 +180,7 @@ export function Empty({ icon: Icon, title, text, children }: { icon: React.Compo
 /** Underlined tab strip with counts, used at the top of table and editor cards. */
 export function Tabs<T extends string>({ value, onChange, tabs }: { value: T; onChange: (v: T) => void; tabs: { value: T; label: string; count?: number; dot?: string }[] }) {
   return (
-    <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-neutral-100 px-3 [scrollbar-width:none]">
+    <div role="tablist" className="flex overflow-x-auto border-b border-neutral-100 px-1 [scrollbar-width:none] sm:gap-1 sm:px-3">
       {tabs.map((t) => {
         const selected = value === t.value;
         return (
@@ -190,7 +190,7 @@ export function Tabs<T extends string>({ value, onChange, tabs }: { value: T; on
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(t.value)}
-            className={cn("relative flex shrink-0 items-center gap-2 px-3 py-3.5 text-sm font-medium transition", selected ? "text-neutral-900" : "text-neutral-500 hover:text-neutral-800")}
+            className={cn("relative flex shrink-0 items-center gap-1.5 px-2.5 py-3.5 text-sm font-medium transition sm:gap-2 sm:px-3", selected ? "text-neutral-900" : "text-neutral-500 hover:text-neutral-800")}
           >
             {t.dot && <span className={cn("size-2 rounded-full", t.dot)} />}
             {t.label}

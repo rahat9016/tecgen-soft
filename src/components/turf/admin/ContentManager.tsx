@@ -7,7 +7,7 @@ import { turfImages } from "@/src/lib/turf-store/seed";
 import { groundOf, saveContent, saveSettings, updateCourt, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Service, SiteContent, TurfDB } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
-import { abtn, AddButton, Field, Group, inputClass, SaveBar, Tabs, textareaClass } from "./ui";
+import { abtn, AddButton, Field, Group, inputClass, SaveBar, Tabs, textareaClass, ToolbarSelect } from "./ui";
 
 type Tab = "venue" | "hero" | "ground" | "services" | "about";
 
@@ -131,9 +131,15 @@ export default function ContentManager() {
   ];
 
   return (
-    <div className="mx-auto max-w-[1600px]">
+    <div>
       <section className="rounded-md border border-neutral-200 bg-white">
-        <Tabs value={tab} onChange={setTab} tabs={sections} />
+        {/* Phones: the sections as one dropdown, so none hide off-screen. */}
+        <div className="border-b border-neutral-100 p-3 sm:hidden">
+          <ToolbarSelect label="Section" value={tab} onChange={setTab} options={sections.map((s) => ({ value: s.value, label: s.label }))} />
+        </div>
+        <div className="hidden sm:block">
+          <Tabs value={tab} onChange={setTab} tabs={sections} />
+        </div>
 
         <div className="p-3 sm:p-6">
           {tab === "venue" && (
@@ -147,7 +153,7 @@ export default function ContentManager() {
                 </Field>
               </Group>
               <Group title="Contact">
-                <Field label="Phone" hint="Shown on the site, and the number customers send bKash/Nagad advances to">
+                <Field label="Phone" hint="Also the bKash/Nagad number">
                   <input value={draft.venue.phone} onChange={(e) => setVenue("phone", e.target.value)} className={inputClass} />
                 </Field>
               </Group>
@@ -157,7 +163,7 @@ export default function ContentManager() {
           {tab === "hero" && (
             <div className="grid gap-3 sm:gap-4">
               <Group title="Text">
-                <Field label="Headline" hint="Press Enter to start a new line">
+                <Field label="Headline">
                   <textarea value={c.heroTitle} onChange={(e) => setContent("heroTitle", e.target.value)} rows={2} className={textareaClass} />
                 </Field>
                 <Field label="Intro" className="mt-3">
@@ -220,7 +226,6 @@ export default function ContentManager() {
 
           {tab === "services" && (
             <div className="space-y-2">
-              <p className="mb-3 text-sm text-neutral-500">Rows in the “More than an hour on the pitch” section. Online services link to booking; the rest show “Call to arrange”.</p>
               {c.services.map((s, i) => (
                 <ListRow
                   key={i}
@@ -250,7 +255,7 @@ export default function ContentManager() {
 
           {tab === "about" && (
             <Group title="About section">
-              <Field label="Headline" hint="Press Enter to start a new line">
+              <Field label="Headline">
                 <textarea value={c.aboutTitle} onChange={(e) => setContent("aboutTitle", e.target.value)} rows={2} className={textareaClass} />
               </Field>
               <Field label="Text" className="mt-3">
