@@ -8,6 +8,7 @@ import { ArrowUpRight, Phone, Search, Ticket as TicketIcon } from "lucide-react"
 import { dateLabel, formatDuration, hourLabel, payLabels, rangeLabel, relativeDay, taka } from "@/src/lib/turf-store/format";
 import { dueOf, endMs, paidOf, refundState, startMs, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Booking } from "@/src/lib/turf-store/types";
+import { useT } from "@/src/lib/turf-store/i18n";
 import { cn } from "@/src/lib/utils";
 import { BookingStatusBadge, Loader, tbtn } from "./ui";
 
@@ -58,6 +59,7 @@ function parseQuery(raw: string): Query | { error: string } {
 
 export default function MyBookings() {
   const db = useTurfDB();
+  const tr = useT();
   const hydrated = useHydrated();
   const now = useNow(1000);
   const params = useSearchParams();
@@ -111,8 +113,8 @@ export default function MyBookings() {
   // Only tabs with bookings in them; the whole list disappears when there's nothing beyond the featured ticket.
   const groups = (
     [
-      { k: "upcoming", label: "More upcoming", items: upcoming.slice(query?.kind === "phone" ? 1 : 0) },
-      { k: "past", label: "Past", items: past },
+      { k: "upcoming", label: tr("More upcoming"), items: upcoming.slice(query?.kind === "phone" ? 1 : 0) },
+      { k: "past", label: tr("Past"), items: past },
     ] as const
   ).filter((g) => g.items.length > 0);
   const shown = groups.find((g) => g.k === tab) ?? groups[0];
@@ -123,13 +125,13 @@ export default function MyBookings() {
       <div className={cn("relative isolate flex overflow-hidden bg-emerald-950 pt-32", query ? "pb-14" : "min-h-svh items-center pb-16")}>
         <PitchBackdrop />
         <div className="mx-auto w-full max-w-2xl px-4 text-center">
-          <h1 className="text-fluid-6xl font-semibold tracking-tight text-white">Find your booking</h1>
+          <h1 className="text-fluid-6xl font-semibold tracking-tight text-white">{tr("Find your booking")}</h1>
           <p className="mx-auto mt-4 max-w-md text-base leading-relaxed text-white/65">
-            Your mobile number shows every booking you&apos;ve made. A booking code shows just that one.
+            {tr("Your mobile number shows every booking you've made. A booking code shows just that one.")}
           </p>
 
           <form onSubmit={submit} noValidate className="mt-10 text-left">
-            <div role="tablist" aria-label="Look up by" className="mx-auto flex w-fit rounded-full bg-white/[0.07] p-1 ring-1 ring-white/10">
+            <div role="tablist" aria-label={tr("Look up by")} className="mx-auto flex w-fit rounded-full bg-white/[0.07] p-1 ring-1 ring-white/10">
               {(
                 [
                   ["phone", "Mobile number"],
@@ -151,7 +153,7 @@ export default function MyBookings() {
                     mode === k ? "bg-white text-emerald-950" : "text-white/70 hover:text-white"
                   )}
                 >
-                  {l}
+                  {tr(l)}
                 </button>
               ))}
             </div>
@@ -170,7 +172,7 @@ export default function MyBookings() {
               <input
                 id="mb-q"
                 autoFocus={!query}
-                aria-label={mode === "phone" ? "Mobile number" : "Booking code"}
+                aria-label={mode === "phone" ? tr("Mobile number") : tr("Booking code")}
                 autoComplete={mode === "phone" ? "tel" : "off"}
                 inputMode={mode === "phone" ? "tel" : "text"}
                 className="h-14 min-w-0 flex-1 bg-transparent text-lg tracking-wide text-neutral-900 outline-none placeholder:text-neutral-400"
@@ -188,11 +190,11 @@ export default function MyBookings() {
                 aria-describedby="mb-hint"
               />
               <button className={cn(tbtn.lime, "h-14 px-7 text-base")}>
-                <Search className="size-4" /> Find
+                <Search className="size-4" /> {tr("Find")}
               </button>
             </div>
             <p id="mb-hint" className={cn("mt-3 text-center text-sm", error ? "text-rose-300" : "text-white/50")}>
-              {error || (mode === "phone" ? "The number you entered when you booked." : "Shown after you paid the advance — looks like TH-1042.")}
+              {error ? tr(error) : mode === "phone" ? tr("The number you entered when you booked.") : tr("Shown after you paid the advance — looks like TH-1042.")}
             </p>
           </form>
         </div>
@@ -203,13 +205,13 @@ export default function MyBookings() {
           {query && !mine.length && (
             <Reveal className="mt-12 text-center">
               <p className="text-lg font-medium text-neutral-900">
-                {query.kind === "phone" ? "No bookings on this number yet." : `No booking found with code ${query.value}.`}
+                {query.kind === "phone" ? tr("No bookings on this number yet.") : tr("No booking found with code {code}.", { code: query.value })}
               </p>
               <p className="mt-1 text-sm text-neutral-500">
-                {query.kind === "phone" ? "Booked with a different number? Change it above." : "Check the code, or look up with your mobile number instead."}
+                {query.kind === "phone" ? tr("Booked with a different number? Change it above.") : tr("Check the code, or look up with your mobile number instead.")}
               </p>
               <Link href="/turf/book" className={cn(tbtn.green, "mt-6")}>
-                Book a slot
+                {tr("Book a slot")}
               </Link>
             </Reveal>
           )}
@@ -274,6 +276,7 @@ function PitchBackdrop() {
 /** The featured booking, styled as a match ticket with a tear-off stub carrying the code. */
 function Ticket({ b, now }: { b: Booking; now: number }) {
   const db = useTurfDB();
+  const tr = useT();
   const court = db.courts.find((c) => c.id === b.courtId);
   const until = startMs(b) - now;
   const live = until <= 0 && endMs(b) > now && b.status !== "cancelled";
@@ -291,7 +294,7 @@ function Ticket({ b, now }: { b: Booking; now: number }) {
           <div className="mb-5 flex flex-wrap items-center gap-3">
             <BookingStatusBadge booking={b} />
             {b.status !== "cancelled" ? (
-              <span className="text-sm font-medium text-emerald-700">{live ? "Playing now" : `Kick-off in ${formatDuration(until)}`}</span>
+              <span className="text-sm font-medium text-emerald-700">{live ? tr("Playing now") : tr("Kick-off in {time}", { time: formatDuration(until) })}</span>
             ) : (
               <RefundNote b={b} now={now} />
             )}
@@ -300,38 +303,38 @@ function Ticket({ b, now }: { b: Booking; now: number }) {
         <p className="text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">
           {relativeDay(b.date) === dateLabel(b.date)
             ? dateLabel(b.date, { weekday: "long", day: "numeric", month: "long" })
-            : `${relativeDay(b.date)}, ${dateLabel(b.date, { day: "numeric", month: "long" })}`}
+            : `${tr(relativeDay(b.date))}, ${dateLabel(b.date, { day: "numeric", month: "long" })}`}
         </p>
         <p className="mt-1 text-xl text-neutral-700">
-          {rangeLabel(b.startHour, b.duration)} <span className="text-neutral-400">·</span> {b.duration} hr{b.duration > 1 ? "s" : ""}
+          {rangeLabel(b.startHour, b.duration)} <span className="text-neutral-400">·</span> {tr(b.duration > 1 ? "{n} hrs" : "{n} hr", { n: b.duration })}
         </p>
         <p className="mt-1 text-sm text-neutral-500">
-          {court?.name ?? "Ground"}
-          {court && ` · ${court.size.split(" · ")[0]}`}
+          {court ? tr(court.name) : tr("Ground")}
+          {court && ` · ${tr(court.size.split(" · ")[0])}`}
           {b.customer.team && ` · ${b.customer.team}`}
         </p>
 
         <dl className="mt-6 grid grid-cols-3 border-t border-neutral-200 pt-4 text-sm">
           <div>
-            <dt className="text-neutral-500">Total</dt>
+            <dt className="text-neutral-500">{tr("Total")}</dt>
             <dd className="mt-0.5 font-semibold text-neutral-900">{taka(b.total)}</dd>
           </div>
           <div>
-            <dt className="text-neutral-500">Paid</dt>
+            <dt className="text-neutral-500">{tr("Paid")}</dt>
             <dd className="mt-0.5 font-semibold text-neutral-900">
               {taka(paid)}
-              {b.payments[0] && <span className="font-normal text-neutral-500"> · {payLabels[b.payments[0].method]}</span>}
+              {b.payments[0] && <span className="font-normal text-neutral-500"> · {tr(payLabels[b.payments[0].method])}</span>}
             </dd>
           </div>
           <div>
-            <dt className="text-neutral-500">Due at venue</dt>
-            <dd className={cn("mt-0.5 font-semibold", due > 0 ? "text-orange-600" : "text-emerald-700")}>{due > 0 ? taka(due) : "Nothing"}</dd>
+            <dt className="text-neutral-500">{tr("Due at venue")}</dt>
+            <dd className={cn("mt-0.5 font-semibold", due > 0 ? "text-orange-600" : "text-emerald-700")}>{due > 0 ? taka(due) : tr("Nothing")}</dd>
           </div>
         </dl>
 
         <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm">
           <a href={directions} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-emerald-800 hover:underline">
-            Get directions <ArrowUpRight className="size-4" />
+            {tr("Get directions")} <ArrowUpRight className="size-4" />
           </a>
         </div>
       </div>
@@ -345,10 +348,10 @@ function Ticket({ b, now }: { b: Booking; now: number }) {
       >
         <span className="absolute -left-3 -top-3 hidden size-6 rounded-full bg-neutral-50 md:block" />
         <span className="absolute -bottom-3 -left-3 hidden size-6 rounded-full bg-neutral-50 md:block" />
-        <p className="text-xs uppercase tracking-[0.16em] text-white/50">Booking code</p>
+        <p className="text-xs uppercase tracking-[0.16em] text-white/50">{tr("Booking code")}</p>
         <p className="font-mono text-3xl font-semibold tracking-wider text-white">{b.code}</p>
-        <p className="mt-2 text-xs text-white/60">Show this at the front desk</p>
-        <p className="mt-4 text-xs text-white/50">Kick-off {hourLabel(b.startHour)}</p>
+        <p className="mt-2 text-xs text-white/60">{tr("Show this at the front desk")}</p>
+        <p className="mt-4 text-xs text-white/50">{tr("Kick-off {time}", { time: hourLabel(b.startHour) })}</p>
       </motion.div>
     </article>
   );
@@ -356,13 +359,20 @@ function Ticket({ b, now }: { b: Booking; now: number }) {
 
 /** What happened to the money on a cancelled booking. */
 function RefundNote({ b, now, className }: { b: Booking; now: number; className?: string }) {
+  const tr = useT();
   const r = refundState(b, now);
-  const text = { owed: `Refund of ${taka(r.amount)} on its way`, refunded: `${taka(r.amount)} refunded`, kept: "No refund", none: "Nothing was paid" }[r.kind];
+  const text = {
+    owed: tr("Refund of {amount} on its way", { amount: taka(r.amount) }),
+    refunded: tr("{amount} refunded", { amount: taka(r.amount) }),
+    kept: tr("No refund"),
+    none: tr("Nothing was paid"),
+  }[r.kind];
   return <span className={cn("text-sm font-medium", r.kind === "owed" ? "text-violet-700" : r.kind === "refunded" ? "text-emerald-700" : "text-neutral-500", className)}>{text}</span>;
 }
 
 function Row({ b, index }: { b: Booking; index: number }) {
   const now = useNow(60_000);
+  const tr = useT();
   const due = dueOf(b);
   const reduce = useReducedMotion();
   return (
@@ -383,7 +393,7 @@ function Row({ b, index }: { b: Booking; index: number }) {
       {b.status === "cancelled" ? (
         <RefundNote b={b} now={now} className="font-normal max-md:hidden" />
       ) : (
-        <p className="text-sm text-neutral-500 max-md:hidden">{due > 0 ? `${taka(due)} due at venue` : "Fully paid"}</p>
+        <p className="text-sm text-neutral-500 max-md:hidden">{due > 0 ? tr("{amount} due at venue", { amount: taka(due) }) : tr("Fully paid")}</p>
       )}
       <p className="text-right font-semibold text-neutral-900">{taka(b.total)}</p>
     </motion.li>

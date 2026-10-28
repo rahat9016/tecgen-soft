@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import { Loader2, Trophy } from "lucide-react";
 import { GiSoccerBall } from "react-icons/gi";
 import { statusLabels, statusStyles } from "@/src/lib/turf-store/format";
+import { setLang, useLang, useT } from "@/src/lib/turf-store/i18n";
 import { phaseOf, useNow } from "@/src/lib/turf-store/store";
 import type { Booking, Sport } from "@/src/lib/turf-store/types";
 import { cn } from "@/src/lib/utils";
@@ -41,6 +43,7 @@ export function LiveDot({ className }: { className?: string }) {
 }
 
 export function LiveBadge({ now, dark }: { now: number; dark?: boolean }) {
+  const t = useT();
   return (
     <span
       className={cn(
@@ -49,7 +52,7 @@ export function LiveBadge({ now, dark }: { now: number; dark?: boolean }) {
       )}
     >
       <LiveDot />
-      Live
+      {t("Live")}
       {now > 0 && (
         <span className="tabular-nums opacity-70">
           · {new Date(now).toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })}
@@ -61,6 +64,7 @@ export function LiveBadge({ now, dark }: { now: number; dark?: boolean }) {
 
 export function BookingStatusBadge({ booking, className }: { booking: Booking; className?: string }) {
   const phase = phaseOf(booking, useNow(30_000));
+  const t = useT();
   return (
     <span
       className={cn(
@@ -70,7 +74,7 @@ export function BookingStatusBadge({ booking, className }: { booking: Booking; c
       )}
     >
       {phase === "playing" && <LiveDot className="size-1.5" />}
-      {statusLabels[phase]}
+      {t(statusLabels[phase])}
     </span>
   );
 }
@@ -118,5 +122,48 @@ export function Chip({
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * EN / বাংলা switch for every /turf page — the booking site and the admin share the choice, remembered
+ * in this browser. `dark` is the glass style for the site's dark header.
+ */
+export function LanguageSwitch({ dark, className }: { dark?: boolean; className?: string }) {
+  const lang = useLang();
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Language / ভাষা"
+      className={cn(
+        "flex h-9 shrink-0 items-center rounded-full p-0.5 text-xs font-semibold sm:h-10 sm:p-1 sm:text-[13px]",
+        dark ? "bg-white/10 ring-1 ring-white/20" : "border border-neutral-200 bg-white",
+        className
+      )}
+    >
+      {(
+        [
+          ["en", "EN"],
+          ["bn", "বাংলা"],
+        ] as const
+      ).map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          role="radio"
+          aria-checked={lang === value}
+          onClick={() => setLang(value)}
+          className={cn(
+            "h-7.5 rounded-full px-2.5 transition sm:h-8 sm:px-3",
+            lang === value ? (dark ? "bg-lime-400 text-emerald-950" : "bg-emerald-700 text-white") : dark ? "text-white/80 hover:text-white" : "text-neutral-600 hover:text-emerald-700"
+          )}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
   );
 }

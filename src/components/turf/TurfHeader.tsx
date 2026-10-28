@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, Phone, X } from "lucide-react";
 import { useTurfDB } from "@/src/lib/turf-store/store";
+import { useT } from "@/src/lib/turf-store/i18n";
 import { cn } from "@/src/lib/utils";
-import { TurfLogo } from "./ui";
+import { LanguageSwitch, TurfLogo } from "./ui";
 
 const links = [
   { href: "/turf", label: "Home" },
@@ -23,6 +24,7 @@ const DARK_TOP = ["/turf", "/turf/my-bookings"];
 export default function TurfHeader() {
   const pathname = usePathname();
   const { settings } = useTurfDB();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const glass = DARK_TOP.includes(pathname);
@@ -52,7 +54,7 @@ export default function TurfHeader() {
             glass && "h-16 rounded-2xl px-3 ring-1 md:px-4"
           )}
         >
-          <Link href="/turf" aria-label="TurfHub home">
+          <Link href="/turf" aria-label={t("TurfHub home")}>
             <TurfLogo />
           </Link>
 
@@ -68,18 +70,19 @@ export default function TurfHeader() {
                     active ? "bg-white text-emerald-950" : "text-white/80 hover:bg-white/10 hover:text-white"
                   )}
                 >
-                  {l.label}
+                  {t(l.label)}
                 </Link>
               );
             })}
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            <LanguageSwitch dark />
             <a
               href={`tel:${settings.phone.replace(/[^+\d]/g, "")}`}
               className="hidden items-center gap-2 rounded-full bg-white py-1 pl-4 pr-1 text-sm font-medium text-emerald-950 sm:flex"
             >
-              Contact
+              {t("Contact")}
               <span className="flex size-8 items-center justify-center rounded-full bg-emerald-800 text-white">
                 <Phone className="size-4" />
               </span>
@@ -88,11 +91,11 @@ export default function TurfHeader() {
               href="/turf/book"
               className="hidden h-10 items-center rounded-full bg-lime-400 px-5 text-sm font-semibold text-emerald-950 hover:bg-lime-300 md:flex"
             >
-              Book now
+              {t("Book now")}
             </Link>
             <button
               onClick={() => setOpen((o) => !o)}
-              aria-label="Toggle menu"
+              aria-label={t("Toggle menu")}
               className="flex size-10 items-center justify-center rounded-full bg-white/10 text-white lg:hidden"
             >
               {open ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -110,11 +113,11 @@ export default function TurfHeader() {
           >
             {links.map((l) => (
               <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="rounded-xl px-4 py-3 text-sm text-white hover:bg-white/10">
-                {l.label}
+                {t(l.label)}
               </Link>
             ))}
             <Link href="/turf/admin" onClick={() => setOpen(false)} className="rounded-xl px-4 py-3 text-sm text-lime-300 hover:bg-white/10">
-              Admin panel
+              {t("Admin panel")}
             </Link>
           </nav>
         )}

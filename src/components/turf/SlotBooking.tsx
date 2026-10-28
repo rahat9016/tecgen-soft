@@ -44,6 +44,7 @@ import {
   type SlotInfo,
 } from "@/src/lib/turf-store/store";
 import type { Court, PayMethod } from "@/src/lib/turf-store/types";
+import { useT } from "@/src/lib/turf-store/i18n";
 import { cn } from "@/src/lib/utils";
 import DateCalendar from "./DateCalendar";
 import { AmountChoice, BD_PHONE, MethodTiles, TRX_ID, TrxIdField, WalletDetails } from "./pay";
@@ -81,6 +82,7 @@ const cellNote = (info: SlotInfo) =>
           : "Past";
 
 export default function SlotBooking() {
+  const tr = useT();
   const db = useTurfDB();
   const hydrated = useHydrated();
   const now = useNow(1000);
@@ -126,9 +128,9 @@ export default function SlotBooking() {
   useEffect(() => {
     if (paying && hydrated && clientId && !myHold) {
       setPaying(false);
-      toast.warn("Your slot hold expired. Pick the slot again to continue.");
+      toast.warn(tr("Your slot hold expired. Pick the slot again to continue."));
     }
-  }, [paying, myHold, hydrated, clientId]);
+  }, [paying, myHold, hydrated, clientId, tr]);
 
   const selection = court && start !== null ? { courtId: court.id, date: day, startHour: start, duration } : null;
   const conflict = selection && hydrated ? findConflict(db, selection, { clientId, now }) : null;
@@ -152,7 +154,7 @@ export default function SlotBooking() {
     if (!selection) return;
     const r = holdSlot(selection, clientId);
     if (!r.ok) {
-      toast.error(r.error);
+      toast.error(tr(r.error));
       return;
     }
     setPaying(true);
@@ -166,8 +168,8 @@ export default function SlotBooking() {
   const weekDays = days.slice(week * 7, week * 7 + 7);
   const { peakStartHour, advancePercent, holdMinutes, maxDuration } = db.settings;
   const groups = [
-    { label: `Morning & Afternoon`, hs: upcoming.filter((h) => h < peakStartHour) },
-    { label: "Evening", hs: upcoming.filter((h) => h >= peakStartHour) },
+    { label: tr("Morning & Afternoon"), hs: upcoming.filter((h) => h < peakStartHour) },
+    { label: tr("Evening"), hs: upcoming.filter((h) => h >= peakStartHour) },
   ];
   const offPeakOnly = peakHours === 0;
   const allPeak = selection ? peakHours === selection.duration : false;
@@ -176,10 +178,11 @@ export default function SlotBooking() {
     <div className="bg-[#f7f6f1]">
       <div className="mx-auto max-w-7xl px-4 pb-16 pt-6 md:px-8 md:pt-10">
         {/* The payment step opens straight on the form; its heading stays for screen readers. */}
-        <h1 className={cn("text-fluid-6xl font-semibold tracking-tight text-neutral-900", paying && "sr-only")}>
-          {paying ? "Complete your booking" : "Book the ground"}
+        {/* Not cn(): tailwind-merge reads text-fluid-6xl as a colour and drops it next to text-neutral-900. */}
+        <h1 className={`text-fluid-6xl font-semibold tracking-tight text-neutral-900 ${paying ? "sr-only" : ""}`}>
+          {paying ? tr("Complete your booking") : tr("Book the ground")}
         </h1>
-        {!paying && <p className="mt-3 text-base text-neutral-500 md:text-lg">Pick your day. Choose your time. Get playing.</p>}
+        {!paying && <p className="mt-3 text-base text-neutral-500 md:text-lg">{tr("Pick your day. Choose your time. Get playing.")}</p>}
 
         {paying && selection && price ? (
           <div>
@@ -249,7 +252,7 @@ export default function SlotBooking() {
                 {/* 01 Day */}
                 <Step n={1} state="done">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <StepTitle n={1}>Choose a day</StepTitle>
+                    <StepTitle n={1}>{tr("Choose a day")}</StepTitle>
                     <div className="flex items-center gap-2 text-sm text-neutral-600 max-sm:w-full">
                       <DateCalendar
                         value={day}
@@ -262,7 +265,7 @@ export default function SlotBooking() {
                           setWeekPick(null);
                         }}
                       >
-                        <button aria-label="Open calendar" className="-ml-2 flex h-8 items-center gap-2 rounded-lg px-2 transition hover:bg-neutral-100 hover:text-emerald-800">
+                        <button aria-label={tr("Open calendar")} className="-ml-2 flex h-8 items-center gap-2 rounded-lg px-2 transition hover:bg-neutral-100 hover:text-emerald-800">
                           {new Date(`${weekDays[0]}T00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
                           <CalendarDays className="size-4" />
                         </button>
@@ -270,7 +273,7 @@ export default function SlotBooking() {
                       <button
                         onClick={() => setWeekPick(week - 1)}
                         disabled={week === 0}
-                        aria-label="Previous week"
+                        aria-label={tr("Previous week")}
                         className="flex size-8 items-center max-sm:ml-auto justify-center rounded-lg hover:bg-neutral-100 disabled:opacity-30"
                       >
                         <ChevronLeft className="size-4" />
@@ -278,7 +281,7 @@ export default function SlotBooking() {
                       <button
                         onClick={() => setWeekPick(week + 1)}
                         disabled={week >= weeks - 1}
-                        aria-label="Next week"
+                        aria-label={tr("Next week")}
                         className="flex size-8 items-center justify-center rounded-lg hover:bg-neutral-100 disabled:opacity-30"
                       >
                         <ChevronRight className="size-4" />
@@ -317,7 +320,7 @@ export default function SlotBooking() {
 
                 {/* 02 Length */}
                 <Step n={2} state="done">
-                  <StepTitle n={2}>How long?</StepTitle>
+                  <StepTitle n={2}>{tr("How long?")}</StepTitle>
                   <div className="mt-4 flex gap-2 sm:flex-wrap">
                     {Array.from({ length: maxDuration }, (_, i) => i + 1).map((d) => {
                       const bad = start !== null && !!findConflict(db, { courtId: court.id, date: day, startHour: start, duration: d }, { clientId, now });
@@ -328,11 +331,11 @@ export default function SlotBooking() {
                           onClick={() => setDuration(d)}
                           aria-pressed={d === duration}
                           className={cn(
-                            "h-11 flex-1 rounded-lg border px-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-30 sm:flex-none sm:px-6",
+                            "h-11 min-w-0 flex-1 whitespace-nowrap rounded-lg border px-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-30 sm:flex-none sm:px-6",
                             d === duration ? "border-emerald-900 bg-emerald-900 text-white" : "border-neutral-200 text-neutral-800 hover:border-emerald-700"
                           )}
                         >
-                          {d} hour{d > 1 ? "s" : ""}
+                          {tr(d > 1 ? "{n} hours" : "{n} hour", { n: d })}
                         </button>
                       );
                     })}
@@ -342,16 +345,16 @@ export default function SlotBooking() {
                 {/* 03 Kick-off */}
                 <Step n={3} state={start !== null ? "done" : "active"} last>
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <StepTitle n={3}>Pick your kick-off</StepTitle>
+                    <StepTitle n={3}>{tr("Pick your kick-off")}</StepTitle>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-neutral-600">
                       <span className="flex items-center gap-1.5">
-                        <span className="size-3.5 rounded-full border border-neutral-300" /> Available
+                        <span className="size-3.5 rounded-full border border-neutral-300" /> {tr("Available")}
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <span className="size-3.5 rounded-full bg-lime-400" /> Selected
+                        <span className="size-3.5 rounded-full bg-lime-400" /> {tr("Selected")}
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <span className="size-3.5 rounded-full bg-neutral-200" /> Booked
+                        <span className="size-3.5 rounded-full bg-neutral-200" /> {tr("Booked")}
                       </span>
                     </div>
                   </div>
@@ -371,7 +374,7 @@ export default function SlotBooking() {
                     </div>
                   ) : upcoming.length === 0 ? (
                     <p className="mt-5 rounded-lg bg-neutral-50 px-4 py-8 text-center text-sm text-neutral-600">
-                      No kick-off times left on this day.{" "}
+                      {tr("No kick-off times left on this day.")}{" "}
                       {days[days.indexOf(day) + 1] && (
                         <button
                           onClick={() => {
@@ -380,7 +383,7 @@ export default function SlotBooking() {
                           }}
                           className="font-semibold text-emerald-800 underline"
                         >
-                          See the next day
+                          {tr("See the next day")}
                         </button>
                       )}
                     </p>
@@ -412,15 +415,17 @@ export default function SlotBooking() {
                                   >
                                     <span className={cn("block whitespace-nowrap text-sm font-semibold tabular-nums", !clickable && !selected && "line-through decoration-neutral-300")}>{clock(h)}</span>
                                     <span className={cn("mt-0.5 block text-xs leading-tight", selected ? "text-emerald-950/80" : clickable ? "text-emerald-700" : "text-neutral-400")}>
-                                      {selected
-                                        ? "Selected"
-                                        : clickable
-                                          ? "Available"
-                                          : info.kind === "blocked"
-                                            ? "Closed"
-                                            : info.kind === "held"
-                                              ? "Being paid"
-                                              : "Booked"}
+                                      {tr(
+                                        selected
+                                          ? "Selected"
+                                          : clickable
+                                            ? "Available"
+                                            : info.kind === "blocked"
+                                              ? "Closed"
+                                              : info.kind === "held"
+                                                ? "Being paid"
+                                                : "Booked"
+                                      )}
                                     </span>
                                   </button>
                                 );
@@ -438,47 +443,45 @@ export default function SlotBooking() {
                   <div className="flex justify-between gap-3 py-1.5">
                     <dt className="text-white/80">
                       {offPeakOnly
-                        ? `Hourly rate (before ${hourLabel(peakStartHour)})`
+                        ? tr("Hourly rate (before {time})", { time: hourLabel(peakStartHour) })
                         : allPeak
-                          ? `Hourly rate (from ${hourLabel(peakStartHour)})`
-                          : "Hourly rate (mixed)"}
+                          ? tr("Hourly rate (from {time})", { time: hourLabel(peakStartHour) })
+                          : tr("Hourly rate (mixed)")}
                     </dt>
                     <dd className="tabular-nums">
                       {offPeakOnly ? taka(court.price) : allPeak ? taka(court.peakPrice) : `${taka(court.price)} / ${taka(court.peakPrice)}`}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3 py-1.5">
-                    <dt className="text-white/80">Duration</dt>
-                    <dd>
-                      {duration} hour{duration > 1 ? "s" : ""}
-                    </dd>
+                    <dt className="text-white/80">{tr("Duration")}</dt>
+                    <dd>{tr(duration > 1 ? "{n} hours" : "{n} hour", { n: duration })}</dd>
                   </div>
                   <div className="mt-3 flex items-baseline justify-between gap-3 border-y border-white/10 py-4">
-                    <dt className="text-lg">Total</dt>
+                    <dt className="text-lg">{tr("Total")}</dt>
                     <dd className="text-2xl font-semibold tabular-nums">{price ? taka(price.total) : "—"}</dd>
                   </div>
                   <div className="flex justify-between gap-3 border-b border-white/10 py-3.5">
-                    <dt className="text-white/70">Pay now ({advancePercent}%)</dt>
+                    <dt className="text-white/70">{tr("Pay now ({n}%)", { n: advancePercent })}</dt>
                     <dd className="text-lg font-semibold tabular-nums">{price ? taka(price.advance) : "—"}</dd>
                   </div>
                   <div className="flex justify-between gap-3 py-3.5">
-                    <dt className="text-white/80">Pay at ground</dt>
+                    <dt className="text-white/80">{tr("Pay at ground")}</dt>
                     <dd className="text-lg font-semibold tabular-nums">{price ? taka(price.total - price.advance) : "—"}</dd>
                   </div>
                 </dl>
 
                 {conflict && start !== null && (
-                  <p className="mt-2 rounded-lg bg-rose-500/15 px-3 py-2 text-xs text-rose-200">That time was just taken. Pick another kick-off.</p>
+                  <p className="mt-2 rounded-lg bg-rose-500/15 px-3 py-2 text-xs text-rose-200">{tr("That time was just taken. Pick another kick-off.")}</p>
                 )}
                 <button
                   onClick={proceed}
                   disabled={!selection || !!conflict}
                   className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-lime-400 text-base font-semibold text-emerald-950 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {selection ? "Continue to payment" : "Pick a kick-off time"} <ArrowRight className="size-5" />
+                  {selection ? tr("Continue to payment") : tr("Pick a kick-off time")} <ArrowRight className="size-5" />
                 </button>
                 <p className="mt-4 flex items-center justify-center gap-2 text-xs text-white/70">
-                  <Lock className="size-3.5" /> Slot held for {holdMinutes} minutes once you continue.
+                  <Lock className="size-3.5" /> {tr("Slot held for {n} minutes once you continue.", { n: holdMinutes })}
                 </p>
               </Ticket>
             </div>
@@ -493,10 +496,10 @@ export default function SlotBooking() {
             <p className="truncate font-semibold">
               {clock(selection.startHour)} – {clock(selection.startHour + duration)}
             </p>
-            <p className="text-xs text-white/70">{taka(price.advance)} to pay now</p>
+            <p className="text-xs text-white/70">{tr("{amount} to pay now", { amount: taka(price.advance) })}</p>
           </div>
           <button onClick={proceed} className="flex h-11 items-center gap-2 rounded-lg bg-lime-400 px-4 text-sm font-semibold text-emerald-950">
-            Continue <ArrowRight className="size-4" />
+            {tr("Continue")} <ArrowRight className="size-4" />
           </button>
         </div>
       )}
@@ -620,6 +623,7 @@ function Matrix({
 
 /** Dark match ticket shared by both steps: day, time and length above the perforation, the step's totals and button below. */
 function Ticket({ day, start, duration, children }: { day: string; start: number | null; duration: number; children: React.ReactNode }) {
+  const tr = useT();
   return (
     <aside className="relative rounded-lg bg-emerald-950 p-5 text-white lg:sticky lg:top-28 md:p-8">
       <svg
@@ -634,7 +638,7 @@ function Ticket({ day, start, duration, children }: { day: string; start: number
         <path d="M75 1v108M1 30h22v50H1M149 30h-22v50h22" />
         <circle cx="75" cy="55" r="16" />
       </svg>
-      <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/60">Your match</p>
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-white/60">{tr("Your match")}</p>
       <p className="mt-4 max-w-[14rem] text-fluid-4xl font-semibold leading-tight">
         {new Date(`${day}T00:00`).toLocaleDateString("en-GB", { weekday: "long" })},
         <br />
@@ -642,11 +646,11 @@ function Ticket({ day, start, duration, children }: { day: string; start: number
       </p>
       <p className="mt-6 flex items-center gap-4 text-fluid-3xl font-semibold">
         <Clock className="size-7 shrink-0 text-white/80" />
-        {start === null ? <span className="text-white/40">Pick a time</span> : clockRange(start, start + duration)}
+        {start === null ? <span className="text-white/40">{tr("Pick a time")}</span> : clockRange(start, start + duration)}
       </p>
       <p className="mt-3 flex items-center gap-4 text-white/85">
         <Users className="size-7 shrink-0 text-white/60" />
-        {duration} hour{duration > 1 ? "s" : ""} · Entire ground
+        {tr(duration > 1 ? "{n} hours" : "{n} hour", { n: duration })} · {tr("Entire ground")}
       </p>
 
       {/* Perforation */}
@@ -678,6 +682,7 @@ function PaymentStep({
   onBack: () => void;
   onDone: (code: string, phone: string) => void;
 }) {
+  const tr = useT();
   const db = useTurfDB();
   const { advancePercent, holdMinutes, phone: venuePhone } = db.settings;
   const [form, setForm] = useState(() => {
@@ -703,17 +708,17 @@ function PaymentStep({
 
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
-    if (form.name.trim().length < 2) e.name = "Enter your name";
-    if (!BD_PHONE.test(form.phone.trim())) e.phone = "Enter a valid 11-digit mobile number";
+    if (form.name.trim().length < 2) e.name = tr("Enter your name");
+    if (!BD_PHONE.test(form.phone.trim())) e.phone = tr("Enter a valid 11-digit mobile number");
     if (method === "card") {
-      if (cardDigits.length !== 16) e.card = "Card number must be 16 digits";
-      else if (!/^\d{2}\/\d{2}$/.test(card.exp)) e.card = "Expiry as MM/YY";
-      else if (!/^\d{3,4}$/.test(card.cvc)) e.card = "Enter the CVC";
-    } else if (!ref) e.ref = "Enter the transaction ID from the SMS";
-    else if (!TRX_ID.test(ref)) e.ref = "A transaction ID is 8–10 letters and numbers";
-    else if (trxUsed(db, method, ref)) e.ref = "This transaction ID has already been used";
+      if (cardDigits.length !== 16) e.card = tr("Card number must be 16 digits");
+      else if (!/^\d{2}\/\d{2}$/.test(card.exp)) e.card = tr("Expiry as MM/YY");
+      else if (!/^\d{3,4}$/.test(card.cvc)) e.card = tr("Enter the CVC");
+    } else if (!ref) e.ref = tr("Enter the transaction ID from the SMS");
+    else if (!TRX_ID.test(ref)) e.ref = tr("A transaction ID is 8–10 letters and numbers");
+    else if (trxUsed(db, method, ref)) e.ref = tr("This transaction ID has already been used");
     return e;
-  }, [db, form, method, ref, card, cardDigits]);
+  }, [db, form, method, ref, card, cardDigits, tr]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -732,10 +737,10 @@ function PaymentStep({
     );
     setBusy(false);
     if (!r.ok) {
-      toast.error(r.error);
+      toast.error(tr(r.error));
       return;
     }
-    toast.success(`Booking ${r.value.code} received!`);
+    toast.success(tr("Booking {code} received!", { code: r.value.code }));
     onDone(r.value.code, r.value.customer.phone);
   };
 
@@ -751,14 +756,14 @@ function PaymentStep({
         onClick={onBack}
         className="-mb-2 flex w-fit items-center gap-1.5 text-sm font-medium text-neutral-600 transition hover:text-emerald-800 lg:col-span-2"
       >
-        <ArrowLeft className="size-4" /> Change slot
+        <ArrowLeft className="size-4" /> {tr("Change slot")}
       </button>
       <div className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-black/[0.04]">
         {/* Hold countdown: the bar drains as the hold runs out. */}
         <div className="border-b border-neutral-100 px-4 py-3.5 sm:px-5 md:px-6">
           <div className="flex items-center justify-between gap-3 text-sm">
             <span className="flex items-center gap-2 text-neutral-600">
-              <Hourglass className="size-4" /> Slot held for
+              <Hourglass className="size-4" /> {tr("Slot held for")}
             </span>
             <span className={cn("font-semibold tabular-nums", urgent ? "text-rose-600" : "text-neutral-900")}>{formatDuration(left)}</span>
           </div>
@@ -772,19 +777,19 @@ function PaymentStep({
 
         <div className="p-4 sm:p-5 md:p-6">
           <StepTitle n={1} numbered>
-            Your details
+            {tr("Your details")}
           </StepTitle>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="pf-name" className={labelClass}>
-                Name
+                {tr("Name")}
               </label>
-              <input id="pf-name" className={input} placeholder="Your full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="name" />
+              <input id="pf-name" className={input} placeholder={tr("Your full name")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="name" />
               {err("name")}
             </div>
             <div>
               <label htmlFor="pf-phone" className={labelClass}>
-                Mobile number
+                {tr("Mobile number")}
               </label>
               <input
                 id="pf-phone"
@@ -802,27 +807,27 @@ function PaymentStep({
 
           <div className="mt-8 border-t border-neutral-100 pt-6">
             <StepTitle n={2} numbered>
-              Payment
+              {tr("Payment")}
             </StepTitle>
             <div className="mt-3">
               <AmountChoice
                 options={[
-                  { v: false, t: `${advancePercent}% advance`, a: taka(price.advance) },
-                  { v: true, t: "Full amount", a: taka(price.total) },
+                  { v: false, t: tr("{n}% advance", { n: advancePercent }), a: taka(price.advance) },
+                  { v: true, t: tr("Full amount"), a: taka(price.total) },
                 ]}
                 value={full}
                 onChange={setFull}
               />
             </div>
 
-            <p className="mb-2 mt-5 text-sm font-medium text-neutral-800">Pay with</p>
-            <MethodTiles methods={["bkash", "nagad", "card"]} value={method} onChange={setMethod} />
+            <p className="mb-2 mt-5 text-sm font-medium text-neutral-800">{tr("Pay with")}</p>
+            <MethodTiles methods={["bkash", "nagad", "card"]} value={method} onChange={setMethod} t={tr} />
 
             {method === "card" ? (
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <label htmlFor="pf-card" className={labelClass}>
-                    Card number
+                    {tr("Card number")}
                   </label>
                   <input
                     id="pf-card"
@@ -844,7 +849,7 @@ function PaymentStep({
                 </div>
                 <div>
                   <label htmlFor="pf-exp" className={labelClass}>
-                    Expiry
+                    {tr("Expiry")}
                   </label>
                   <input
                     id="pf-exp"
@@ -861,7 +866,7 @@ function PaymentStep({
                 </div>
                 <div>
                   <label htmlFor="pf-cvc" className={labelClass}>
-                    CVC
+                    {tr("CVC")}
                   </label>
                   <input
                     id="pf-cvc"
@@ -878,10 +883,11 @@ function PaymentStep({
             ) : (
               <>
                 <div className="mt-4">
-                  <WalletDetails venuePhone={venuePhone} amount={amount} amountLabel={taka(amount)} />
+                  <WalletDetails venuePhone={venuePhone} amount={amount} amountLabel={taka(amount)} t={tr} />
                 </div>
                 <div className="mt-4">
                   <TrxIdField
+                    t={tr}
                     id="pf-ref"
                     method={method}
                     value={ref}
@@ -901,15 +907,15 @@ function PaymentStep({
       <Ticket day={selection.date} start={selection.startHour} duration={selection.duration}>
         <dl className="text-sm">
           <div className="flex justify-between gap-3 py-1.5">
-            <dt className="text-white/80">{court.name}</dt>
+            <dt className="text-white/80">{tr(court.name)}</dt>
             <dd className="tabular-nums">{taka(price.total)}</dd>
           </div>
           <div className="mt-3 flex items-baseline justify-between gap-3 border-y border-white/10 py-4">
-            <dt className="text-lg">Pay now</dt>
+            <dt className="text-lg">{tr("Pay now")}</dt>
             <dd className="text-2xl font-semibold tabular-nums">{taka(amount)}</dd>
           </div>
           <div className="flex justify-between gap-3 py-3.5">
-            <dt className="text-white/80">Pay at ground</dt>
+            <dt className="text-white/80">{tr("Pay at ground")}</dt>
             <dd className="text-lg font-semibold tabular-nums">{taka(price.total - amount)}</dd>
           </div>
         </dl>
@@ -918,7 +924,7 @@ function PaymentStep({
           disabled={busy}
           className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-lime-400 text-base font-semibold text-emerald-950 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Pay {taka(amount)} &amp; book <ArrowRight className="size-5" />
+          {tr("Pay {amount} & book", { amount: taka(amount) })} <ArrowRight className="size-5" />
         </button>
       </Ticket>
     </form>

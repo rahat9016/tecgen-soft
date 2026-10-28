@@ -8,9 +8,9 @@ import { ClipboardList, ExternalLink, Image as ImageIcon, LayoutTemplate, Menu, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/src/components/ui/dropdown-menu";
 import { rangeLabel, relativeDay, todayYmd } from "@/src/lib/turf-store/format";
 import { creditOf, endMs, resetDemoData, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
-import { setLang, useLang, useT } from "@/src/lib/turf-store/i18n";
+import { useT } from "@/src/lib/turf-store/i18n";
 import { cn } from "@/src/lib/utils";
-import { Loader, TurfLogo } from "../ui";
+import { LanguageSwitch, Loader, TurfLogo } from "../ui";
 import { ADMIN } from "./ui";
 
 const COMPACT_KEY = "turf-admin-sidebar-compact";
@@ -236,35 +236,6 @@ export default function TurfAdminShell({ children }: { children: React.ReactNode
         </header>
         <div className="p-4 print:p-0">{hydrated ? children : <Loader />}</div>
       </div>
-    </div>
-  );
-}
-
-/** EN / বাংলা switch, same as the hotel admin's; the choice is remembered in this browser. */
-function LanguageSwitch() {
-  const lang = useLang();
-  useEffect(() => {
-    document.documentElement.lang = lang;
-  }, [lang]);
-  return (
-    <div role="radiogroup" aria-label="Language / ভাষা" className="flex h-9 items-center rounded-full border border-neutral-200 bg-white p-0.5 text-xs font-semibold sm:h-10 sm:p-1 sm:text-[13px]">
-      {(
-        [
-          ["en", "EN"],
-          ["bn", "বাংলা"],
-        ] as const
-      ).map(([value, label]) => (
-        <button
-          key={value}
-          type="button"
-          role="radio"
-          aria-checked={lang === value}
-          onClick={() => setLang(value)}
-          className={cn("h-7.5 rounded-full px-2.5 transition sm:h-8 sm:px-3", lang === value ? "bg-emerald-700 text-white" : "text-neutral-600 hover:text-emerald-700")}
-        >
-          {label}
-        </button>
-      ))}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { useElementSize } from "@/src/hooks/useElementSize";
 import { addDays, dateLabel, hourLabel, rangeLabel, slotTime, taka, todayYmd } from "@/src/lib/turf-store/format";
 import { conflictMessage, findConflict, freeSlots, hoursOf, quote, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
 import type { Court } from "@/src/lib/turf-store/types";
+import { useT } from "@/src/lib/turf-store/i18n";
 import { cn } from "@/src/lib/utils";
 import DateCalendar from "./DateCalendar";
 
@@ -20,6 +21,7 @@ const chipOff = "bg-neutral-100 text-neutral-800 hover:bg-emerald-50";
 /** Hero booking card: shows which start times are free as the visitor picks, then hands off to the slot page. */
 export default function QuickBook() {
   const db = useTurfDB();
+  const tr = useT();
   const router = useRouter();
   const hydrated = useHydrated();
   const now = useNow(15_000);
@@ -58,12 +60,21 @@ export default function QuickBook() {
         court: pick,
         ...quote(pick, hour, duration, settings),
       };
+    // The start hour may be free while a later hour of the game isn't: count how many hours do fit.
+    let fits = 0;
+    while (fits < duration - 1 && candidates.some((c) => !findConflict(db, { courtId: c.id, date: day, startHour: hour, duration: fits + 1 }, { now }))) fits++;
     const conflict = findConflict(db, { courtId: candidates[0].id, date: day, startHour: hour, duration }, { now });
     const taken = conflict?.kind === "booking" || conflict?.kind === "hold" || conflict?.kind === "block";
-    const message = taken ? `${hourLabel(hour)} is already taken.` : conflict ? conflictMessage(conflict) : "";
+    const message = fits
+      ? tr("Only {n} hr free from {time}.", { n: fits, time: hourLabel(hour) })
+      : taken
+        ? tr("{time} is already taken.", { time: hourLabel(hour) })
+        : conflict
+          ? tr(conflictMessage(conflict))
+          : "";
     // Point the visitor at the next start time that works.
     const next = hours.find((h) => h > hour && freeAt.get(h));
-    return { ok: false as const, message, next };
+    return { ok: false as const, message, fits, next };
   })();
 
   const go = () => {
@@ -86,7 +97,7 @@ export default function QuickBook() {
           <div role="group" aria-labelledby="qb-date">
             <div className="mb-2 flex items-center justify-between gap-3">
               <p id="qb-date" className="flex items-center text-sm font-medium text-neutral-800">
-                <Step n={1} /> Date
+                <Step n={1} /> {tr("Date")}
               </p>
               {day && <span className="text-sm text-neutral-500">{dateLabel(day)}</span>}
             </div>
@@ -103,7 +114,7 @@ export default function QuickBook() {
                     className={cn(chip, on ? chipOn : chipOff)}
                   >
                     <span className={cn("text-[11px] font-medium", on ? "text-white/75" : "text-neutral-500")}>
-                      {i === 0 ? "Today" : dateLabel(d, { weekday: "short" })}
+                      {i === 0 ? tr("Today") : dateLabel(d, { weekday: "short" })}
                     </span>
                     <span className="text-lg font-semibold leading-tight tabular-nums">{dateLabel(d, { day: "numeric" })}</span>
                   </button>
@@ -117,16 +128,17 @@ export default function QuickBook() {
                   isFull={(d) => candidates.every((c) => freeSlots(db, c, d, now) === 0)}
                   onChange={setDate}
                 >
-                  <button aria-label="Pick a later date" aria-pressed={later} className={cn(chip, "gap-1", later ? chipOn : chipOff)}>
+                  <button aria-label={tr("Pick a later date")} aria-pressed={later} className={cn(chip, "gap-1", later ? chipOn : chipOff)}>
                     <CalendarDays className="size-4" />
-                    <span className="text-[11px] font-medium">{later ? dateLabel(day, { day: "numeric", month: "short" }) : "More"}</span>
+                    <span className="text-[11px] font-medium">{later ? dateLabel(day, { day: "numeric", month: "short" }) : tr("More")}</span>
                   </button>
                 </DateCalendar>
               )}
             </div>
           </div>
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-neutral-800">Duration</p>
+          {/* Phones: label on its own line and the lengths share the full width, so longer (Bangla) labels never wrap. */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <p className="text-sm font-medium text-neutral-800">{tr("Duration")}</p>
             <div className="flex h-10 gap-1 rounded-xl bg-neutral-100 p-1">
               {Array.from({ length: settings.maxDuration }, (_, i) => i + 1).map((d) => (
                 <button
@@ -134,11 +146,11 @@ export default function QuickBook() {
                   onClick={() => setDuration(d)}
                   aria-pressed={d === duration}
                   className={cn(
-                    "min-w-14 rounded-lg px-3 text-sm font-medium transition",
+                    "min-w-0 flex-1 whitespace-nowrap rounded-lg px-2.5 text-sm font-medium transition sm:min-w-14 sm:flex-none sm:px-3",
                     d === duration ? "bg-emerald-800 text-white" : "text-neutral-600 hover:bg-white"
                   )}
                 >
-                  {d} hr
+                  {tr("{n} hr", { n: d })}
                 </button>
               ))}
             </div>
@@ -146,19 +158,19 @@ export default function QuickBook() {
           <div role="group" aria-labelledby="qb-time">
             <div className="mb-2 flex items-center justify-between">
               <p id="qb-time" className="flex items-center text-sm font-medium text-neutral-800">
-                <Step n={2} /> Start time
+                <Step n={2} /> {tr("Start time")}
               </p>
               {hydrated && hours.length > 0 && (
                 <span className={cn("text-sm font-medium", freeCount ? "text-emerald-700" : "text-rose-600")}>
-                  {freeCount ? `${freeCount} free` : "Fully booked"}
+                  {freeCount ? tr("{n} free", { n: freeCount }) : tr("Fully booked")}
                 </span>
               )}
             </div>
             {hours.length === 0 && (
               <p className="rounded-xl bg-neutral-50 px-3 py-3 text-sm text-neutral-600">
-                No start times left today.{" "}
+                {tr("No start times left today.")}{" "}
                 <button onClick={() => setDate(addDays(todayYmd(), 1))} className="font-semibold text-emerald-800 underline">
-                  See tomorrow
+                  {tr("See tomorrow")}
                 </button>
               </p>
             )}
@@ -167,6 +179,8 @@ export default function QuickBook() {
                 const ok = !!freeAt.get(h);
                 const peak = h >= settings.peakStartHour;
                 const selected = h === hour;
+                // Every hour of a valid pick lights up, not just the kick-off.
+                const inGame = !!check?.ok && h >= hour && h < hour + duration;
                 return (
                   <motion.button
                     key={h}
@@ -179,27 +193,27 @@ export default function QuickBook() {
                     }}
                     disabled={!ok}
                     onClick={() => setHour(h)}
-                    aria-pressed={selected}
-                    aria-label={`${hourLabel(h)}${ok ? "" : ", taken"}${peak ? ", peak rate" : ""}`}
+                    aria-pressed={selected || inGame}
+                    aria-label={`${hourLabel(h)}${ok ? "" : `, ${tr("taken")}`}${peak ? `, ${tr("peak rate")}` : ""}`}
                     className={cn(
                       "relative h-11 rounded-xl text-sm font-medium transition disabled:cursor-not-allowed",
-                      selected
-                        ? ok
-                          ? "bg-emerald-800 text-white"
-                          : "bg-rose-50 text-rose-600 ring-1 ring-rose-300"
-                        : ok
-                          ? "bg-neutral-100 text-neutral-800 hover:bg-emerald-50 hover:ring-1 hover:ring-emerald-500"
-                          : "bg-neutral-50 text-neutral-300 line-through"
+                      inGame
+                        ? "bg-emerald-800 text-white disabled:cursor-default"
+                        : selected
+                          ? "bg-rose-50 text-rose-600 ring-1 ring-rose-300"
+                          : ok
+                            ? "bg-neutral-100 text-neutral-800 hover:bg-emerald-50 hover:ring-1 hover:ring-emerald-500"
+                            : "bg-neutral-50 text-neutral-300 line-through"
                     )}
                   >
                     {hourLabel(h).toLowerCase()}
-                    {peak && ok && <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-orange-500" />}
+                    {peak && ok && !inGame && <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-orange-500" />}
                   </motion.button>
                 );
               })}
             </div>
             <p className="mt-2.5 flex items-center gap-1.5 text-sm text-neutral-500">
-              <span className="size-1.5 rounded-full bg-orange-500" /> Peak rate from {hourLabel(settings.peakStartHour)}
+              <span className="size-1.5 rounded-full bg-orange-500" /> {tr("Peak rate from {time}", { time: hourLabel(settings.peakStartHour) })}
             </p>
           </div>
 
@@ -215,15 +229,21 @@ export default function QuickBook() {
               {check.ok ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" /> : <XCircle className="mt-0.5 size-4 shrink-0" />}
               {check.ok ? (
                 <span>
-                  <b>Available</b> · {taka(check.total)} total · {taka(check.advance)} advance to lock it
+                  <b>{tr("Available")}</b> · {tr("{total} total · {advance} advance to lock it", { total: taka(check.total), advance: taka(check.advance) })}
                 </span>
               ) : (
                 <span>
                   {check.message}{" "}
-                  {check.next !== undefined && (
-                    <button onClick={() => setHour(check.next!)} className="font-semibold underline">
-                      Try {hourLabel(check.next)}
+                  {check.fits ? (
+                    <button onClick={() => setDuration(check.fits)} className="font-semibold underline">
+                      {tr("Book {n} hr", { n: check.fits })}
                     </button>
+                  ) : (
+                    check.next !== undefined && (
+                      <button onClick={() => setHour(check.next!)} className="font-semibold underline">
+                        {tr("Try {time}", { time: hourLabel(check.next) })}
+                      </button>
+                    )
                   )}
                 </span>
               )}
@@ -232,7 +252,7 @@ export default function QuickBook() {
         </div>
       </motion.div>
       <button onClick={go} className="mt-4 h-13 w-full rounded-2xl bg-white text-base font-semibold text-emerald-950 transition hover:bg-lime-300">
-        {check?.ok ? `Book ${rangeLabel(hour, duration)}` : "Check live slots"}
+        {check?.ok ? tr("Book {time}", { time: rangeLabel(hour, duration) }) : tr("Check live slots")}
       </button>
     </div>
   );

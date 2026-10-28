@@ -13,6 +13,7 @@ import {
 import { GiSoccerBall } from "react-icons/gi";
 import { formatDuration, hourLabel, taka } from "@/src/lib/turf-store/format";
 import { courtLive, endMs, groundOf, useHydrated, useNow, useTurfDB } from "@/src/lib/turf-store/store";
+import { useT } from "@/src/lib/turf-store/i18n";
 import QuickBook from "./QuickBook";
 import { LiveDot, tbtn } from "./ui";
 
@@ -21,15 +22,16 @@ const useGround = () => groundOf(useTurfDB());
 export function Hero() {
   const { settings, content } = useTurfDB();
   const ground = useGround();
+  const tr = useT();
   const facts = [
     {
       icon: GiSoccerBall,
-      v: ground ? `${ground.size.split(" · ")[0]} ground` : "Football ground",
-      t: ground ? `${ground.size.split(" · ")[1] ?? ""} · ${ground.players}` : "",
+      v: ground ? tr("{format} ground", { format: tr(ground.size.split(" · ")[0]) }) : tr("Football ground"),
+      t: ground ? `${ground.size.split(" · ")[1] ?? ""} · ${tr(ground.players)}` : "",
     },
-    { icon: Clock, v: `${hourLabel(settings.openHour)} – ${hourLabel(settings.closeHour)}`, t: "Open every day" },
-    { icon: Wallet, v: `${settings.advancePercent}% advance`, t: "bKash, Nagad or card — rest at the venue" },
-    { icon: ShieldCheck, v: "Free cancellation", t: `Up to ${settings.cancelCutoffHours} hours before kick-off` },
+    { icon: Clock, v: `${hourLabel(settings.openHour)} – ${hourLabel(settings.closeHour)}`, t: tr("Open every day") },
+    { icon: Wallet, v: tr("{n}% advance", { n: settings.advancePercent }), t: tr("bKash, Nagad or card — rest at the venue") },
+    { icon: ShieldCheck, v: tr("Free cancellation"), t: tr("Up to {n} hours before kick-off", { n: settings.cancelCutoffHours }) },
   ];
 
   return (
@@ -43,18 +45,18 @@ export function Hero() {
       <div className="relative mx-auto grid w-full max-w-7xl flex-1 gap-10 px-4 pb-10 pt-28 max-md:content-start md:px-8 lg:grid-cols-[1fr_440px] lg:grid-rows-[1fr_auto] lg:items-center lg:pb-12 lg:pt-28">
         <div className="flex flex-col justify-center max-md:contents">
           <h1 className="max-md:sr-only whitespace-pre-line text-4xl font-semibold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
-            {content.heroTitle}
+            {tr(content.heroTitle)}
           </h1>
-          <p className="mt-5 max-w-md text-sm leading-relaxed text-white/80 max-md:hidden md:text-base">{content.heroText}</p>
+          <p className="mt-5 max-w-md text-sm leading-relaxed text-white/80 max-md:hidden md:text-base">{tr(content.heroText)}</p>
           <div className="mt-8 flex flex-wrap gap-3 max-md:hidden">
             <Link href="/turf/book" className={tbtn.lime}>
-              See live slots <ArrowRight className="size-4" />
+              {tr("See live slots")} <ArrowRight className="size-4" />
             </Link>
             <a
               href="#how-it-works"
               className="inline-flex h-11 items-center rounded-full px-5 text-sm font-medium text-white ring-1 ring-white/30 hover:bg-white/10"
             >
-              How booking works
+              {tr("How booking works")}
             </a>
           </div>
         </div>
@@ -84,6 +86,7 @@ export function Ground() {
   const ground = useGround();
   const hydrated = useHydrated();
   const now = useNow(1000);
+  const tr = useT();
   if (!ground) return null;
 
   const { settings } = db;
@@ -93,11 +96,11 @@ export function Ground() {
   const [format, dims] = ground.size.split(" · ");
 
   const specs = [
-    { k: "Surface", v: ground.surface },
-    { k: "Squad size", v: `${format} · ${ground.players}` },
-    { k: "Hours", v: `${hourLabel(settings.openHour)} – ${hourLabel(settings.closeHour)}, every day` },
-    { k: "On site", v: ground.features.join(", ") },
-    { k: "Player rating", v: `${ground.rating} / 5` },
+    { k: tr("Surface"), v: tr(ground.surface) },
+    { k: tr("Squad size"), v: `${tr(format)} · ${tr(ground.players)}` },
+    { k: tr("Hours"), v: tr("{from} – {to}, every day", { from: hourLabel(settings.openHour), to: hourLabel(settings.closeHour) }) },
+    { k: tr("On site"), v: ground.features.map((f) => tr(f)).join(", ") },
+    { k: tr("Player rating"), v: `${ground.rating} / 5` },
   ];
 
   return (
@@ -114,15 +117,15 @@ export function Ground() {
               <span className="flex items-center gap-2 font-medium text-neutral-900">
                 {current ? (
                   <>
-                    <LiveDot /> Match in play — {formatDuration(left)} left
+                    <LiveDot /> {tr("Match in play — {time} left", { time: formatDuration(left) })}
                   </>
                 ) : (
                   <>
-                    <span className="size-2 rounded-full bg-neutral-400" /> {hydrated ? "Pitch is free right now" : "Checking…"}
+                    <span className="size-2 rounded-full bg-neutral-400" /> {hydrated ? tr("Pitch is free right now") : tr("Checking…")}
                   </>
                 )}
               </span>
-              <span className="text-neutral-500">{next ? `Next game ${hourLabel(next.startHour)}` : "No more games today"}</span>
+              <span className="text-neutral-500">{next ? tr("Next game {time}", { time: hourLabel(next.startHour) }) : tr("No more games today")}</span>
             </figcaption>
           </figure>
 
@@ -146,9 +149,10 @@ export function Ground() {
 /** Top-down drawing of the pitch with its dimensions, like a groundsman's plan. */
 function PitchPlan({ dims }: { dims?: string }) {
   const [length, width] = (dims ?? "").replace(/ ft$/, "").split(" × ");
+  const tr = useT();
   return (
     <div className="rounded-2xl bg-emerald-900 p-5">
-      <svg viewBox="0 0 234 120" className="w-full text-white/80" fill="none" aria-label={dims ? `Pitch plan, ${dims}` : "Pitch plan"}>
+      <svg viewBox="0 0 234 120" className="w-full text-white/80" fill="none" aria-label={dims ? `${tr("Pitch plan")}, ${dims}` : tr("Pitch plan")}>
         <g stroke="currentColor" strokeWidth="1">
           <rect x="10" y="14" width="200" height="96" />
           <path d="M110 14V110" />
@@ -162,13 +166,13 @@ function PitchPlan({ dims }: { dims?: string }) {
           <g className="fill-lime-300 text-[7px]" stroke="none">
             <path d="M10 6H210" stroke="currentColor" strokeOpacity=".4" strokeDasharray="2 2" />
             <text x="110" y="8.5" textAnchor="middle" className="fill-lime-300" style={{ paintOrder: "stroke" }} stroke="#064e3b" strokeWidth="4">
-              {length} ft
+              {length} {tr("ft")}
             </text>
           </g>
         )}
         {width && (
           <text x="226" y="62" textAnchor="middle" transform="rotate(90 226 62)" className="fill-lime-300 text-[7px]">
-            {width} ft
+            {width} {tr("ft")}
           </text>
         )}
       </svg>
@@ -179,23 +183,24 @@ function PitchPlan({ dims }: { dims?: string }) {
 export function Gallery() {
   const { gallery } = useTurfDB();
   const photos = gallery.filter((g) => g.visible);
+  const tr = useT();
   if (!photos.length) return null;
 
   return (
     <section id="gallery" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12 md:px-8 md:py-20">
-      <h2 className="text-fluid-4xl font-semibold text-neutral-900">Life on the pitch</h2>
+      <h2 className="text-fluid-4xl font-semibold text-neutral-900">{tr("Life on the pitch")}</h2>
       <ul className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
         {photos.map((g) => (
           <li key={g.id} className="group relative aspect-[4/3] overflow-hidden rounded-2xl bg-neutral-100">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={g.src}
-              alt={g.title}
+              alt={tr(g.title)}
               loading="lazy"
               className="size-full object-cover transition duration-500 group-hover:scale-105 motion-reduce:transition-none"
             />
             {g.title && (
-              <p className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-8 text-xs font-medium text-white md:text-sm">{g.title}</p>
+              <p className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-8 text-xs font-medium text-white md:text-sm">{tr(g.title)}</p>
             )}
           </li>
         ))}
@@ -212,27 +217,28 @@ const players = [
 
 export function About() {
   const { settings, content } = useTurfDB();
+  const tr = useT();
   const facts = [
-    { v: `${settings.closeHour - settings.openHour} hrs`, t: "Open every day", d: `${hourLabel(settings.openHour)} to ${hourLabel(settings.closeHour)}` },
-    { v: hourLabel(settings.closeHour), t: "Floodlights until", d: "Full LED lighting for night games" },
-    { v: `${settings.holdMinutes} min`, t: "Slot held while you pay", d: "Nobody can take it mid-checkout" },
-    { v: `${settings.bookingWindowDays} days`, t: "Book ahead", d: "Lock your regular slot early" },
+    { v: tr("{n} hrs", { n: settings.closeHour - settings.openHour }), t: tr("Open every day"), d: tr("{from} to {to}", { from: hourLabel(settings.openHour), to: hourLabel(settings.closeHour) }) },
+    { v: hourLabel(settings.closeHour), t: tr("Floodlights until"), d: tr("Full LED lighting for night games") },
+    { v: tr("{n} min", { n: settings.holdMinutes }), t: tr("Slot held while you pay"), d: tr("Nobody can take it mid-checkout") },
+    { v: tr("{n} days", { n: settings.bookingWindowDays }), t: tr("Book ahead"), d: tr("Lock your regular slot early") },
   ];
 
   return (
     <section id="about" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12 md:px-8 md:py-24">
       <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
         <div>
-          <h2 className="whitespace-pre-line text-fluid-5xl font-semibold tracking-tight text-neutral-900">{content.aboutTitle}</h2>
-          <p className="mt-5 max-w-md text-base leading-relaxed text-neutral-600">{content.aboutText}</p>
+          <h2 className="whitespace-pre-line text-fluid-5xl font-semibold tracking-tight text-neutral-900">{tr(content.aboutTitle)}</h2>
+          <p className="mt-5 max-w-md text-base leading-relaxed text-neutral-600">{tr(content.aboutText)}</p>
 
           <ul className="mt-8 border-t border-neutral-200 md:mt-10">
             {players.map((p, i) => (
               <li key={p.who} className="grid grid-cols-[2.5rem_1fr] gap-x-2 border-b border-neutral-200 py-5">
                 <span className="pt-0.5 text-sm tabular-nums text-neutral-400">0{i + 1}</span>
                 <div>
-                  <p className="font-semibold text-neutral-900">{p.who}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-neutral-500">{p.what}</p>
+                  <p className="font-semibold text-neutral-900">{tr(p.who)}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-neutral-500">{tr(p.what)}</p>
                 </div>
               </li>
             ))}
@@ -242,16 +248,16 @@ export function About() {
         <div className="grid grid-cols-2 gap-4 self-start">
           <figure className="mt-12">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/turf/player.webp" alt="Player striking the ball on the turf" className="aspect-[3/4] w-full rounded-2xl object-cover" />
+            <img src="/turf/player.webp" alt={tr("Player striking the ball on the turf")} className="aspect-[3/4] w-full rounded-2xl object-cover" />
             <figcaption className="mt-3 text-sm text-neutral-500">
-              <span className="font-medium text-neutral-900">By day</span> — FIFA-grade grass with a true roll.
+              <span className="font-medium text-neutral-900">{tr("By day")}</span> — {tr("FIFA-grade grass with a true roll.")}
             </figcaption>
           </figure>
           <figure>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/turf/night-match.webp" alt="Night match under floodlights" className="aspect-[3/4] w-full rounded-2xl object-cover" />
+            <img src="/turf/night-match.webp" alt={tr("Night match under floodlights")} className="aspect-[3/4] w-full rounded-2xl object-cover" />
             <figcaption className="mt-3 text-sm text-neutral-500">
-              <span className="font-medium text-neutral-900">After dark</span> — floodlit until {hourLabel(settings.closeHour)}.
+              <span className="font-medium text-neutral-900">{tr("After dark")}</span> — {tr("floodlit until {time}.", { time: hourLabel(settings.closeHour) })}
             </figcaption>
           </figure>
         </div>
@@ -273,12 +279,15 @@ export function About() {
 export function Services() {
   const { settings, content } = useTurfDB();
   const ground = useGround();
+  const tr = useT();
   const tel = `tel:${settings.phone.replace(/[^+\d]/g, "")}`;
   const services = content.services.map((x) => ({
     ...x,
-    detail: x.detail || (x.online ? (ground ? `From ${taka(ground.price)}/hr` : "Book online") : ""),
+    title: tr(x.title),
+    text: tr(x.text),
+    detail: x.detail ? tr(x.detail) : x.online ? (ground ? tr("From {amount}/hr", { amount: taka(ground.price) }) : tr("Book online")) : "",
     href: x.online ? "/turf/book" : tel,
-    cta: x.online ? "Book" : "Call to arrange",
+    cta: x.online ? tr("Book") : tr("Call to arrange"),
   }));
   if (!services.length) return null;
 
@@ -286,13 +295,9 @@ export function Services() {
     <section id="services" className="scroll-mt-24 bg-emerald-950">
       <div className="mx-auto max-w-7xl px-4 py-12 md:px-8 md:py-24">
         <div className="grid gap-6 lg:grid-cols-2 lg:items-end">
-          <h2 className="text-fluid-5xl font-semibold tracking-tight text-white">
-            More than an hour
-            <br />
-            on the pitch.
-          </h2>
+          <h2 className="whitespace-pre-line text-fluid-5xl font-semibold tracking-tight text-white">{tr("More than an hour\non the pitch.")}</h2>
           <p className="max-w-md text-base leading-relaxed text-white/60 lg:justify-self-end">
-            Book a kickabout online in a minute. For coaching, events or a tournament, give us a call and we&apos;ll set it up.
+            {tr("Book a kickabout online in a minute. For coaching, events or a tournament, give us a call and we'll set it up.")}
           </p>
         </div>
 
@@ -336,26 +341,27 @@ export function Services() {
 
 export function HowItWorks() {
   const { settings } = useTurfDB();
+  const tr = useT();
   const steps = [
     {
       icon: MapPin,
-      title: "Pick date & time",
-      text: "Open Live Slots and choose a day. You see right away which start times are free and which are taken.",
+      title: tr("Pick date & time"),
+      text: tr("Open Live Slots and choose a day. You see right away which start times are free and which are taken."),
     },
     {
       icon: Lock,
-      title: `Slot held for ${settings.holdMinutes} min`,
-      text: "Enter your name and mobile number. While you pay, the slot is locked for you — nobody else can grab it.",
+      title: tr("Slot held for {n} min", { n: settings.holdMinutes }),
+      text: tr("Enter your name and mobile number. While you pay, the slot is locked for you — nobody else can grab it."),
     },
     {
       icon: Wallet,
-      title: `Pay ${settings.advancePercent}% advance`,
-      text: "Pay the advance with bKash, Nagad or card. The rest is paid in cash or bKash at the venue.",
+      title: tr("Pay {n}% advance", { n: settings.advancePercent }),
+      text: tr("Pay the advance with bKash, Nagad or card. The rest is paid in cash or bKash at the venue."),
     },
     {
       icon: ShieldCheck,
-      title: "Get confirmed & play",
-      text: "Your booking is confirmed the moment you pay. Find it any time under My Bookings with your phone number.",
+      title: tr("Get confirmed & play"),
+      text: tr("Your booking is confirmed the moment you pay. Find it any time under My Bookings with your phone number."),
     },
   ];
   return (
@@ -363,10 +369,10 @@ export function HowItWorks() {
       id="how-it-works"
       className="mx-auto grid max-w-7xl scroll-mt-24 gap-x-4 gap-y-8 px-4 py-12 sm:grid-cols-[1fr_auto] sm:items-end md:gap-y-10 md:px-8 md:py-20"
     >
-      <h2 className="max-w-xl text-fluid-4xl font-semibold text-neutral-900">How to book your turf</h2>
+      <h2 className="max-w-xl text-fluid-4xl font-semibold text-neutral-900">{tr("How to book your turf")}</h2>
       {/* Phones: full-width button after the steps, once they've been read. */}
       <Link href="/turf/book" className={`${tbtn.green} max-sm:order-last max-sm:h-12 max-sm:w-full`}>
-        Start booking <ArrowRight className="size-4" />
+        {tr("Start booking")} <ArrowRight className="size-4" />
       </Link>
       <ol className="grid gap-5 sm:col-span-2 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((s, i) => (
@@ -393,6 +399,7 @@ export function HowItWorks() {
 
 export function PrimeTimeCta() {
   const { settings } = useTurfDB();
+  const tr = useT();
   return (
     <section className="mx-auto max-w-7xl px-4 pb-12 md:px-8 md:pb-20">
       <div className="relative overflow-hidden rounded-3xl bg-emerald-900 px-6 py-10 md:px-14 md:py-24">
@@ -400,13 +407,13 @@ export function PrimeTimeCta() {
         <img src="/turf/night.webp" alt="" className="absolute inset-0 size-full object-cover opacity-25" />
         <div className="relative flex flex-wrap items-center justify-between gap-6">
           <div>
-            <h3 className="text-fluid-5xl font-semibold text-white">Tonight&apos;s prime slots go fast.</h3>
+            <h3 className="text-fluid-5xl font-semibold text-white">{tr("Tonight's prime slots go fast.")}</h3>
             <p className="mt-3 text-sm text-white/70 md:text-base">
-              Peak hours start at {hourLabel(settings.peakStartHour)}. Check what&apos;s left before your squad does.
+              {tr("Peak hours start at {time}. Check what's left before your squad does.", { time: hourLabel(settings.peakStartHour) })}
             </p>
           </div>
           <Link href="/turf/book" className={tbtn.lime}>
-            Check live slots <ArrowRight className="size-4" />
+            {tr("Check live slots")} <ArrowRight className="size-4" />
           </Link>
         </div>
       </div>

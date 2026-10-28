@@ -4,14 +4,14 @@ import { useCallback, useSyncExternalStore } from "react";
 import { bn } from "./i18n-bn";
 
 /**
- * Turf admin language — same approach as the hotel admin: English by default, Bangla from the header
- * switch. Strings are looked up by their English text, so anything not yet translated shows in English.
- * The choice is remembered per browser, separately from the hotel admin's.
+ * Language for everything under /turf — the booking site and its admin share one setting, so a visitor
+ * or staff member who picks Bangla on one keeps it on the other. Same approach as the hotel admin:
+ * English by default; strings are looked up by their English text, so anything untranslated shows in English.
  */
 export type Lang = "en" | "bn";
 
-const KEY = "turf-admin-lang";
-const EVENT = "turf-admin-lang";
+const KEY = "turf-lang";
+const EVENT = "turf-lang";
 
 const read = (): Lang => {
   try {
