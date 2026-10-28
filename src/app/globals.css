@@ -53,7 +53,8 @@
    LIGHT THEME
 ========================= */
 :root {
-  font-family: var(--font-poppins);
+  /* Poppins for Latin; Bangla text falls through to Hind Siliguri (Bengali glyphs only). */
+  font-family: var(--font-poppins), var(--font-bangla), sans-serif;
   --radius: 0.625rem;
 
   --light: #f7f7f7;

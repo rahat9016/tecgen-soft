@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Hind_Siliguri, Poppins } from "next/font/google";
 import "./globals.css";
 
 import ToastProvider from "../components/shared/Toast/ToastProvider";
@@ -14,6 +14,17 @@ const poppins = Poppins({
   display: "swap",
 });
 
+// Bangla text (turf and hotel Bangla modes). Poppins has no Bengali glyphs, so the browser falls back to
+// Hind Siliguri — made to pair with Poppins. Bengali subset only and not preloaded: it downloads only
+// when a page actually shows Bangla.
+const bangla = Hind_Siliguri({
+  subsets: ["bengali"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-bangla",
+  display: "swap",
+  preload: false,
+});
+
 export const metadata: Metadata = {
   title: "Tecgen Soft - Web & Software Development Company in Bangladesh",
   description:
@@ -26,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={poppins.variable} suppressHydrationWarning>
+    <html lang="en" className={`${poppins.variable} ${bangla.variable}`} suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
         <StoreProvider>
           <QueryProvider>
